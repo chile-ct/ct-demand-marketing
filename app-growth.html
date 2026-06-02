@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App Growth Dashboard — 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a2e; }
+
+.header { background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); color: white; padding: 10px 36px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+.header-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.header h1 { font-size: 17px; font-weight: 700; white-space: nowrap; }
+.header-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.header-meta .target-badge { background: rgba(255,255,255,0.1); border-radius: 4px; padding: 2px 8px; font-size: 10px; color: #c7d2fe; white-space: nowrap; }
+.header-meta .target-badge strong { color: white; }
+.months-badge { display: flex; gap: 6px; flex-wrap: wrap; }
+.months-badge span { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 2px 10px; font-size: 10px; }
+.months-badge span.active { background: #f59e0b; color: #1a1a2e; font-weight: 700; }
+.container { padding: 24px 36px; max-width: 1440px; margin: 0 auto; }
+
+/* EXECUTIVE SUMMARY */
+.exec-summary { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 32px; border-left: 5px solid #4361ee; }
+.exec-title { font-size: 14px; font-weight: 700; color: #4361ee; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+.exec-months { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.exec-month { border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb; }
+.exec-month.neutral { border-color: #e0e7ff; background: #eef2ff; }
+.exec-month.negative { border-color: #fecaca; background: #fef2f2; }
+.exec-month.positive { border-color: #bbf7d0; background: #f0fdf4; }
+.exec-month.warning { border-color: #fed7aa; background: #fff7ed; }
+.exec-month-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.exec-month-name { font-size: 13px; font-weight: 700; }
+.exec-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+.badge-green { background: #dcfce7; color: #15803d; }
+.badge-red { background: #fee2e2; color: #dc2626; }
+.badge-blue { background: #dbeafe; color: #1d4ed8; }
+.badge-amber { background: #fef3c7; color: #d97706; }
+.exec-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+.exec-metric { font-size: 11px; color: #6b7280; }
+.exec-metric strong { color: #1a1a2e; display: block; font-size: 13px; }
+.exec-text { font-size: 12px; color: #374151; line-height: 1.6; }
+.exec-alert { margin-top: 10px; font-size: 11px; padding: 6px 10px; border-radius: 6px; font-weight: 600; }
+.alert-warn { background: #fef3c7; color: #92400e; }
+.alert-ok { background: #dcfce7; color: #166534; }
+.alert-danger { background: #fee2e2; color: #991b1b; }
+
+/* SECTION */
+.section { margin-bottom: 44px; }
+.section-title { font-size: 16px; font-weight: 700; border-left: 4px solid #4361ee; padding-left: 12px; margin-bottom: 6px; }
+.section-subtitle { font-size: 12px; color: #6b7280; margin-bottom: 14px; padding-left: 16px; }
+
+/* COMMENTARY with month selector */
+.commentary-wrapper { margin-bottom: 16px; }
+.month-selector { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+.month-chip { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1.5px solid #e5e7eb; background: white; color: #6b7280; transition: all 0.15s; }
+.month-chip.active { border-color: #4361ee; background: #4361ee; color: white; }
+.month-chip.chip-jan.active { background: #4361ee; border-color: #4361ee; }
+.month-chip.chip-feb.active { background: #ef4444; border-color: #ef4444; }
+.month-chip.chip-mar.active { background: #10b981; border-color: #10b981; }
+.month-chip.chip-apr.active { background: #f59e0b; border-color: #f59e0b; color: #1a1a2e; }
+.month-chip.chip-may.active { background: #8b5cf6; border-color: #8b5cf6; color: white; }
+.commentary { border-radius: 12px; padding: 16px 20px; border: 1px solid #c7d2fe; background: linear-gradient(135deg,#eef2ff,#f5f3ff); }
+.commentary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.commentary-chip { background: white; border-radius: 10px; padding: 14px 16px; }
+.chip-icon { font-size: 16px; margin-bottom: 5px; }
+.chip-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 7px; }
+.chip-title.hl { color: #1d4ed8; } .chip-title.wn { color: #d97706; } .chip-title.rc { color: #059669; }
+.chip-body { font-size: 12px; color: #374151; line-height: 1.65; }
+.chip-body ul { padding-left: 14px; }
+.chip-body li { margin-bottom: 3px; }
+.chip-body .next-month { font-size: 11px; color: #6b7280; font-style: italic; margin-bottom: 4px; }
+
+/* KPI */
+.kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 16px; }
+.kpi-card { background: white; border-radius: 10px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.kpi-label { font-size: 11px; color: #6b7280; margin-bottom: 6px; line-height: 1.3; }
+.kpi-value { font-size: 20px; font-weight: 700; }
+.kpi-sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
+.kpi-delta { font-size: 11px; margin-top: 4px; font-weight: 600; }
+.up { color: #10b981; } .down { color: #ef4444; }
+
+/* CARDS & TABLES */
+.card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.card-title { font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #f8fafc; color: #6b7280; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; padding: 10px 14px; text-align: right; border-bottom: 1px solid #e5e7eb; }
+th:first-child, th.left { text-align: left; }
+td { padding: 9px 14px; text-align: right; border-bottom: 1px solid #f3f4f6; color: #374151; }
+td:first-child, td.left { text-align: left; font-weight: 500; color: #1a1a2e; }
+tr:hover td { background: #f9fafb; }
+tr.total-row td { font-weight: 700; background: #f0f4ff; }
+tr.combined-row td { font-style: italic; color: #6b7280; font-size: 12px; }
+.tag { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-left: 4px; }
+.tag-adview { background: #dbeafe; color: #1d4ed8; }
+.tag-lead { background: #dcfce7; color: #15803d; }
+.tag-combined { background: #f3e8ff; color: #7c3aed; }
+td.apr { background: #fefce8 !important; font-weight: 600; }
+th.apr { background: #fef9c3; color: #854d0e; }
+.ret-drop { color: #ef4444 !important; font-weight: 800 !important; }
+tr.sep td { border-top: 2px solid #c7d2fe; }
+
+/* GRID */
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.chart-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.chart-title { font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+canvas { max-height: 320px; }
+
+/* DATA TABS */
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.tab { padding: 7px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: #f3f4f6; color: #6b7280; transition: all 0.15s; }
+.tab.active { background: #4361ee; color: white; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.note { font-size: 11px; color: #9ca3af; margin-top: 8px; padding: 8px 12px; background: #fafafa; border-radius: 6px; border-left: 3px solid #e5e7eb; }
+.divider { height: 1px; background: #e5e7eb; margin: 28px 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <h1>📱 App Growth Dashboard</h1>
+    <div class="header-meta">
+      <span class="target-badge">App RR M1: <strong>70%+</strong></span>
+      <span class="target-badge">NURR M1: <strong>42%</strong></span>
+      <span class="target-badge">Stickiness: <strong>18%</strong></span>
+      <span class="target-badge">App MAU target: <strong>1,680,927</strong></span>
+      <span class="target-badge">Total CT MAU: <strong>6,874,579</strong></span>
+    </div>
+    <div class="months-badge">
+      <span>Jan 2026</span>
+      <span>Feb 2026</span>
+      <span>Mar 2026</span>
+      <span>Apr 2026</span>
+      <span class="active">May 2026*</span>
+    </div>
+  </div><!-- header-row -->
+</div>
+
+<div class="container">
+
+<!-- ===== EXECUTIVE SUMMARY ===== -->
+<div class="exec-summary">
+  <div class="exec-title">📋 Executive Summary — App Growth</div>
+  <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap" id="exec-tabs">
+    <button onclick="selectExecMonth('jan')" data-m="jan" style="padding:6px 14px;border-radius:20px;border:1.5px solid #e5e7eb;background:white;color:#6b7280;font-size:12px;font-weight:500;cursor:pointer">Jan 2026</button>
+    <button onclick="selectExecMonth('feb')" data-m="feb" style="padding:6px 14px;border-radius:20px;border:1.5px solid #e5e7eb;background:white;color:#6b7280;font-size:12px;font-weight:500;cursor:pointer">Feb 2026</button>
+    <button onclick="selectExecMonth('mar')" data-m="mar" style="padding:6px 14px;border-radius:20px;border:1.5px solid #e5e7eb;background:white;color:#6b7280;font-size:12px;font-weight:500;cursor:pointer">Mar 2026</button>
+    <button onclick="selectExecMonth('apr')" data-m="apr" style="padding:6px 14px;border-radius:20px;border:1.5px solid #e5e7eb;background:white;color:#6b7280;font-size:12px;font-weight:500;cursor:pointer">Apr 2026</button>
+    <button onclick="selectExecMonth('may')" data-m="may" style="padding:6px 14px;border-radius:20px;border:1.5px solid #f59e0b;background:#f59e0b;color:#1a1a2e;font-size:12px;font-weight:700;cursor:pointer">May 2026* ⭐</button>
+  </div>
+  <div id="exec-jan" style="display:none">
+    <div class="exec-month neutral" style="max-width:100%">
+      <div class="exec-month-header"><span class="exec-month-name">Jan 2026</span><span class="exec-badge badge-blue">Baseline</span></div>
+      <div class="exec-metrics"><div class="exec-metric"><strong>1.39M</strong>App MAU</div><div class="exec-metric"><strong>261K</strong>New Users</div><div class="exec-metric"><strong>55.0%</strong>App Ret D1</div><div class="exec-metric"><strong>68.2%</strong>App Ret M1</div></div>
+      <div class="exec-text">Baseline ổn. Retention tốt (M1: 68.2%), user hiện tại gắn bó. Direct chiếm 55% acquisition. Login rate mới 74%. NURR M1 chỉ 6.8% — cứ 100 new user, chỉ ~7 người quay lại sau 1 tháng → onboarding cần cải thiện.</div>
+      <div class="exec-alert alert-warn">⚠️ NURR M1 thấp (6.8%) + Login rate 74% — 2 điểm cần fix ngay</div>
+    </div>
+  </div>
+  <div id="exec-feb" style="display:none">
+    <div class="exec-month negative" style="max-width:100%">
+      <div class="exec-month-header"><span class="exec-month-name">Feb 2026</span><span class="exec-badge badge-red">Seasonality Dip</span></div>
+      <div class="exec-metrics"><div class="exec-metric"><strong>1.30M</strong>App MAU <span style="color:#ef4444;font-size:10px">▼7%</span></div><div class="exec-metric"><strong>234K</strong>New Users <span style="color:#ef4444;font-size:10px">▼10%</span></div><div class="exec-metric"><strong>55.2%</strong>App Ret D1</div><div class="exec-metric"><strong>67.9%</strong>App Ret M1</div></div>
+      <div class="exec-text">MAU & acquisition giảm do seasonality sau Tết. Điểm tích cực: retention ổn định → churn không phải nguyên nhân. New user login rate tăng mạnh (46%→65%). Growth channel giảm mạnh 54K→42K.</div>
+      <div class="exec-alert alert-warn">⚠️ Feb dip là pattern — cần paid push sớm từ mid-Jan để counter</div>
+    </div>
+  </div>
+  <div id="exec-mar" style="display:none">
+    <div class="exec-month positive" style="max-width:100%">
+      <div class="exec-month-header"><span class="exec-month-name">Mar 2026</span><span class="exec-badge badge-green">Best Month ✨</span></div>
+      <div class="exec-metrics"><div class="exec-metric"><strong>1.55M</strong>App MAU <span style="color:#10b981;font-size:10px">▲20%</span></div><div class="exec-metric"><strong>345K</strong>New Users <span style="color:#10b981;font-size:10px">▲47%</span></div><div class="exec-metric"><strong>54.5%</strong>App Ret D1</div><div class="exec-metric"><strong>68.1%</strong>App Ret M1</div></div>
+      <div class="exec-text">Tháng tốt nhất. Growth channel bùng nổ (42K→78K), kéo acquisition +47%. NURR cải thiện (D1: 37.9%, M1: 7.3%). Login rate new user 71% — cao nhất kỳ. Activation đạt đỉnh 108K. Retention giữ vững 68.1%.</div>
+      <div class="exec-alert alert-ok">✅ Acquisition + Retention cùng đỉnh — tháng mẫu để replicate</div>
+    </div>
+  </div>
+  <div id="exec-apr" style="display:none">
+    <div class="exec-month warning" style="max-width:100%">
+      <div class="exec-month-header"><span class="exec-month-name">Apr 2026</span><span class="exec-badge badge-amber">⚠️ Retention Alert</span></div>
+      <div class="exec-metrics"><div class="exec-metric"><strong>1.47M</strong>App MAU <span style="color:#ef4444;font-size:10px">▼5%</span></div><div class="exec-metric"><strong>294K</strong>New Users <span style="color:#ef4444;font-size:10px">▼15%</span></div><div class="exec-metric"><strong style="color:#ef4444">51.0%</strong>App Ret D1 ▼3.5pp</div><div class="exec-metric"><strong style="color:#ef4444">63.8%</strong>App Ret M1 ▼4.3pp</div></div>
+      <div class="exec-text">MAU giảm nhẹ vs Mar nhưng còn cao hơn Jan+Feb. Critical: <strong>App Ret M1 giảm 68.1%→63.8% (−4.3pp)</strong> — nguy cơ lớn nhất với sustainable growth. Growth channel duy trì 76K. Login rate new user 71% ổn định.</div>
+      <div class="exec-alert alert-danger">🔴 App Ret M1 −4.3pp — PRIORITY #1 trước khi scale thêm acquisition</div>
+    </div>
+  </div>
+  <div id="exec-may" style="display:block">
+    <div class="exec-month neutral" style="max-width:100%;border-color:#f59e0b;background:#fffbeb">
+      <div class="exec-month-header"><span class="exec-month-name">May 2026*</span><span class="exec-badge badge-amber">⏳ Partial Month</span></div>
+      <div class="exec-metrics"><div class="exec-metric"><strong>1.49M</strong>App MAU <span style="color:#10b981;font-size:10px">▲+1.1%</span></div><div class="exec-metric"><strong>296K</strong>New Users <span style="color:#10b981;font-size:10px">▲+0.8%</span></div><div class="exec-metric"><strong>49.3%</strong>App Ret D1 ▼</div><div class="exec-metric"><strong>—</strong>App Ret M1 (pending)</div></div>
+      <div class="exec-text">MAU ổn định, nhích nhẹ vs Apr. Activation rate 29.9% (adview), 26.0% (lead). App Ret D1 49.3%, D7 32.7% — cần monitor tiếp. NURR D1 36.1%, D7 11.7%. Growth channel 80.4K new users, CPA 6,481₫. Ret M1 & NURR M1 pending (partial month).</div>
+      <div class="exec-alert alert-warn">⏳ Partial data — App Ret M1 & NURR M1 chưa đo được. Growth cost 521.1M₫.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 1: OVERVIEW ===== -->
+<div class="section">
+  <div class="section-title">1. Overview App</div>
+  <div class="note" style="margin-bottom:12px;font-size:12px;color:#6b7280;padding:8px 14px;background:#f5f3ff;border-left:3px solid #8b5cf6;border-radius:6px;">
+    * May 2026: data updated with real values. NURR M1 &amp; App Ret M1 marked — (N/A, partial month cohort not yet measurable). Forecast rows (Jun–Dec 2026) show planned cost only.
+  </div>
+
+  <div class="commentary-wrapper" id="cw-s1"><!-- JS will render --></div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Total App MAU</div><div class="kpi-value">1.49M</div><div class="kpi-sub">May 2026*</div><div class="kpi-delta up">▲ vs Apr: +17K (+1.1%)</div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg Daily DAU</div><div class="kpi-value">235K</div><div class="kpi-sub">May 2026*</div><div class="kpi-delta down">▼ vs Apr: −5.4K (−2.3%)</div></div>
+    <div class="kpi-card"><div class="kpi-label">App MAU (login)</div><div class="kpi-value">1.21M</div><div class="kpi-sub">May 2026* | 81.3% login rate</div><div class="kpi-delta up">▲ vs Apr: +7K (+0.6%)</div></div>
+    <div class="kpi-card"><div class="kpi-label">% App / Total Chotot</div><div class="kpi-value">24.8%</div><div class="kpi-sub">May 2026*</div><div class="kpi-delta up">▲ vs Apr: +0.3pp</div></div>
+    <div class="kpi-card"><div class="kpi-label">New App MAU</div><div class="kpi-value">296K</div><div class="kpi-sub">May 2026*</div><div class="kpi-delta up">▲ vs Apr: +2.2K (+0.7%)</div></div>
+    <div class="kpi-card"><div class="kpi-label">New App MAU (login)</div><div class="kpi-value">197K</div><div class="kpi-sub">May 2026* | 66.5% login rate</div><div class="kpi-delta down">▼ vs Apr: −12K (−5.7%)</div></div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="card">
+      <div class="card-title">Monthly Metrics</div>
+      <table>
+        <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+        <tbody>
+          <tr class="total-row"><td>Total App MAU (Android+iOS)</td><td>1,394,597</td><td>1,296,533</td><td>1,551,037</td><td>1,472,750</td><td class="apr">1,489,715</td></tr>
+          <tr><td>↳ Avg Daily DAU</td><td>225,026</td><td>204,524</td><td>252,967</td><td>240,367</td><td class="apr">235,047</td></tr>
+          <tr><td>↳ App MAU (login)</td><td>1,030,263</td><td>1,011,227</td><td>1,248,085</td><td>1,204,341</td><td class="apr">1,211,386</td></tr>
+          <tr><td>↳ % login / Total App MAU</td><td>73.9%</td><td>78.0%</td><td>80.5%</td><td>81.8%</td><td class="apr">81.3%</td></tr>
+          <tr><td>% App MAU / Total Chotot</td><td>22.3%</td><td>28.1%</td><td>21.8%</td><td>24.5%</td><td class="apr">24.8%</td></tr>
+          <tr class="sep"><td>New App MAU</td><td>261,241</td><td>234,333</td><td>344,562</td><td>293,506</td><td class="apr">295,688</td></tr>
+          <tr><td>↳ Avg Daily New DAU</td><td>8,429</td><td>8,370</td><td>11,116</td><td>9,785</td><td class="apr">9,538</td></tr>
+          <tr><td>↳ New App MAU (login)</td><td>120,641</td><td>151,255</td><td>246,121</td><td>209,296</td><td class="apr">196,680</td></tr>
+          <tr><td>↳ % login / New App MAU</td><td>46.2%</td><td>64.5%</td><td>71.4%</td><td>71.3%</td><td class="apr">66.5%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="chart-card"><div class="chart-title">App MAU = Returning + New App MAU | % New line</div><canvas id="chartOverviewMAU"></canvas></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">App MAU = Login + Non-login | Login Rate % line</div><canvas id="chartLoginRate"></canvas></div>
+    <div class="chart-card"><div class="chart-title">Total Chotot MAU = Web/Other + App MAU</div><canvas id="chartCTMAU"></canvas></div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== SECTION 2: ACQUISITION ===== -->
+<div class="section">
+  <div class="section-title">2. New App User Acquisition</div>
+  <div class="section-subtitle">Channel: Direct | Organic Search | Growth (Paid Search + Display + CRM) | (Other)</div>
+
+  <div class="commentary-wrapper" id="cw-s2"><!-- JS will render --></div>
+
+  <div class="tabs" id="tabs-new">
+    <button class="tab active" onclick="switchTab('new',0)">Overview</button>
+    <button class="tab" onclick="switchTab('new',1)">By Channel — Monthly</button>
+    <button class="tab" onclick="switchTab('new',2)">By Channel — Daily</button>
+  </div>
+
+  <div class="tab-content active" id="new-0">
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">New App MAU & Daily New DAU — Total</div>
+        <table>
+          <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+          <tbody>
+            <tr class="total-row"><td>New App MAU</td><td>261,241</td><td>234,333</td><td>344,562</td><td>293,506</td><td class="apr">295,688</td></tr>
+            <tr><td>Avg Daily New DAU</td><td>8,429</td><td>8,370</td><td>11,116</td><td>9,785</td><td class="apr">9,538</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="chart-card"><div class="chart-title">New App MAU Trend</div><canvas id="chartNewOverview"></canvas></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="new-1">
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">New App MAU by Channel</div>
+        <table>
+          <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+          <tbody>
+            <tr class="total-row"><td>Total</td><td>261,241</td><td>234,333</td><td>344,562</td><td>293,506</td><td class="apr">295,688</td></tr>
+            <tr><td>Direct</td><td>142,590</td><td>122,781</td><td>192,791</td><td>157,824</td><td class="apr">154,320</td></tr>
+            <tr><td>Organic Search</td><td>55,700</td><td>61,101</td><td>64,173</td><td>53,038</td><td class="apr">52,992</td></tr>
+            <tr><td>Growth (Paid+Display+CRM)</td><td>54,439</td><td>41,702</td><td>77,942</td><td>75,796</td><td class="apr">80,424</td></tr>
+            <tr><td>(Other)</td><td>8,511</td><td>8,749</td><td>9,656</td><td>6,848</td><td class="apr">7,950</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="chart-card"><div class="chart-title">New App MAU by Channel</div><canvas id="chartNewChannel"></canvas></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="new-2">
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">Avg Daily New DAU by Channel</div>
+        <table>
+          <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+          <tbody>
+            <tr class="total-row"><td>Total</td><td>8,429</td><td>8,370</td><td>11,116</td><td>9,785</td><td class="apr">9,538</td></tr>
+            <tr><td>Direct</td><td>4,601</td><td>4,386</td><td>6,220</td><td>5,263</td><td class="apr">—</td></tr>
+            <tr><td>Organic Search</td><td>1,797</td><td>2,182</td><td>2,070</td><td>1,768</td><td class="apr">—</td></tr>
+            <tr><td>Growth (Paid+Display+CRM)</td><td>1,756</td><td>1,489</td><td>2,515</td><td>2,527</td><td class="apr">—</td></tr>
+            <tr><td>(Other)</td><td>275</td><td>313</td><td>311</td><td>228</td><td class="apr">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="chart-card"><div class="chart-title">Avg Daily New DAU by Channel</div><canvas id="chartNewChannelDaily"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== SECTION 3: ACTIVATION ===== -->
+<div class="section">
+  <div class="section-title">3. App User Activation (New Users)</div>
+  <div class="section-subtitle">Điều kiện: ≥20 adview trong D7 HOẶC ≥1 lead trong D7 (tính riêng từng điều kiện)</div>
+
+  <div class="commentary-wrapper" id="cw-s3"><!-- JS will render --></div>
+
+  <div class="tabs" id="tabs-act">
+    <button class="tab active" onclick="switchTab('act',0)">Overview</button>
+    <button class="tab" onclick="switchTab('act',1)">By Channel — Monthly</button>
+    <button class="tab" onclick="switchTab('act',2)">By Channel — Daily</button>
+  </div>
+
+  <div class="tab-content active" id="act-0">
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">Monthly & Daily Activated — Total</div>
+        <table>
+          <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+          <tbody>
+            <tr><td>Monthly Activated <span class="tag tag-adview">≥20 adview D7</span></td><td>78,119</td><td>72,962</td><td>108,592</td><td>87,006</td><td class="apr">88,399</td></tr>
+            <tr><td>Monthly Activated <span class="tag tag-lead">≥1 lead D7</span></td><td>66,422</td><td>63,191</td><td>95,807</td><td>77,935</td><td class="apr">76,894</td></tr>
+            <tr><td>Activation rate <span class="tag tag-adview">≥20 adview D7</span></td><td>29.9%</td><td>31.1%</td><td>31.5%</td><td>29.7%</td><td class="apr">29.9%</td></tr>
+            <tr><td>Activation rate <span class="tag tag-lead">≥1 lead D7</span></td><td>25.4%</td><td>27.0%</td><td>27.8%</td><td>26.6%</td><td class="apr">26.0%</td></tr>
+            <tr class="sep"><td>Daily Activated <span class="tag tag-adview">≥20 adview D7</span></td><td>2,520</td><td>2,606</td><td>3,503</td><td>2,900</td><td class="apr">2,852</td></tr>
+            <tr><td>Daily Activated <span class="tag tag-lead">≥1 lead D7</span></td><td>2,143</td><td>2,257</td><td>3,091</td><td>2,598</td><td class="apr">2,480</td></tr>
+          </tbody>
+        </table>
+        <div class="note">* Tổng 2 điều kiện riêng — Activation rate tính riêng theo từng điều kiện (adview D7 và lead D7).</div>
+      </div>
+      <div class="chart-card"><div class="chart-title">New App MAU & Activation Rate: ≥20 adview D7 vs ≥1 lead D7</div><canvas id="chartActOverview"></canvas></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="act-1">
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">Monthly Activated by Channel — ≥20 adview D7</div>
+        <table>
+          <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+          <tbody>
+            <tr class="total-row"><td>Total</td><td>78,119</td><td>72,962</td><td>108,592</td><td>87,006</td><td class="apr">88,399</td></tr>
+            <tr><td>Direct</td><td>43,962</td><td>39,295</td><td>64,746</td><td>49,572</td><td class="apr">48,310</td></tr>
+            <tr><td>Organic Search</td><td>16,446</td><td>18,812</td><td>18,821</td><td>15,040</td><td class="apr">15,501</td></tr>
+            <tr><td>Growth (Paid+Display+CRM)</td><td>15,369</td><td>12,195</td><td>21,830</td><td>20,354</td><td class="apr">22,238</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">Monthly Activated by Channel — ≥1 lead D7</div>
+        <table>
+          <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+          <tbody>
+            <tr class="total-row"><td>Total</td><td>66,422</td><td>63,191</td><td>95,807</td><td>77,935</td><td class="apr">76,894</td></tr>
+            <tr><td>Direct</td><td>35,891</td><td>32,349</td><td>54,007</td><td>42,636</td><td class="apr">40,994</td></tr>
+            <tr><td>Organic Search</td><td>14,556</td><td>17,170</td><td>17,815</td><td>14,117</td><td class="apr">13,875</td></tr>
+            <tr><td>Growth (Paid+Display+CRM)</td><td>13,406</td><td>10,980</td><td>20,461</td><td>18,888</td><td class="apr">19,561</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">Monthly Activated by Channel (≥20 adview)</div><canvas id="chartActMonthCh1"></canvas></div>
+      <div class="chart-card"><div class="chart-title">Monthly Activated by Channel (≥1 lead)</div><canvas id="chartActMonthCh2"></canvas></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="act-2">
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">Daily Activated by Channel — ≥20 adview D7</div>
+        <table>
+          <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+          <tbody>
+            <tr class="total-row"><td>Total</td><td>2,520</td><td>2,606</td><td>3,503</td><td>2,900</td><td class="apr">2,852</td></tr>
+            <tr><td>Direct</td><td>1,418</td><td>1,403</td><td>2,089</td><td>1,652</td><td class="apr">1,558</td></tr>
+            <tr><td>Organic Search</td><td>531</td><td>672</td><td>607</td><td>501</td><td class="apr">500</td></tr>
+            <tr><td>Growth (Paid+Display+CRM)</td><td>496</td><td>436</td><td>704</td><td>678</td><td class="apr">717</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">Daily Activated by Channel — ≥1 lead D7</div>
+        <table>
+          <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+          <tbody>
+            <tr class="total-row"><td>Total</td><td>2,143</td><td>2,257</td><td>3,091</td><td>2,598</td><td class="apr">2,480</td></tr>
+            <tr><td>Direct</td><td>1,158</td><td>1,155</td><td>1,742</td><td>1,421</td><td class="apr">1,323</td></tr>
+            <tr><td>Organic Search</td><td>470</td><td>613</td><td>575</td><td>471</td><td class="apr">448</td></tr>
+            <tr><td>Growth (Paid+Display+CRM)</td><td>433</td><td>392</td><td>659</td><td>630</td><td class="apr">631</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">Daily Activated by Channel (≥20 adview)</div><canvas id="chartActDailyCh1"></canvas></div>
+      <div class="chart-card"><div class="chart-title">Daily Activated by Channel (≥1 lead)</div><canvas id="chartActDailyCh2"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== SECTION 4: RETENTION ===== -->
+<div class="section">
+  <div class="section-title">4. App User Retention</div>
+
+  <div class="commentary-wrapper" id="cw-s4"><!-- JS will render --></div>
+
+  <div class="tabs" id="tabs-ret">
+    <button class="tab active" onclick="switchTab('ret',0)">Overview</button>
+    <button class="tab" onclick="switchTab('ret',1)">By Channel — NURR</button>
+    <button class="tab" onclick="switchTab('ret',2)">NURR Snapshot May*</button>
+  </div>
+
+  <div class="tab-content active" id="ret-0">
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">Total User & App User Retention — D1 / D7 / M1</div>
+        <table>
+          <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+          <tbody>
+            <tr><td>Total User Retention D1</td><td>52.4%</td><td>52.6%</td><td>52.0%</td><td>51.7%</td><td class="apr">—</td></tr>
+            <tr><td>Total User Retention D7</td><td>43.9%</td><td>44.1%</td><td>43.6%</td><td>43.4%</td><td class="apr">—</td></tr>
+            <tr><td>Total User Retention M1</td><td>65.4%</td><td>65.2%</td><td>65.2%</td><td>64.9%</td><td class="apr">—</td></tr>
+            <tr class="sep"><td>App User Retention D1</td><td>55.0%</td><td>55.2%</td><td>54.5%</td><td class="ret-drop">51.0% ▼</td><td class="apr">49.3%</td></tr>
+            <tr><td>App User Retention D7</td><td>46.0%</td><td>46.4%</td><td>45.8%</td><td class="ret-drop">42.2% ▼</td><td class="apr">32.7%</td></tr>
+            <tr class="total-row"><td>App User Retention M1</td><td>68.2%</td><td>67.9%</td><td>68.1%</td><td class="ret-drop">63.8% ▼▼</td><td class="apr">—</td></tr>
+            <tr class="sep"><td>NURR D1 (New User)</td><td>36.1%</td><td>36.1%</td><td>37.9%</td><td>37.1%</td><td class="apr">36.1%</td></tr>
+            <tr><td>NURR D7 (New User)</td><td>14.5%</td><td>14.8%</td><td>15.7%</td><td>14.9%</td><td class="apr">11.7%</td></tr>
+            <tr><td>NURR M1 (New User)</td><td>6.8%</td><td>7.0%</td><td>7.3%</td><td>7.0%</td><td class="apr">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="chart-card"><div class="chart-title">May 2026* — Retention Snapshot All Cohorts (D1 / D7 / M1)</div><canvas id="chartRetComparison"></canvas></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="ret-1">
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">NURR by Channel — Monthly Avg</div>
+        <table>
+          <thead><tr><th>Channel</th><th class="left">Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+          <tbody>
+            <tr class="total-row"><td rowspan="3">Total</td><td class="left">NURR D1</td><td>36.1%</td><td>36.1%</td><td>37.9%</td><td>37.1%</td><td class="apr">36.1%</td></tr>
+            <tr class="total-row"><td class="left">NURR D7</td><td>14.5%</td><td>14.8%</td><td>15.7%</td><td>14.9%</td><td class="apr">11.7%</td></tr>
+            <tr class="total-row"><td class="left">NURR M1</td><td>6.8%</td><td>7.0%</td><td>7.3%</td><td>7.0%</td><td class="apr">—</td></tr>
+            <tr><td rowspan="3">Direct</td><td class="left">NURR D1</td><td>36.8%</td><td>36.7%</td><td>38.5%</td><td>37.9%</td><td class="apr">34.7%</td></tr>
+            <tr><td class="left">NURR D7</td><td>14.9%</td><td>15.3%</td><td>16.3%</td><td>15.4%</td><td class="apr">11.5%</td></tr>
+            <tr><td class="left">NURR M1</td><td>6.9%</td><td>7.2%</td><td>7.6%</td><td>7.2%</td><td class="apr">—</td></tr>
+            <tr><td rowspan="3">Organic Search</td><td class="left">NURR D1</td><td>37.5%</td><td>37.4%</td><td>38.9%</td><td>37.3%</td><td class="apr">40.4%</td></tr>
+            <tr><td class="left">NURR D7</td><td>15.3%</td><td>15.8%</td><td>16.5%</td><td>15.5%</td><td class="apr">13.3%</td></tr>
+            <tr><td class="left">NURR M1</td><td>7.1%</td><td>7.4%</td><td>7.7%</td><td>7.2%</td><td class="apr">—</td></tr>
+            <tr><td rowspan="3">Growth (P+D+CRM)</td><td class="left">NURR D1</td><td>37.1%</td><td>36.1%</td><td>38.7%</td><td>37.5%</td><td class="apr">35.8%</td></tr>
+            <tr><td class="left">NURR D7</td><td>15.1%</td><td>14.8%</td><td>16.4%</td><td>15.9%</td><td class="apr">11.3%</td></tr>
+            <tr><td class="left">NURR M1</td><td>7.0%</td><td>6.9%</td><td>7.6%</td><td>7.4%</td><td class="apr">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="chart-card"><div class="chart-title">NURR D1 by Channel</div><canvas id="chartNURRD1Ch"></canvas></div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">NURR D7 by Channel</div><canvas id="chartNURRD7Ch"></canvas></div>
+      <div class="chart-card"><div class="chart-title">NURR M1 by Channel</div><canvas id="chartNURRM1Ch"></canvas></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="ret-2">
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">NURR by Channel — May 2026* Snapshot</div>
+        <table>
+          <thead><tr><th>Channel</th><th>NURR D1</th><th>NURR D7</th><th class="apr">NURR M1</th></tr></thead>
+          <tbody>
+            <tr class="total-row"><td>Total</td><td>36.1%</td><td>11.7%</td><td class="apr">— *</td></tr>
+            <tr><td>Direct</td><td>34.7%</td><td>11.5%</td><td class="apr">— *</td></tr>
+            <tr><td>Organic Search</td><td>40.4%</td><td>13.3%</td><td class="apr">— *</td></tr>
+            <tr><td>Growth (Paid+Display+CRM)</td><td>35.8%</td><td>11.3%</td><td class="apr">— *</td></tr>
+          </tbody>
+        </table>
+        <div class="note">* NURR M1 May 2026 chưa có — partial month cohort chưa đủ 30 ngày để đo | Organic Search D1 cao nhất (40.4%) — intent-based traffic chất lượng cao</div>
+      </div>
+      <div class="chart-card"><div class="chart-title">NURR D1→D7→M1 Funnel by Channel (May*)</div><canvas id="chartNURRFunnel"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== SECTION 5: GROWTH PERFORMANCE ===== -->
+<div class="section">
+  <div class="section-title">5. Growth Performance — Growth Channel (Paid+Display+CRM)</div>
+  <div class="section-subtitle">Hiệu quả đầu tư của Growth channel: Acquisition · Activation · Retention · Cost efficiency</div>
+
+  <div class="commentary-wrapper" id="cw-s5"><!-- JS will render --></div>
+
+  <!-- KPI dynamic — updates with month chip -->
+  <div class="kpi-grid" style="grid-template-columns:repeat(6,1fr)" id="s5-kpis">
+    <div class="kpi-card"><div class="kpi-label">New Users (Growth)</div><div class="kpi-value" id="kpi-s5-new">80.4K</div><div class="kpi-sub" id="kpi-s5-new-sub">May 2026* (Latest)</div><div class="kpi-delta up" id="kpi-s5-new-delta">▲ vs Apr: +4.6K (+6.1%)</div></div>
+    <div class="kpi-card"><div class="kpi-label">Monthly Activated (adview)</div><div class="kpi-value" id="kpi-s5-adv">22.2K</div><div class="kpi-sub" id="kpi-s5-adv-sub">May 2026* (Latest)</div><div class="kpi-delta up" id="kpi-s5-adv-delta">▲ vs Apr: +1.9K (+9.3%)</div></div>
+    <div class="kpi-card"><div class="kpi-label">Monthly Activated (lead)</div><div class="kpi-value" id="kpi-s5-lead">19.6K</div><div class="kpi-sub" id="kpi-s5-lead-sub">May 2026* (Latest)</div><div class="kpi-delta up" id="kpi-s5-lead-delta">▲ vs Apr: +0.7K (+3.6%)</div></div>
+    <div class="kpi-card"><div class="kpi-label">NURR D1</div><div class="kpi-value" id="kpi-s5-nurrD1">35.8%</div><div class="kpi-sub" id="kpi-s5-nurrD1-sub">May 2026* (Latest)</div><div class="kpi-delta down" id="kpi-s5-nurrD1-delta">▼ vs Apr: −1.7pp</div></div>
+    <div class="kpi-card"><div class="kpi-label">NURR M1</div><div class="kpi-value" id="kpi-s5-nurrM1">—</div><div class="kpi-sub" id="kpi-s5-nurrM1-sub">May 2026* — N/A (partial month)</div><div class="kpi-delta" id="kpi-s5-nurrM1-delta">N/A (partial month)</div></div>
+    <div class="kpi-card"><div class="kpi-label">Monthly Cost · CPA</div><div class="kpi-value" id="kpi-s5-cost">521.1M ₫</div><div class="kpi-sub" id="kpi-s5-cost-sub">May 2026* (Latest)</div><div class="kpi-delta" id="kpi-s5-cost-delta">CPA: 6,481₫/user</div></div>
+  </div>
+
+  <div class="tabs" id="tabs-g5">
+    <button class="tab active" onclick="switchTab('g5',0)">Overview</button>
+    <button class="tab" onclick="switchTab('g5',1)">Acquisition</button>
+    <button class="tab" onclick="switchTab('g5',2)">Activation</button>
+    <button class="tab" onclick="switchTab('g5',3)">Retention</button>
+  </div>
+
+  <!-- Tab 0: Overview -->
+  <div class="tab-content active" id="g5-0">
+    <div class="charts-grid" style="margin-bottom:16px">
+      <div class="chart-card"><div class="chart-title">New Users vs Activated (≥20 adview D7 & ≥1 lead D7) — Growth Channel</div><div style="position:relative;height:280px"><canvas id="chartG5Overview"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">CPA / CAA / CRR Trend (₫)</div><div style="position:relative;height:280px"><canvas id="chartG5Cost"></canvas></div></div>
+    </div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-title">Monthly Cost vs New Users (bars nhạt = forecast Jun–Dec)</div>
+      <div style="position:relative;height:300px"><canvas id="chartG5CostVsUsers"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Growth Channel — All Metrics Summary</div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+        <tbody>
+          <tr class="total-row"><td colspan="6" style="font-size:11px;color:#4361ee;text-transform:uppercase;letter-spacing:.5px">Acquisition</td></tr>
+          <tr><td>New App Users</td><td>54,439</td><td>41,702</td><td>77,942</td><td>75,796</td><td class="apr">80,424</td></tr>
+          <tr><td>Avg Daily New DAU</td><td>1,756</td><td>1,489</td><td>2,515</td><td>2,527</td><td class="apr">2,594</td></tr>
+          <tr class="total-row"><td colspan="6" style="font-size:11px;color:#4361ee;text-transform:uppercase;letter-spacing:.5px">Activation</td></tr>
+          <tr><td>Monthly Activated (≥20 adview D7)</td><td>15,369</td><td>12,195</td><td>21,830</td><td>20,354</td><td class="apr">22,238</td></tr>
+          <tr><td>Monthly Activated (≥1 lead D7)</td><td>13,406</td><td>10,980</td><td>20,461</td><td>18,888</td><td class="apr">19,561</td></tr>
+          <tr><td>Activation rate (≥20 adview D7)</td><td>28.2%</td><td>29.2%</td><td>28.0%</td><td>26.9%</td><td class="apr">27.7%</td></tr>
+            <tr><td>Activation rate (≥1 lead D7)</td><td>24.6%</td><td>26.3%</td><td>26.3%</td><td>24.9%</td><td class="apr">24.3%</td></tr>
+          <tr class="total-row"><td colspan="6" style="font-size:11px;color:#4361ee;text-transform:uppercase;letter-spacing:.5px">Retention</td></tr>
+          <tr><td>NURR D1</td><td>37.1%</td><td>36.1%</td><td>38.7%</td><td>37.5%</td><td class="apr">35.8%</td></tr>
+          <tr><td>NURR D7</td><td>15.1%</td><td>14.8%</td><td>16.4%</td><td>15.9%</td><td class="apr">11.3%</td></tr>
+          <tr><td>NURR M1</td><td>7.0%</td><td>6.9%</td><td>7.6%</td><td>7.4%</td><td class="apr">—</td></tr>
+          <tr class="total-row"><td colspan="6" style="font-size:11px;color:#059669;text-transform:uppercase;letter-spacing:.5px">Cost &amp; Unit Economics</td></tr>
+          <tr><td>Monthly Cost (VND)</td><td>481,535,327</td><td>307,196,146</td><td>413,829,723</td><td>429,898,910</td><td class="apr">521,127,006</td></tr>
+          <tr><td>Retained D1 (NURR D1 × new)</td><td>20,197</td><td>15,054</td><td>30,163</td><td>28,424</td><td class="apr">28,792</td></tr>
+          <tr><td>Retained D7 (NURR D7 × new)</td><td>8,220</td><td>6,172</td><td>12,782</td><td>12,051</td><td class="apr">9,088</td></tr>
+          <tr><td>Retained M1 (NURR M1 × new)</td><td>3,811</td><td>2,877</td><td>5,924</td><td>5,609</td><td class="apr">—</td></tr>
+          <tr><td>CPA — Cost / New User</td><td>8,845 ₫</td><td>7,366 ₫</td><td style="color:#10b981;font-weight:700">5,311 ₫ ↓</td><td>5,672 ₫</td><td class="apr">6,481 ₫</td></tr>
+          <tr><td>CAA — Cost / Activated User</td><td>31,331 ₫</td><td>25,190 ₫</td><td style="color:#10b981;font-weight:700">18,960 ₫ ↓</td><td>21,123 ₫</td><td class="apr">23,434 ₫</td></tr>
+          <tr><td>CRR D1 — Cost / Retained (D1)</td><td>23,842 ₫</td><td>20,406 ₫</td><td style="color:#10b981;font-weight:700">13,720 ₫ ↓</td><td>15,124 ₫</td><td class="apr">18,099 ₫</td></tr>
+          <tr><td>CRR D7 — Cost / Retained (D7)</td><td>58,581 ₫</td><td>49,770 ₫</td><td style="color:#10b981;font-weight:700">32,375 ₫ ↓</td><td>35,669 ₫</td><td class="apr">57,343 ₫</td></tr>
+          <tr><td>CRR M1 — Cost / Retained (M1)</td><td>126,356 ₫</td><td>106,782 ₫</td><td style="color:#10b981;font-weight:700">69,859 ₫ ↓</td><td>76,643 ₫</td><td class="apr">—</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="note">Cost = tổng 5 dòng "app growth" từ sheet Data for Claude | ↓ = best trong kỳ</div>
+    </div>
+  </div>
+
+  <!-- Tab 1: Acquisition -->
+  <div class="tab-content" id="g5-1">
+    <div class="chart-card" style="margin-bottom:16px"><div class="chart-title">New App Users (Growth) vs Total — % Share</div><canvas id="chartG5Acq"></canvas></div>
+    <div class="card">
+      <div class="card-title">Acquisition — Growth Channel</div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+        <tbody>
+          <tr class="total-row"><td>New App Users (Growth)</td><td>54,439</td><td>41,702</td><td>77,942</td><td>75,796</td><td class="apr">80,424</td></tr>
+          <tr><td>% of Total New App Users</td><td>20.8%</td><td>17.8%</td><td>22.6%</td><td>25.8%</td><td class="apr">27.2%</td></tr>
+          <tr><td>Avg Daily New DAU</td><td>1,756</td><td>1,489</td><td>2,515</td><td>2,527</td><td class="apr">2,594</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- Tab 2: Activation -->
+  <div class="tab-content" id="g5-2">
+    <div class="chart-card" style="margin-bottom:16px"><div class="chart-title">Activation Trend — Growth Channel</div><canvas id="chartG5Act"></canvas></div>
+    <div class="card">
+      <div class="card-title">Activation — Growth Channel</div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+        <tbody>
+          <tr><td>Monthly Activated (≥20 adview D7)</td><td>15,369</td><td>12,195</td><td>21,830</td><td>20,354</td><td class="apr">22,238</td></tr>
+          <tr><td>Monthly Activated (≥1 lead D7)</td><td>13,406</td><td>10,980</td><td>20,461</td><td>18,888</td><td class="apr">19,561</td></tr>
+          <tr><td>Activation rate (≥20 adview D7)</td><td>28.2%</td><td>29.2%</td><td>28.0%</td><td>26.9%</td><td class="apr">27.7%</td></tr>
+          <tr><td>Activation rate (≥1 lead D7)</td><td>24.6%</td><td>26.3%</td><td>26.3%</td><td>24.9%</td><td class="apr">24.3%</td></tr>
+          <tr><td>Daily Activated (adview D7)</td><td>496</td><td>436</td><td>704</td><td>678</td><td class="apr">717</td></tr>
+          <tr><td>Daily Activated (lead D7)</td><td>433</td><td>392</td><td>659</td><td>630</td><td class="apr">631</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- Tab 3: Retention -->
+  <div class="tab-content" id="g5-3">
+    <div class="chart-card" style="margin-bottom:16px"><div class="chart-title">Growth NURR vs Total NURR Trend</div><canvas id="chartG5Ret"></canvas></div>
+    <div class="card">
+      <div class="card-title">NURR — Growth Channel vs Total</div>
+      <div style="overflow-x:auto"><table>
+          <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+          <tbody>
+            <tr class="total-row"><td>Growth NURR D1</td><td>37.1%</td><td>36.1%</td><td>38.7%</td><td>37.5%</td><td class="apr">35.8%</td></tr>
+            <tr><td>Total NURR D1</td><td>36.1%</td><td>36.1%</td><td>37.9%</td><td>37.1%</td><td class="apr">36.1%</td></tr>
+            <tr><td>Δ vs Total (D1)</td><td style="color:#10b981">+1.0pp</td><td style="color:#6b7280">0pp</td><td style="color:#10b981">+0.8pp</td><td style="color:#10b981">+0.4pp</td><td class="apr" style="color:#ef4444">−0.3pp</td></tr>
+            <tr class="sep total-row"><td>Growth NURR D7</td><td>15.1%</td><td>14.8%</td><td>16.4%</td><td>15.9%</td><td class="apr">11.3%</td></tr>
+            <tr><td>Total NURR D7</td><td>14.5%</td><td>14.8%</td><td>15.7%</td><td>14.9%</td><td class="apr">11.7%</td></tr>
+            <tr><td>Δ vs Total (D7)</td><td style="color:#10b981">+0.6pp</td><td style="color:#6b7280">0pp</td><td style="color:#10b981">+0.7pp</td><td style="color:#10b981">+1.0pp</td><td class="apr" style="color:#ef4444">−0.4pp</td></tr>
+            <tr class="sep total-row"><td>Growth NURR M1</td><td>7.0%</td><td>6.9%</td><td>7.6%</td><td>7.4%</td><td class="apr">—</td></tr>
+            <tr><td>Total NURR M1</td><td>6.8%</td><td>7.0%</td><td>7.3%</td><td>7.0%</td><td class="apr">—</td></tr>
+            <tr><td>Δ vs Total (M1)</td><td style="color:#10b981">+0.2pp</td><td style="color:#ef4444">−0.1pp</td><td style="color:#10b981">+0.3pp</td><td style="color:#10b981">+0.4pp</td><td class="apr" style="color:#9ca3af">—</td></tr>
+          </tbody>
+        </table></div>
+    </div>
+  </div>
+
+
+</div><!-- /section 5 -->
+
+</div><!-- /container -->
+
+<script>
+// ============================================================
+// COMMENTARY DATA
+// ============================================================
+const COMMENTARY = {
+  s1: {
+    overall: {
+      hl: ['App MAU Apr (1.47M) cao hơn Jan 6% — trend tổng thể tích cực dù có dip Feb', 'Login rate tăng đều: 74%→78%→81%→82% — user ngày càng gắn bó hơn với account', 'New user login rate Mar-Apr ổn định 71% — cohort quality tốt', 'Ratio DAU/MAU ~16% ổn định → engagement consistency tốt'],
+      wn: ['Feb yếu nhất: MAU −7%, New users −10% — pattern seasonality sau Tết', '% App/Total CT biến động 22%→28%→22%→24.5% — web/app share không ổn định', 'Daily New DAU Apr giảm 12% vs Mar → momentum acquisition chậm lại', '18% users vẫn non-login — mất tracking + personalization opportunity'],
+      rc: { next: null, items: ['Tăng login rate → target 85%+ dài hạn qua social login (Zalo OAuth) và personalization incentive', 'Stabilize % App/Total CT ở mức 26–28%+ qua app-exclusive features và push notification strategy', 'New user login rate target 75%+ thông qua login-gate onboarding với value proposition rõ ràng', 'Build DAU/MAU monitoring alert: nếu <14% liên tục 2 tuần → trigger engagement investigation'] }
+    },
+    jan: {
+      hl: ['Baseline tháng đầu năm: MAU 1.39M, DAU 225K', 'Login rate 73.9% — thấp nhất trong kỳ, room to improve', 'New user login rate chỉ 46.2% — hơn nửa user mới không login', 'App chiếm 22.3% total CT MAU'],
+      wn: ['Login rate 73.9% thấp → nhiều user browsing anonymously, khó personalize', 'New user login rate 46.2% rất thấp — impact trực tiếp đến activation tracking', 'Feb sẽ dip do seasonality sau Tết — cần prepare', 'Direct channel 55% — concentration risk'],
+      rc: { next: 'Tháng 2/2026', items: ['Launch pre-Tết campaign từ mid-Jan để buffer Feb dip', 'A/B test login prompt screen ngay trên onboarding D1 cho new users', 'Set up Feb retention campaign trước để giữ existing users trong dip', 'ASO optimization để không bị drop Organic Search khi intent giảm'] }
+    },
+    feb: {
+      hl: ['MAU giảm 7% — seasonality expected sau Tết', 'New user login rate tăng mạnh: 46%→65% — user mới Feb có intent mua hàng cao hơn', 'Retention ổn định (App D1: 55.2%) → drop do acquisition, không phải churn', 'Organic Search tăng share trong tháng thấp điểm'],
+      wn: ['MAU 1.30M — thấp nhất trong kỳ, cần watch nếu Mar không bounce back', 'Growth channel giảm 22%: 54K→42K — budget bị cut hay seasonality?', 'Daily New DAU thấp nhất (8.4K) — tốc độ thu hút user chậm', '% App/Total CT tăng 28.1% — web cũng giảm, không phải app gain share thực'],
+      rc: { next: 'Tháng 3/2026', items: ['Increase Growth channel budget mạnh để capture post-Tết demand burst', 'Leverage high-intent Feb cohort (65% login rate) với targeted campaigns trong Mar', 'Plan Mar activation campaign cho new users tháng 2 chưa activated', 'Push app-exclusive deals đầu Mar khi user spending picks back up'] }
+    },
+    mar: {
+      hl: ['MAU đạt đỉnh 1.55M (+20% vs Feb) — breakout month', 'New user login rate đạt đỉnh 71.4% — cohort quality tốt nhất kỳ', 'Login rate tổng app 80.5% — gần target 85%', 'Growth channel tăng gần 2x: 42K→78K'],
+      wn: ['Mar spike có thể không sustain — need to monitor Apr carefully', 'Login rate 80.5% tốt nhưng vẫn còn 19.5% users không login', 'Activation rate 31.5% — tốt nhưng 68.5% new user vẫn chưa activated D7', 'Apr predictions: seasonal cooling sau March peak'],
+      rc: { next: 'Tháng 4/2026', items: ['Duy trì Growth channel spend ở mức Mar để giữ momentum acquisition', 'Activate March cohort: target D30 campaign cho 78K user mới từ Mar Growth channel', 'Onboarding improvement để giữ login rate 71%+ cho new users', 'Prepare retention campaign cho existing users khi Apr có dấu hiệu cooling'] }
+    },
+    apr: {
+      hl: ['MAU giảm 5% vs Mar nhưng vẫn +6% vs Jan — không phải crash', 'Login rate tiếp tục cải thiện: 81.8% — tốt nhất trong kỳ', 'New user login rate 71.3% — ổn định vs Mar (71.4%)', 'Growth channel duy trì mạnh 76K'],
+      wn: ['App Ret M1 giảm mạnh 68.1%→63.8% (−4.3pp) — signal nguy hiểm nhất', 'App Ret D1 giảm 54.5%→51.0% — D1 experience Apr kém hơn Mar đáng kể', 'Acquisition giảm 15% vs Mar — cần confirm là cooling vs trend', 'Organic Search giảm 64K→53K — check ASO health'],
+      rc: { next: 'Tháng 5/2026', items: ['🔴 PRIORITY #1: Audit lý do App Ret M1 drop — check product changes, app version, content trong Apr', 'Cohort analysis Apr cohort D1→D7 behavior để locate drop point cụ thể', 'Nếu Ret M1 May vẫn <65%: tạm dừng scale acquisition, double-down retention fixes', 'ASO audit để recover Organic Search về 60K+'] }
+    },
+    may: {
+      hl: ['App MAU May 1.49M (+1.1% vs Apr) — tăng trưởng nhẹ, ổn định', 'Growth channel tăng tốt: 80.4K new users (+6.1% vs Apr) — kênh bứt phá', 'Login rate 81.3% — duy trì ổn định cao', 'Total CT MAU 6.0M — App share 24.8%'],
+      wn: ['New user login rate giảm: 71.3%→66.5% (−4.8pp) — cần theo dõi chất lượng cohort', 'Activation & retention data chưa có (BQ session issue) — chưa thể đánh giá full health', 'DAU giảm nhẹ: 240K→235K — stickiness có thể đang chậm lại', 'Organic Search giảm tiếp (53K→53K) — cần ASO intervention'],
+      rc: { next: 'Tháng 6/2026', items: ['Thu thập đủ activation & retention data cho May khi BQ session fix', 'Investigate new user login rate drop: test lại login prompt trong onboarding flow', 'Leverage Growth channel momentum (80.4K) — scale thêm 5–10% trong June', 'DAU recovery: check notification strategy và D3/D7 re-engagement effectiveness'] }
+    }
+  },
+  s2: {
+    overall: {
+      hl: ['Direct 54% acquisition share — ổn định, brand pull mạnh', 'Growth (P+D+CRM) bứt phá Mar-Apr: 42K→78K→76K — kênh tăng trưởng chính', 'Growth channel Apr (76K) lần đầu vượt Organic Search (53K)', 'Daily Growth DAU Apr (2.5K) duy trì ngang Mar (2.5K) — momentum tốt'],
+      wn: ['Direct 54% = concentration risk — cần diversify', 'Feb: Growth giảm 23% (54K→42K) — budget allocation không đều', '(Other) 7–10K/tháng chưa tagged — visibility gap', 'Organic Search Apr giảm (64K→53K) — ASO cần chú ý'],
+      rc: { next: null, items: ['Diversify acquisition mix về target: Direct 45% / Organic 22% / Growth 28% / Other <5%', 'ASO long-term investment: target Organic Search 65K+/tháng ổn định qua keyword optimization & review management', 'Build Growth channel ROI tracking riêng theo sub-channel (Paid / Display / CRM) để optimize dài hạn', 'Implement UTM governance policy: mandatory check trước mỗi campaign launch, target (Other) = 0'] }
+    },
+    jan: {
+      hl: ['Direct 55% — dominant, ổn định', 'Growth 54K, Organic Search 56K — tương đương nhau', 'Daily Growth DAU 1.76K — baseline tốt', 'New user login rate 46% — thấp, impact tracking chất lượng per channel'],
+      wn: ['Growth và Organic Search gần tương đương — chưa có kênh phụ nào breakthrough', 'Login rate 46% cho new users → khó attribute retention per channel chính xác', '(Other) 8.5K không có data — budget waste', 'Growth Feb sẽ giảm theo seasonality'],
+      rc: { next: 'Tháng 2/2026', items: ['Tăng Growth budget mid-Jan để frontload trước Feb dip', 'Pilot login-required campaigns với Growth users để improve login rate tracking', 'UTM audit: map toàn bộ (Other) traffic về đúng channel', 'Organic Search: optimize listing keywords cho mùa sau Tết'] }
+    },
+    feb: {
+      hl: ['Organic Search tăng share trong tháng thấp — user intent search mạnh sau Tết', 'Feb là tháng test chất lượng organic — Organic Search giữ 61K (−8% vs Jan)', 'Growth drop (−23%) — có thể là budget pause sau Jan spending', 'Tỉ lệ login của new user tăng lên 65% — Organic Search và Direct user quality cao hơn'],
+      wn: ['Growth giảm mạnh 54K→42K — nếu là budget issue, cần fix ngay để catch Mar rebound', 'Total new user giảm 10% — tháng thấp nhất, rủi ro nếu không recover Mar', 'Daily Growth DAU giảm còn 1.49K — momentum chậm', '(Other) 8.7K — vẫn chưa được resolve'],
+      rc: { next: 'Tháng 3/2026', items: ['Scale Growth channel mạnh cho Mar — target 70K+ new users từ Growth', 'Leverage Organic Search quality (65% login): create landing pages tối ưu cho intent-based queries', 'A/B test new user onboarding cho từng channel để measure quality gap', 'Set UTM deadline: toàn bộ (Other) phải được tag trước 1/3'] }
+    },
+    mar: {
+      hl: ['Growth bùng nổ: 42K→78K (+87%) — kênh tăng trưởng mạnh nhất', 'Organic Search stable 64K — healthy organic base', 'Daily Growth DAU 2.5K — đạt đỉnh', 'New user login rate 71% — across all channels quality cao'],
+      wn: ['Direct 55%→56% — acquisition mix chưa đa dạng hóa được', 'Growth tăng nhờ budget hay seasonal demand? Cần phân biệt để plan Apr', 'Activation rate Growth channel 28% — thấp hơn Organic Search (29%) một chút', '(Other) vẫn 9.7K — chưa được xử lý'],
+      rc: { next: 'Tháng 4/2026', items: ['Sustain Growth budget ở mức Mar để giữ 70K+ new users/tháng', 'Deep dive Growth sub-channel (Paid vs Display vs CRM) để biết ROI thực', 'Focus Organic Search retention: user từ Organic Search có NURR cao nhất — nurture cohort này', 'Plan (Other) cleanup: mandatory UTM check trước khi launch campaign mới'] }
+    },
+    apr: {
+      hl: ['Growth duy trì tốt 76K (−2% vs Mar) — kênh ổn định nhất', 'Growth daily DAU 2.5K — ngang Mar, consistent', 'Direct giảm 18%: 193K→158K — điều chỉnh bình thường sau tháng đỉnh', 'Organic Search giảm 53K vs Mar 64K — cần monitor'],
+      wn: ['Organic Search giảm 17% (64K→53K) — watch ASO health indicators', 'Direct giảm nhiều hơn Growth → mix shift tốt (paid acquiring hơn organic)', '(Other) giảm còn 6.8K — improving but still untagged', 'New user quality: login rate ổn nhưng activation rate có dấu hiệu sụt nhẹ'],
+      rc: { next: 'Tháng 5/2026', items: ['ASO: audit Organic Search decline — check keyword ranking, competitor activity', 'Scale Growth channel thêm 10%: target 83K new users để offset Organic gap', 'Attribution audit: toàn bộ (Other) = 0 là target tháng 5', 'Track Growth cohort Apr retention — nếu NURR M1 ổn, tăng budget further'] }
+    },
+    may: {
+      hl: ['Growth channel bứt phá: 80.4K (+6.1% vs Apr) — cao nhất kỳ, kênh dẫn đầu tăng trưởng', 'Growth share tăng lên 27.2% tổng new users — tăng dần từ 20.8% Jan', 'Total new users 295.7K — tăng nhẹ vs Apr', '(Other) 7.95K — còn untagged, cần tiếp tục UTM discipline'],
+      wn: ['Direct giảm: 157.8K→154.3K — slight slowdown', 'Organic Search giảm tiếp: 53K→53K — trend đáng lo', 'New user login rate drop (71%→66.5%) — ảnh hưởng chất lượng tracking per channel', 'Daily new DAU chưa có data (BQ issue)'],
+      rc: { next: 'Tháng 6/2026', items: ['Growth channel: sustain 80K+ với ROI tracking real-time từ June', 'ASO recovery plan: target Organic Search 58K+ trong June qua keyword refresh', 'Direct channel: investigate decline, check app store ranking & rating', 'UTM cleanup: toàn bộ (Other) phải về 0 trước end of June'] }
+    }
+  },
+  s3: {
+    overall: {
+      hl: ['Activation rate ~30% (adview) ổn định — cứ 3 new user thì 1 người activated', 'Mar đạt đỉnh 108K activated — activation rate tốt nhất kỳ (31.5%)', 'Growth channel activation rate tương đương Organic Search — paid user có engagement', 'Direct chiếm 57% activated — consistent với acquisition share'],
+      wn: ['70% new users chưa activated trong D7 — majority vẫn dormant', 'Apr activation drop 20% (108K→87K) lớn hơn acquisition drop 15% → activation rate sụt', 'Double-count issue trong combined row — số thực OR logic thấp hơn 10–15%', 'Daily activated 2.9K/ngày nhưng daily new DAU 9.8K — 7K user/ngày không activate'],
+      rc: { next: null, items: ['Target activation rate 35%+ dài hạn — redesign onboarding flow với personalized category + "quick win" adview trigger trong D1', 'Build automated D3/D7 re-engagement sequence cho 70% new user chưa activated — personalized push notification', 'Implement OR logic tracking để đo activated users chính xác (không double-count adview+lead)', 'Measure và optimize activation rate riêng cho từng sub-channel Growth (Paid/Display/CRM) để allocate budget hiệu quả'] }
+    },
+    jan: {
+      hl: ['Activation rate baseline: 29.9% (adview), 25.4% (lead)', 'Daily activated 2.5K adview / 2.1K lead — baseline metric', 'Direct chiếm 56% activated — proportional', 'Growth + Organic Search mỗi kênh ~20% activated'],
+      wn: ['Activation rate 29.9% — room để cải thiện lên 33%+', '70% new users chưa activated — cần onboarding intervention', 'Login rate new user Jan chỉ 46% → nhiều user activated nhưng non-login, khó track', 'Tháng đầu năm — belum ada optimization cho activation flow'],
+      rc: { next: 'Tháng 2/2026', items: ['A/B test onboarding flow: version A (category picker D1) vs version B (popular listings D1)', 'Set up D3 push notification campaign cho Jan cohort chưa activated', 'Measure impact của login requirement trên activation rate', 'Track activation rate per acquisition channel để biết channel nào chất lượng nhất'] }
+    },
+    feb: {
+      hl: ['Activation rate tăng nhẹ: 31.1% (adview) vs Jan 29.9% — Feb user quality tốt hơn', 'Daily activated tăng nhẹ 2.6K vs Jan 2.5K — engagement tốt hơn dù MAU giảm', 'Organic Search activation rate cao nhất: 30.8% (18.8K/61.1K)', 'Feb cohort có intent cao (login rate 65%) → activation potential cao'],
+      wn: ['Growth channel activation giảm 21%: 15.4K→12.2K — theo acquisition drop', 'Feb cohort nhỏ (234K) — activation số tuyệt đối thấp nhất kỳ', 'Seasonal low → activation habit chưa được build', 'User Feb có thể bị distracted bởi Tết activities'],
+      rc: { next: 'Tháng 3/2026', items: ['Nurture Feb cohort trong Mar: D30 activation campaign cho 70% chưa activated', 'Test re-engagement offer: "Bạn chưa xem tin nào — Khám phá ngay" với Feb dormant users', 'Leverage Feb Organic Search cohort (quality cao): personalized category recommendations', 'Scale activation tracking dashboard để measure per-cohort activation over time'] }
+    },
+    mar: {
+      hl: ['Monthly activated đạt đỉnh: 108K (adview), 96K (lead)', 'Activation rate 31.5% — cao nhất kỳ', 'Growth channel tăng 79%: 12K→22K activated — quality channel', 'Daily activated 3.5K/3.1K — đỉnh cao nhất'],
+      wn: ['Activation tăng nhờ volume (acquisition +47%) không chỉ rate improvement', 'Daily activated 3.5K trong khi daily new DAU 11K → 68% vẫn không activate', 'Rate tăng nhẹ (29.9%→31.5%) — onboarding improvement chưa đột phá', 'Apr sẽ cooling — activated number sẽ giảm theo acquisition'],
+      rc: { next: 'Tháng 4/2026', items: ['Onboarding A/B test kết quả từ Jan-Feb: implement winning variant cho Mar cohort re-engagement', 'Mar cohort lớn (345K) → D30 activation campaign trong Apr sẽ có impact cao', 'Growth channel (22K activated) → build CRM journey riêng để improve NURR sau activation', 'Track cohort: trong 108K Mar activated, bao nhiêu người retain D30?'] }
+    },
+    apr: {
+      hl: ['Activation rate 29.7% (adview) — giảm nhẹ vs Mar 31.5%', 'Growth channel giữ activation 20K — consistent với Mar', 'Organic Search activation 15K — giảm theo acquisition volume', 'Daily activated 2.9K — reasonable dù MAU giảm'],
+      wn: ['Activation rate sụt 1.8pp vs Mar — onboarding hoặc product experience issue?', 'Apr cohort 87K activated — 30% ít hơn Mar dù acquisition chỉ giảm 15%', 'Retention của activated users cũng giảm (App Ret M1 drop) — activation quality giảm?', 'Cần investigate: activation rate drop có liên quan đến retention drop không?'],
+      rc: { next: 'Tháng 5/2026', items: ['🔴 Connect activation với retention: analyze nếu Apr activated cohort có retention thấp hơn Mar activated cohort', 'D3-D7 behavior analysis: Apr users bỏ app tại bước nào sau install?', 'Test: tăng activation threshold về 10 adview D3 thay vì 20 adview D7 để capture user sớm hơn', 'Growth CRM: trigger activation sequence riêng cho Growth channel users (cao nhất về NURR)'] }
+    },
+    may: {
+      hl: ['May 2026 activation data chưa available (BQ session issue)', 'New users tăng nhẹ (295.7K vs 293.5K) — activation absolute number kỳ vọng tương đương Apr', 'Growth channel new users 80.4K — nếu activation rate giữ 27%, activated Growth ~21.7K', 'Cần data để confirm activation trend sau 2 tháng liên tiếp sụt rate'],
+      wn: ['Activation & daily data pending — không thể đánh giá May chưa', 'New user login rate giảm (66.5%) có thể kéo activation tracking xuống', 'Apr activation rate drop (29.7%) chưa recover — May cần phải improve', 'BQ session fix cần được prioritize để không miss data'],
+      rc: { next: 'Tháng 6/2026', items: ['Fix BQ session issue để có May activation data đầy đủ', 'Khi có data: compare May vs Apr activation rate — nếu tiếp tục drop → emergency onboarding audit', 'Track Growth channel May cohort D7 activation riêng để measure channel quality', 'Prepare June activation campaign cho May cohort lớn (295.7K new users)'] }
+    }
+  },
+  s4: {
+    overall: {
+      hl: ['App User Retention > Total User Retention tất cả ngưỡng → app user gắn bó hơn web', 'NURR D1 (37%) thấp hơn App User D1 (51–55%) — gap 14–18pp', 'Jan–Mar App Ret M1 ổn định 67.9–68.2% — excellent baseline', 'Growth channel NURR M1 (7.4%) cao nhất — paid user quality tốt'],
+      wn: ['Apr: App Ret M1 giảm mạnh 68.1%→63.8% (−4.3pp) — CRITICAL signal', 'App Ret D1 drop 54.5%→51.0% — D1 experience tháng 4 kém rõ rệt', 'NURR M1 vẫn thấp (7%) — 93% new user không quay lại sau 1 tháng', 'Total User Ret cũng giảm nhẹ — broader product issue?'],
+      rc: { next: null, items: ['Target App Ret M1 ≥70% (từ 63.8%) và NURR M1 ≥8% (từ 7%) — 2 KPI retention cốt lõi dài hạn', 'Build full retention lifecycle: D1 onboarding → D3 activation push → D7 re-engagement → D14 win-back email → D30 loyalty reward', 'Reduce NURR D1-D7 drop-off (37%→15%): personalize D3–D7 content feed dựa theo behavior D1', 'Establish rule: khi App Ret M1 <65% liên tục → freeze acquisition scale, ưu tiên fix retention trước'] }
+    },
+    jan: {
+      hl: ['Baseline retention tốt: App Ret D1 55.0%, M1 68.2%', 'NURR D1 36.1% — reasonable cho new user', 'App User D1 cao hơn Total User D1 (55% vs 52.4%) — app user quality tốt hơn', 'Growth channel NURR 7.0% (M1) — tương đương average'],
+      wn: ['NURR M1 6.8% — thấp, cần target 8%+', 'NURR D1 (36.1%) vs App D1 (55%) — gap 18.9pp → new user experience kém hơn return user', 'Jan là baseline tốt nhưng chưa có improvement initiatives', 'NURR D7 14.5% — target 16%+'],
+      rc: { next: 'Tháng 2/2026', items: ['Launch D3 push notification sequence cho tất cả new user Jan (target NURR D7 16%)', 'A/B test D1 experience: personalized feed vs generic feed → measure D1 retention impact', 'Build re-engagement email cho users không quay lại sau D7 (86% của cohort)', 'Analyze Jan cohort: top 10% users có NURR cao nhất đang làm gì khác?'] }
+    },
+    feb: {
+      hl: ['App Ret D1 tăng nhẹ: 55.0%→55.2% — ổn định tốt trong tháng thấp điểm', 'NURR D1 giữ nguyên 36.1% — not worse despite seasonality', 'NURR D7 tăng 14.5%→14.8% — nhích lên', 'Base user cohort retain rất tốt dù acquisition giảm'],
+      wn: ['NURR M1 tăng nhẹ 6.8%→7.0% — improvement nhỏ, chưa đủ', 'Feb cohort nhỏ (234K) — ít user để test và measure impact', 'Retention improvement còn chậm — cần more aggressive action', 'Jan cohort D30 retention: bao nhiêu % quay lại trong Feb?'],
+      rc: { next: 'Tháng 3/2026', items: ['Measure Jan cohort D30 NURR trong tháng 3: nếu tốt, scale Jan onboarding approach', 'Build automated D14 re-engagement cho Feb cohort chưa quay lại', 'Test in-app notification cá nhân hóa cho return users vs generic notification', 'March scale: với acquisition +47% planned, cần pre-build retention infrastructure'] }
+    },
+    mar: {
+      hl: ['NURR D1 cải thiện rõ: 36.1%→37.9% — tháng tốt nhất', 'NURR D7 15.7% — cao nhất kỳ', 'NURR M1 7.3% — tiến gần target 8%', 'Retention tốt trong khi acquisition đồng thời tăng 47% — ideal scenario'],
+      wn: ['App Ret D1 giảm nhẹ 55.2%→54.5% — volume lớn có thể dilute quality', 'App Ret M1 giữ 68.1% — tốt nhưng cần watch Apr cohort khi về M1', 'NURR M1 7.3% vẫn chưa đến target 8%', 'Mar cohort lớn (345K) → Apr D30 sẽ là stress test lớn nhất'],
+      rc: { next: 'Tháng 4/2026', items: ['Replicate Mar conditions: analyze điều gì đã cải thiện NURR D1 37.9% (vs Jan 36.1%)', 'Mar cohort D30 tracking trong Apr: target 7.5%+ NURR M1 cho cohort này', 'Scale D3 re-engagement campaign — nếu đây là driver NURR cải thiện, tăng coverage', 'Prepare retention infrastructure cho Apr volume: personalization, content, push'] }
+    },
+    apr: {
+      hl: ['NURR D1 37.1% — giảm từ Mar 37.9% nhưng vẫn cao hơn Jan/Feb', 'Growth channel NURR M1 7.4% — cao nhất, validate paid channel quality', 'NURR M1 7.0% — on track mặc dù App Retention drop', 'Organic Search NURR D1 37.3% — consistent quality'],
+      wn: ['🔴 App Ret M1: 68.1%→63.8% (−4.3pp) — biggest drop in period', '🔴 App Ret D1: 54.5%→51.0% (−3.5pp) — D1 experience issue Apr', '🔴 App Ret D7: 45.8%→42.2% (−3.6pp) — week-1 drop off tăng cao', 'Total User Ret cũng giảm nhẹ — không isolated to app only'],
+      rc: { next: 'Tháng 5/2026', items: ['🔴 PRIORITY #1: Product audit — mọi change trong Apr ảnh hưởng gì đến D1 experience?', 'Run emergency cohort analysis: Apr D1→D7→D30 step-by-step drop vs Mar cohort', 'Thử rollback hoặc A/B test Apr product changes nếu identified root cause', 'Set retention target May: App Ret M1 phải ≥66% (partial recovery) trước khi scale acquisition'] }
+    },
+    may: {
+      hl: ['May 2026 retention data chưa available (BQ session issue)', 'Apr cohort M1 retention (= May data) là metric then chốt cần track', 'Growth channel May new users 80.4K — NURR data pending', 'App MAU May tăng nhẹ → nếu retention recover thì signal tốt'],
+      wn: ['Retention May không có data — risk: không biết Apr Ret drop đã recover hay chưa', 'NURR M1 của Apr cohort (measured in May) chưa có — metric critical nhất', 'New user login rate drop (66.5%) ảnh hưởng NURR tracking accuracy', 'Nếu retention chưa recover: MAU growth May có thể không sustainable'],
+      rc: { next: 'Tháng 6/2026', items: ['Prioritize BQ fix để có May retention data ngay trong tuần đầu June', 'Check App Ret M1 của Apr cohort trong June: nếu vẫn <65% → immediate product intervention', 'Track cohort May D1/D7 trong June để có early retention signal', 'Connect retention với acquisition decision: nếu May Ret M1 <65%, freeze scale acquisition'] }
+    }
+  },
+  s5: {
+    overall: {
+      hl: ['Growth channel Apr: 75.8K new users — duy trì gần bằng Mar (77.9K), kênh ổn định nhất', 'NURR M1 Growth (7.4%) cao nhất trong tất cả channels — paid user quality tốt, justify investment', 'Growth chiếm 25.8% total new app users Apr — tăng từ 20.8% Jan, share tăng dần', 'Activation rate Growth (26.9%) gần bằng Organic Search (28.3%) — engagement quality tương đương organic'],
+      wn: ['Activation rate Growth giảm nhẹ: 28.2%→28.0%→26.9% — cần monitor nếu tiếp tục giảm', 'Feb dip (41.7K) mạnh hơn total market dip — budget allocation hay seasonality?', 'CPA/CAA chưa có data — không thể đánh giá ROI thực tế', 'Growth NURR M1 (7.4%) vẫn thấp hơn nhiều so với target 42% NURR — cần cải thiện mạnh'],
+      rc: { next: null, items: ['Track ROI dài hạn: tính CAC, LTV, và CAC payback period cho Growth cohort', 'Split tracking Paid / Display / CRM riêng để biết sub-channel nào có NURR cao nhất và optimize budget', 'Target activation rate Growth 32%+ qua landing page optimization và post-install CRM sequence', 'Test CRM-only re-engagement cho Growth users D3/D7 để cải thiện NURR M1 về gần target 42%'] }
+    },
+    jan: {
+      hl: ['Growth 54.4K new users — baseline tháng đầu năm', 'NURR M1 7.0% — ngang average, chưa có differentiation', 'Activation rate (adview) 28.2% — tương đương Organic Search', 'Growth share 20.8% tổng new users — room to grow'],
+      wn: ['Growth và Organic Search chưa có sự chênh lệch rõ về NURR — cần optimize để tạo differentiation', 'Activation rate 28.2% — thấp hơn target 32%', 'Budget allocation không rõ — chưa có cost data', 'CRM component của Growth channel chưa được measure riêng'],
+      rc: { next: 'Tháng 2/2026', items: ['Tăng Growth budget trước Feb để buffer seasonality dip', 'Setup CRM sequence riêng cho Growth users: D1 welcome → D3 category recommendation → D7 deal alert', 'A/B test landing page cho Paid Search: version với social proof vs version với deal urgency', 'Measure activation rate riêng cho Paid/Display/CRM sub-channel'] }
+    },
+    feb: {
+      hl: ['Growth 41.7K — giảm 23% nhưng giữ được activation rate 29.2% (tốt hơn Jan)', 'NURR D7 14.8% — ổn định dù volume giảm', 'Feb user quality tốt (login rate cao hơn) → Growth Feb cohort chất lượng cao hơn Jan', 'Growth giảm ít hơn relative share — chiếm 17.8% tổng new users'],
+      wn: ['Volume giảm 23% — nếu budget-driven thì đây là missed opportunity', 'Cost/user Feb có thể cao hơn do seasonality (CPM tăng sau Tết)', 'Activation rate Feb (29.2%) tốt nhưng absolute number thấp nhất kỳ (12.2K)', 'Growth share giảm 20.8%→17.8% — Organic Search lấy share trong tháng thấp điểm'],
+      rc: { next: 'Tháng 3/2026', items: ['Scale Growth budget mạnh cho Mar — target 70K+ với aggressive bidding strategy', 'Leverage Feb cohort quality: fast-track CRM sequence cho 41.7K Feb Growth users', 'Analyze Feb activated cohort NURR D30: nếu cao hơn Jan → confirm quality hypothesis', 'Optimize bidding để giảm CPM/CPA trong Mar khi demand picks up'] }
+    },
+    mar: {
+      hl: ['Growth đạt đỉnh 77.9K (+87% vs Feb) — tháng bùng nổ nhất', 'Activation 21.8K adview / 20.5K lead — đỉnh cao nhất, cả 2 điều kiện đều strong', 'NURR D1 38.7% và NURR D7 16.4% — cải thiện đáng kể', 'Growth chiếm 22.6% tổng new users — tăng share dù total MAU cũng tăng'],
+      wn: ['NURR M1 7.6% — tốt nhất kỳ nhưng vẫn cách xa target 42% rất nhiều', 'Activation rate Mar (28.0%) giảm nhẹ so với Feb (29.2%) dù volume tăng — quality dilution?', 'Không có cost data → không biết ROI có scale theo volume không', 'Apr sẽ cooling — cần plan để maintain 70K+ level'],
+      rc: { next: 'Tháng 4/2026', items: ['Sustain Growth spend để giữ 70K+ new users trong Apr', 'Mar cohort D30: measure NURR M1 của 77.9K Growth users trong tháng 5', 'Tìm hiểu: tại sao NURR D1 tăng (37.1%→38.7%) — landing page hay creative change nào drive?', 'Plan Apr: optimize creative dựa theo Mar learnings để maintain activation rate 28%+'] }
+    },
+    apr: {
+      hl: ['Growth 75.8K — giảm chỉ 3% vs Mar, kênh bền vững nhất qua các tháng', 'NURR M1 7.4% — cao nhất trong tất cả channels, validate investment', 'Growth daily DAU 2.5K — ngang Mar, consistent day-to-day delivery', 'Growth share tăng lên 25.8% tổng new users — highest share kỳ này'],
+      wn: ['Activation rate giảm 28.0%→26.9% — 2 tháng liên tiếp giảm, cần investigate', 'NURR D1 giảm nhẹ 38.7%→37.5% — consistent với overall market drop', 'Apr activation absolute: 20.4K adview / 18.9K lead — thấp hơn Mar ~7%', 'Vẫn chưa có cost data để tính ROI'],
+      rc: { next: 'Tháng 5/2026', items: ['Investigate activation rate decline (2 tháng liên tiếp): check landing page quality, post-install experience', 'Growth CRM: đẩy mạnh D1–D3 sequence để recover activation rate về 30%+', 'Tăng Growth share lên 28%+ trong May — offset Organic Search decline', 'Cost tracking: implement measurement cho Jan–Apr retrospective và bắt đầu real-time tracking từ May'] }
+    },
+    may: {
+      hl: ['Growth channel đạt đỉnh mới: 80.4K new users (+6.1% vs Apr) — tháng tốt nhất kỳ này', 'Growth share 27.2% tổng new users — vượt qua Apr 25.8%, tiếp tục tăng share', 'Growth channel là kênh duy nhất tăng trưởng tháng này', 'Total new users 295.7K vượt nhẹ Apr (293.5K)'],
+      wn: ['Activation & retention data pending (BQ issue) — không thể đánh giá full quality May Growth cohort', 'Cost data pending — ROI calculation blocked', 'NURR May chưa có — không rõ liệu 80.4K user có retain tốt không', 'New user login rate drop (66.5%) có thể ảnh hưởng NURR tracking'],
+      rc: { next: 'Tháng 6/2026', items: ['Scale Growth lên 85K+ trong June trên đà momentum hiện tại', 'Fix BQ data để có activation & NURR May ngay đầu June', 'Bắt đầu cost tracking real-time: cần CPA May để quyết định budget June', 'Track May Growth cohort D7/D30 để validate quality của 80.4K users này'] }
+    }
+  }
+};
+
+// ============================================================
+// RENDER COMMENTARY WITH MONTH SELECTOR
+// ============================================================
+function renderCommentary(sectionId, defaultMonth='overall') {
+  const wrapper = document.getElementById(`cw-${sectionId}`);
+  if (!wrapper) return;
+  const data = COMMENTARY[sectionId];
+  const months = [
+    { key:'overall', label:'Overall', cls:'chip-overall' },
+    { key:'jan', label:'Jan 2026', cls:'chip-jan' },
+    { key:'feb', label:'Feb 2026', cls:'chip-feb' },
+    { key:'mar', label:'Mar 2026', cls:'chip-mar' },
+    { key:'apr', label:'Apr 2026', cls:'chip-apr' },
+    { key:'may', label:'May 2026*', cls:'chip-may' }
+  ];
+
+  function html(m) {
+    const d = data[m];
+    const nextLabel = d.rc.next
+      ? `<div class="next-month">📅 Actions cho ${d.rc.next}:</div>`
+      : `<div class="next-month">📅 Actions cho các tháng tới (long-term):</div>`;
+    return `
+    <div class="commentary">
+      <div class="commentary-grid">
+        <div class="commentary-chip">
+          <div class="chip-icon">🔍</div>
+          <div class="chip-title hl">Key Highlights</div>
+          <div class="chip-body"><ul>${d.hl.map(i=>`<li>${i}</li>`).join('')}</ul></div>
+        </div>
+        <div class="commentary-chip">
+          <div class="chip-icon">⚠️</div>
+          <div class="chip-title wn">Điểm Cần Chú Ý</div>
+          <div class="chip-body"><ul>${d.wn.map(i=>`<li>${i}</li>`).join('')}</ul></div>
+        </div>
+        <div class="commentary-chip">
+          <div class="chip-icon">💡</div>
+          <div class="chip-title rc">Recommendations</div>
+          <div class="chip-body">${nextLabel}<ul>${d.rc.items.map(i=>`<li>${i}</li>`).join('')}</ul></div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  wrapper.innerHTML = `
+    <div class="month-selector" id="ms-${sectionId}">
+      ${months.map(m=>`<button class="month-chip ${m.cls} ${m.key===defaultMonth?'active':''}" onclick="selectMonth('${sectionId}','${m.key}')">${m.label}</button>`).join('')}
+    </div>
+    <div id="cm-${sectionId}">${html(defaultMonth)}</div>`;
+}
+
+function selectMonth(sectionId, month) {
+  const data = COMMENTARY[sectionId];
+  document.querySelectorAll(`#ms-${sectionId} .month-chip`).forEach(c=>{
+    const key = c.textContent.toLowerCase().replace('*','').trim();
+    c.classList.toggle('active', key.startsWith(month==='overall'?'overall':month.substring(0,3)));
+  });
+  if (sectionId === 's5') updateS5KPIs(month);
+  const d = data[month];
+  const nextLabel = d.rc.next ? `<div class="next-month">📅 Actions cho ${d.rc.next}:</div>` : '';
+  const lbl = d.rc.next
+    ? `<div class="next-month">📅 Actions cho ${d.rc.next}:</div>`
+    : `<div class="next-month">📅 Actions cho các tháng tới (long-term):</div>`;
+  document.getElementById(`cm-${sectionId}`).innerHTML = `
+    <div class="commentary">
+      <div class="commentary-grid">
+        <div class="commentary-chip">
+          <div class="chip-icon">🔍</div>
+          <div class="chip-title hl">Key Highlights</div>
+          <div class="chip-body"><ul>${d.hl.map(i=>`<li>${i}</li>`).join('')}</ul></div>
+        </div>
+        <div class="commentary-chip">
+          <div class="chip-icon">⚠️</div>
+          <div class="chip-title wn">Điểm Cần Chú Ý</div>
+          <div class="chip-body"><ul>${d.wn.map(i=>`<li>${i}</li>`).join('')}</ul></div>
+        </div>
+        <div class="commentary-chip">
+          <div class="chip-icon">💡</div>
+          <div class="chip-title rc">Recommendations</div>
+          <div class="chip-body">${lbl}<ul>${d.rc.items.map(i=>`<li>${i}</li>`).join('')}</ul></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// SECTION 5 KPI DATA PER MONTH
+// ============================================================
+const S5_KPI = {
+  overall: { label:'May 2026* (Latest)', new:'80.4K', adv:'22.2K', lead:'19.6K', nD1:'35.8%', nM1:'—', nM1sub:'May 2026* — N/A (partial month)', cost:'521.1M ₫', dNew:'▲ vs Apr: +4.6K (+6.1%)', dAdv:'▲ vs Apr: +1.9K (+9.3%)', dLead:'▲ vs Apr: +0.7K (+3.6%)', dD1:'▼ vs Apr: −1.7pp', dM1:'N/A (partial month)', dCost:'CPA: 6,481₫/user', newClr:'up', advClr:'up', leadClr:'up', d1Clr:'down', m1Clr:'flat', costClr:'flat' },
+  jan:     { label:'Jan 2026', new:'54.4K', adv:'15.4K', lead:'13.4K', nD1:'37.1%', nM1:'7.0%', nM1sub:'Jan 2026', cost:'481.5M ₫', dNew:'Baseline tháng đầu năm', dAdv:'Activation rate: 28.2%', dLead:'Activation rate: 24.6%', dD1:'Baseline', dM1:'Baseline', dCost:'CPA: 8,845₫ / new user', newClr:'flat', advClr:'flat', leadClr:'flat', d1Clr:'flat', m1Clr:'flat', costClr:'down' },
+  feb:     { label:'Feb 2026', new:'41.7K', adv:'12.2K', lead:'11.0K', nD1:'36.1%', nM1:'6.9%', nM1sub:'Feb 2026', cost:'307.2M ₫', dNew:'▼ vs Jan: −12.7K (−23%)', dAdv:'▼ vs Jan: −3.2K (−21%)', dLead:'▼ vs Jan: −2.4K (−18%)', dD1:'▼ vs Jan: −1.0pp', dM1:'▼ vs Jan: −0.1pp', dCost:'CPA: 7,366₫ / new user', newClr:'down', advClr:'down', leadClr:'down', d1Clr:'down', m1Clr:'down', costClr:'up' },
+  mar:     { label:'Mar 2026 ✨', new:'77.9K', adv:'21.8K', lead:'20.5K', nD1:'38.7%', nM1:'7.6%', nM1sub:'Mar 2026 — best month', cost:'413.8M ₫', dNew:'▲ vs Feb: +36.2K (+87%)', dAdv:'▲ vs Feb: +9.6K (+79%)', dLead:'▲ vs Feb: +9.5K (+86%)', dD1:'▲ vs Feb: +2.6pp', dM1:'▲ vs Feb: +0.7pp', dCost:'CPA: 5,311₫ — lowest CPA', newClr:'up', advClr:'up', leadClr:'up', d1Clr:'up', m1Clr:'up', costClr:'up' },
+  apr:     { label:'Apr 2026', new:'75.8K', adv:'20.4K', lead:'18.9K', nD1:'37.5%', nM1:'7.4%', nM1sub:'Apr 2026 — highest channel', cost:'429.9M ₫', dNew:'▼ vs Mar: −2K (−3%)', dAdv:'▼ vs Mar: −1.4K (−7%)', dLead:'▼ vs Mar: −1.6K (−8%)', dD1:'▼ vs Mar: −1.2pp', dM1:'▼ vs Mar: −0.2pp', dCost:'CPA: 5,672₫ / new user', newClr:'down', advClr:'down', leadClr:'down', d1Clr:'down', m1Clr:'down', costClr:'flat' },
+  may:     { label:'May 2026*', new:'80.4K', adv:'22.2K', lead:'19.6K', nD1:'35.8%', nM1:'—', nM1sub:'May 2026* — N/A (partial month)', cost:'521.1M ₫', dNew:'▲ vs Apr: +4.6K (+6.1%)', dAdv:'▲ vs Apr: +1.9K (+9.3%)', dLead:'▲ vs Apr: +0.7K (+3.6%)', dD1:'▼ vs Apr: −1.7pp', dM1:'N/A (partial month)', dCost:'CPA: 6,481₫/user', newClr:'up', advClr:'up', leadClr:'up', d1Clr:'down', m1Clr:'flat', costClr:'flat' }
+};
+
+function updateS5KPIs(month) {
+  const d = S5_KPI[month] || S5_KPI.overall;
+  const set = (id, val, clsId, cls) => {
+    const el = document.getElementById(id); if(el) el.textContent = val;
+    const deltaEl = document.getElementById(clsId);
+    if(deltaEl) { deltaEl.textContent = val; deltaEl.className = 'kpi-delta ' + (cls||''); }
+  };
+  document.getElementById('kpi-s5-new') && (document.getElementById('kpi-s5-new').textContent = d.new);
+  document.getElementById('kpi-s5-new-sub') && (document.getElementById('kpi-s5-new-sub').textContent = d.label);
+  document.getElementById('kpi-s5-new-delta') && (document.getElementById('kpi-s5-new-delta').textContent = d.dNew, document.getElementById('kpi-s5-new-delta').className = 'kpi-delta ' + d.newClr);
+  document.getElementById('kpi-s5-adv') && (document.getElementById('kpi-s5-adv').textContent = d.adv);
+  document.getElementById('kpi-s5-adv-sub') && (document.getElementById('kpi-s5-adv-sub').textContent = d.label);
+  document.getElementById('kpi-s5-adv-delta') && (document.getElementById('kpi-s5-adv-delta').textContent = d.dAdv, document.getElementById('kpi-s5-adv-delta').className = 'kpi-delta ' + d.advClr);
+  document.getElementById('kpi-s5-lead') && (document.getElementById('kpi-s5-lead').textContent = d.lead);
+  document.getElementById('kpi-s5-lead-sub') && (document.getElementById('kpi-s5-lead-sub').textContent = d.label);
+  document.getElementById('kpi-s5-lead-delta') && (document.getElementById('kpi-s5-lead-delta').textContent = d.dLead, document.getElementById('kpi-s5-lead-delta').className = 'kpi-delta ' + d.leadClr);
+  document.getElementById('kpi-s5-nurrD1') && (document.getElementById('kpi-s5-nurrD1').textContent = d.nD1);
+  document.getElementById('kpi-s5-nurrD1-sub') && (document.getElementById('kpi-s5-nurrD1-sub').textContent = d.label);
+  document.getElementById('kpi-s5-nurrD1-delta') && (document.getElementById('kpi-s5-nurrD1-delta').textContent = d.dD1, document.getElementById('kpi-s5-nurrD1-delta').className = 'kpi-delta ' + d.d1Clr);
+  document.getElementById('kpi-s5-nurrM1') && (document.getElementById('kpi-s5-nurrM1').textContent = d.nM1);
+  document.getElementById('kpi-s5-nurrM1-sub') && (document.getElementById('kpi-s5-nurrM1-sub').textContent = d.nM1sub);
+  document.getElementById('kpi-s5-nurrM1-delta') && (document.getElementById('kpi-s5-nurrM1-delta').textContent = d.dM1, document.getElementById('kpi-s5-nurrM1-delta').className = 'kpi-delta ' + d.m1Clr);
+  document.getElementById('kpi-s5-cost') && (document.getElementById('kpi-s5-cost').textContent = d.cost);
+  document.getElementById('kpi-s5-cost-sub') && (document.getElementById('kpi-s5-cost-sub').textContent = d.label);
+  document.getElementById('kpi-s5-cost-delta') && (document.getElementById('kpi-s5-cost-delta').textContent = d.dCost, document.getElementById('kpi-s5-cost-delta').className = 'kpi-delta ' + d.costClr);
+}
+
+renderCommentary('s1');
+renderCommentary('s2');
+renderCommentary('s3');
+renderCommentary('s4');
+renderCommentary('s5');
+
+// ============================================================
+// CHARTS
+// ============================================================
+const MONTHS = ['Jan 2026','Feb 2026','Mar 2026','Apr 2026','May 2026*'];
+const C = {blue:'#4361ee',green:'#10b981',orange:'#f59e0b',purple:'#8b5cf6',red:'#ef4444',gray:'#9ca3af',teal:'#0891b2'};
+
+function makeChart(id,type,labels,datasets,opts={}) {
+  const ctx=document.getElementById(id); if(!ctx)return;
+  new Chart(ctx,{type,data:{labels,datasets},options:{
+    responsive:true,maintainAspectRatio:true,
+    plugins:{
+      legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>{
+        const v=c.parsed.y??c.parsed;
+        if(opts.pct)return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;
+        if(v>=1e6)return ` ${c.dataset.label}: ${(v/1e6).toFixed(2)}M`;
+        if(v>=1000)return ` ${c.dataset.label}: ${v.toLocaleString('en')}`;
+        return ` ${c.dataset.label}: ${v}`;
+      }}}
+    },
+    scales:(type==='bar'||type==='line')?{
+      x:{grid:{display:false},ticks:{font:{size:11}}},
+      y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>opts.pct?(v*100).toFixed(0)+'%':v>=1e6?(v/1e6).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':v}}
+    }:{}
+  }});
+}
+
+
+
+const L=(label,data,color,dash=false)=>({label,data,borderColor:color,backgroundColor:color+'22',fill:true,tension:0.4,pointRadius:4,borderWidth:2,borderDash:dash?[4,4]:[]});
+const B=(label,data,color)=>({label,data,backgroundColor:color+'cc',borderColor:color,borderWidth:1,borderRadius:4});
+
+// S1 Chart 1: Stacked bar (Returning + New) + % new line
+(function(){
+  const ctx = document.getElementById('chartOverviewMAU'); if(!ctx) return;
+  const returning = [1133356,1062200,1206475,1179244,1194027];
+  const newMAU    = [261241,234333,344562,293506,295688];
+  const pctNew    = [0.187,0.181,0.222,0.199,0.198];
+  new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
+    {label:'Returning App MAU',data:returning,backgroundColor:C.blue+'99',borderColor:C.blue,borderWidth:1,borderRadius:0,stack:'s'},
+    {label:'New App MAU',data:newMAU,backgroundColor:C.green+'cc',borderColor:C.green,borderWidth:1,borderRadius:4,stack:'s'},
+    {label:'% New / Total',data:pctNew,type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${v>=1e6?(v/1e6).toFixed(2)+'M':(v/1000).toFixed(0)+'K'}`;
+    }}}},
+    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
+      y:{stacked:true,grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':(v/1000).toFixed(0)+'K'},position:'left'},
+      y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.35}
+    }}});
+})();
+
+// S1 Chart 2: Stacked bar (Login + Non-login) + login rate line
+(function(){
+  const ctx = document.getElementById('chartLoginRate'); if(!ctx) return;
+  const login    = [1030263,1011227,1248085,1204341,1211386];
+  const nonLogin = [364334,285306,302952,268409,278329];
+  const rate     = [0.739,0.780,0.805,0.818,0.813];
+  new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
+    {label:'Non-login MAU',data:nonLogin,backgroundColor:C.gray+'88',borderColor:C.gray,borderWidth:1,borderRadius:0,stack:'s'},
+    {label:'Login MAU',data:login,backgroundColor:C.blue+'cc',borderColor:C.blue,borderWidth:1,borderRadius:4,stack:'s'},
+    {label:'Login Rate %',data:rate,type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${v>=1e6?(v/1e6).toFixed(2)+'M':(v/1000).toFixed(0)+'K'}`;
+    }}}},
+    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
+      y:{stacked:true,grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':(v/1000).toFixed(0)+'K'},position:'left'},
+      y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0.5,max:1.0}
+    }}});
+})();
+
+// S1 Chart 3: Stacked bar Total CT MAU (App + Web/Other)
+(function(){
+  const ctx = document.getElementById('chartCTMAU'); if(!ctx) return;
+  const appMAU  = [1394597,1296533,1551037,1472750,1489715];
+  const webMAU  = [4864216,3310531,5564102,4529739,4512951];
+  const pctApp  = [0.223,0.281,0.218,0.245,0.248];
+  new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
+    {label:'Web/Other MAU',data:webMAU,backgroundColor:C.gray+'88',borderColor:C.gray,borderWidth:1,borderRadius:0,stack:'s'},
+    {label:'App MAU',data:appMAU,backgroundColor:C.blue+'cc',borderColor:C.blue,borderWidth:1,borderRadius:4,stack:'s'},
+    {label:'% App / Total CT',data:pctApp,type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${v>=1e6?(v/1e6).toFixed(2)+'M':(v/1000).toFixed(0)+'K'}`;
+    }}}},
+    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
+      y:{stacked:true,grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':(v/1000).toFixed(0)+'K'},position:'left'},
+      y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.5}
+    }}});
+})();
+
+// S2 charts
+makeChart('chartNewOverview','line',MONTHS,[L('New App MAU',[261241,234333,344562,293506,295688],C.blue)]);
+makeChart('chartNewChannel','bar',MONTHS,[B('Direct',[142590,122781,192791,157824,154320],C.blue),B('Organic Search',[55700,61101,64173,53038,52992],C.green),B('Growth (P+D+CRM)',[54439,41702,77942,75796,80424],C.orange),B('(Other)',[8511,8749,9656,6848,7950],C.gray)]);
+makeChart('chartNewChannelDaily','bar',MONTHS,[B('Direct',[4601,4386,6220,5263,null],C.blue),B('Organic Search',[1797,2182,2070,1768,null],C.green),B('Growth (P+D+CRM)',[1756,1489,2515,2527,null],C.orange)]);
+
+// S3 Activation: Bar = New App MAU, Lines = Activation rate adview & lead
+makeChart('chartActOverview','bar',MONTHS,[
+  B('New App MAU',[261241,234333,344562,293506,295688],C.gray),
+  {label:'% ≥20 adview D7',data:[0.299,0.311,0.315,0.297,0.299],type:'line',borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'},
+  {label:'% ≥1 lead D7',data:[0.254,0.270,0.278,0.266,0.260],type:'line',borderColor:C.green,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4],yAxisID:'y1'}
+],{pct:false});
+// Fix dual axis for chartActOverview
+(function(){
+  const existing=Object.values(Chart.instances).find(c=>c.canvas?.id==='chartActOverview');
+  if(existing)existing.destroy();
+  const ctx=document.getElementById('chartActOverview'); if(!ctx)return;
+  new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
+    {label:'New App MAU',data:[261241,234333,344562,293506,295688],backgroundColor:C.teal+'55',borderColor:C.teal,borderWidth:1,borderRadius:4,yAxisID:'y'},
+    {label:'% ≥20 adview D7',data:[0.299,0.311,0.315,0.297,0.299],type:'line',borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'},
+    {label:'% ≥1 lead D7',data:[0.254,0.270,0.278,0.266,0.260],type:'line',borderColor:C.green,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4],yAxisID:'y1'}
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${(v/1000).toFixed(0)}K`;
+    }}}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
+      y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v/1000).toFixed(0)+'K'},position:'left'},
+      y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.45}
+    }}});
+})();
+makeChart('chartActMonthCh1','bar',MONTHS,[B('Direct',[43962,39295,64746,49572,48310],C.blue),B('Organic Search',[16446,18812,18821,15040,15501],C.green),B('Growth (P+D+CRM)',[15369,12195,21830,20354,22238],C.orange)]);
+makeChart('chartActMonthCh2','bar',MONTHS,[B('Direct',[35891,32349,54007,42636,40994],C.blue),B('Organic Search',[14556,17170,17815,14117,13875],C.green),B('Growth (P+D+CRM)',[13406,10980,20461,18888,19561],C.orange)]);
+makeChart('chartActDailyCh1','bar',MONTHS,[B('Direct',[1418,1403,2089,1652,1558],C.blue),B('Organic Search',[531,672,607,501,500],C.green),B('Growth (P+D+CRM)',[496,436,704,678,717],C.orange)]);
+makeChart('chartActDailyCh2','bar',MONTHS,[B('Direct',[1158,1155,1742,1421,1323],C.blue),B('Organic Search',[470,613,575,471,448],C.green),B('Growth (P+D+CRM)',[433,392,659,630,631],C.orange)]);
+
+
+
+makeChart('chartRetComparison','bar',['D1','D7','M1'],[B('Total User (N/A for May)',[null,null,null],C.gray),B('App User',[0.493,0.327,null],C.blue),B('NURR (New)',[0.361,0.117,null],C.orange)],{pct:true});
+makeChart('chartNURRD1Ch','line',MONTHS,[L('Total',[0.361,0.361,0.379,0.371,0.361],C.blue),L('Direct',[0.368,0.367,0.385,0.379,0.347],C.green),L('Organic Search',[0.375,0.374,0.389,0.373,0.404],C.orange),L('Growth (P+D+CRM)',[0.371,0.361,0.387,0.375,0.358],C.purple)],{pct:true});
+makeChart('chartNURRD7Ch','line',MONTHS,[L('Total',[0.145,0.148,0.157,0.149,0.117],C.blue),L('Direct',[0.149,0.153,0.163,0.154,0.115],C.green),L('Organic Search',[0.153,0.158,0.165,0.155,0.133],C.orange),L('Growth (P+D+CRM)',[0.151,0.148,0.164,0.159,0.113],C.purple)],{pct:true});
+makeChart('chartNURRM1Ch','line',MONTHS,[L('Total',[0.068,0.070,0.073,0.070,null],C.blue),L('Direct',[0.069,0.072,0.076,0.072,null],C.green),L('Organic Search',[0.071,0.074,0.077,0.072,null],C.orange),L('Growth (P+D+CRM)',[0.070,0.069,0.076,0.074,null],C.purple)],{pct:true});
+makeChart('chartNURRFunnel','bar',['Direct','Organic Search','Growth (P+D+CRM)','Total'],[B('NURR D1',[0.347,0.404,0.358,0.361],C.blue),B('NURR D7',[0.115,0.133,0.113,0.117],C.orange),B('NURR M1',[null,null,null,null],C.green)],{pct:true});
+
+// S5: Growth Channel charts
+// G5 Overview charts - maintainAspectRatio:false for crisp rendering
+(function(){
+  const ctx=document.getElementById('chartG5Overview'); if(!ctx)return;
+  new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
+    B('New App Users',[54439,41702,77942,75796,80424],C.gray),
+    B('Activated ≥20 adview D7',[15369,12195,21830,20354,22238],C.blue),
+    B('Activated ≥1 lead D7',[13406,10980,20461,18888,19561],C.green)
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:12}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${(c.parsed.y/1000).toFixed(0)}K`}}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:12}}},
+      y:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},callback:v=>(v/1000).toFixed(0)+'K'}}}}});
+})();
+makeChart('chartG5Acq','bar',MONTHS,[
+  B('New App Users (Growth)',[54439,41702,77942,75796],C.blue),
+  {label:'% of Total',data:[0.208,0.178,0.226,0.258],type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
+],{pct:false});
+// Fix chartG5Acq to use dual axis
+(function(){
+  const existing = Object.values(Chart.instances).find(c=>c.canvas&&c.canvas.id==='chartG5Acq');
+  if(existing) existing.destroy();
+  const ctx = document.getElementById('chartG5Acq'); if(!ctx) return;
+  new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
+    {label:'New App Users (Growth)',data:[54439,41702,77942,75796,80424],backgroundColor:C.blue+'cc',borderColor:C.blue,borderWidth:1,borderRadius:4,yAxisID:'y'},
+    {label:'% of Total New Users',data:[0.208,0.178,0.226,0.258,0.272],type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${(v/1000).toFixed(0)}K`;}}}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
+      y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v/1000).toFixed(0)+'K'},position:'left'},
+      y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.4}
+    }}});
+})();
+// chartG5Act: combo — bars = monthly activated adview/lead, lines = activation rates
+(function(){
+  const existing=Object.values(Chart.instances).find(c=>c.canvas?.id==='chartG5Act');
+  if(existing)existing.destroy();
+  const ctx=document.getElementById('chartG5Act'); if(!ctx)return;
+  new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
+    {label:'Monthly Activated ≥20 adview D7',data:[15369,12195,21830,20354,22238],backgroundColor:C.blue+'cc',borderColor:C.blue,borderWidth:1,borderRadius:4,yAxisID:'y'},
+    {label:'Monthly Activated ≥1 lead D7',data:[13406,10980,20461,18888,19561],backgroundColor:C.green+'cc',borderColor:C.green,borderWidth:1,borderRadius:4,yAxisID:'y'},
+    {label:'Activation rate (≥20 adview D7)',data:[0.282,0.292,0.280,0.269,0.277],type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'},
+    {label:'Activation rate (≥1 lead D7)',data:[0.246,0.263,0.263,0.249,0.243],type:'line',borderColor:C.red,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4],yAxisID:'y1'}
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${(v/1000).toFixed(0)}K`;}}}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
+      y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v/1000).toFixed(0)+'K'},position:'left'},
+      y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.40}
+    }}});
+})();
+makeChart('chartG5Ret','line',MONTHS,[
+  {label:'Growth NURR D1',data:[0.371,0.361,0.387,0.375,0.358],borderColor:C.blue,backgroundColor:C.blue+'22',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
+  L('Total NURR D1',[0.361,0.361,0.379,0.371,0.361],C.blue,true),
+  {label:'Growth NURR M1',data:[0.070,0.069,0.076,0.074,null],borderColor:C.green,backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
+  L('Total NURR M1',[0.068,0.070,0.073,0.070,null],C.green,true)
+],{pct:true});
+
+// S5 Cost charts
+(function(){
+  const ctx=document.getElementById('chartG5Cost'); if(!ctx)return;
+  new Chart(ctx,{type:'line',data:{labels:MONTHS,datasets:[
+    L('CPA',[8845,7366,5311,5672,6481],C.blue),
+    L('CAA',[31331,25190,18960,21123,23434],C.orange),
+    L('CRR D1',[23842,20406,13720,15124,18099],C.green),
+    L('CRR D7',[58581,49770,32375,35669,57343],C.purple),
+    L('CRR M1',[126356,106782,69859,76643,null],C.red)
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:12}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y?.toLocaleString('en')}₫`}}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:12}}},
+      y:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v}}}}});
+})();
+(function(){
+  const ctx=document.getElementById('chartG5CostVsUsers'); if(!ctx)return;
+  const allLabels=[...MONTHS,'Jun 2026*','Jul 2026*','Aug 2026*','Sep 2026*','Oct 2026*','Nov 2026*','Dec 2026*'];
+  new Chart(ctx,{type:'bar',data:{labels:allLabels,datasets:[
+    {label:'Monthly Cost (VND)',data:[481535327,307196146,413829723,429898910,521127006,780000000,1000000000,1310000000,1360000000,1310000000,1160000000,1070000000],backgroundColor:[...Array(5).fill(C.purple+'cc'),...Array(7).fill(C.purple+'44')],borderColor:[...Array(5).fill(C.purple),...Array(7).fill(C.purple+'88')],borderWidth:1,borderRadius:4,yAxisID:'y'},
+    {label:'New Users (actual)',data:[54439,41702,77942,75796,80424,null,null,null,null,null,null,null],type:'line',borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:12}}},tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v/1000).toFixed(0)}K`;return ` ${c.dataset.label}: ${(v/1e6).toFixed(0)}M ₫`;}}}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:11},maxRotation:45}},
+      y:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},callback:v=>(v/1e6).toFixed(0)+'M'},position:'left'},
+      y1:{grid:{display:false},ticks:{font:{size:11},callback:v=>(v/1000).toFixed(0)+'K'},position:'right'}
+    }}});
+})();
+makeChart('chartG5UnitEcon','bar',['CPA\n(cost/new user)','CAA\n(cost/activated)','CRR D1\n(cost/retained D1)','CRR D7\n(cost/retained D7)'],[
+  B('Jan',[8845,31331,23842,58581],C.gray),
+  B('Feb',[7366,25190,20406,49770],C.blue),
+  B('Mar',[5311,18960,13720,32375],C.green),
+  B('Apr',[5672,21123,15124,35669],C.orange),
+  B('May',[6481,23434,18099,57343],C.purple)
+]);
+
+// DATA TAB SWITCHER
+function switchTab(g,idx){
+  document.querySelectorAll(`#tabs-${g} .tab`).forEach((t,i)=>t.classList.toggle('active',i===idx));
+  document.querySelectorAll(`[id^="${g}-"]`).forEach((c,i)=>c.classList.toggle('active',i===idx));
+}
+
+function selectExecMonth(m) {
+  const months = ['jan','feb','mar','apr','may'];
+  const colors = {jan:'#4361ee',feb:'#ef4444',mar:'#10b981',apr:'#f59e0b',may:'#f59e0b'};
+  // Hide all cards
+  months.forEach(mn => {
+    const card = document.getElementById('exec-'+mn);
+    if(card) card.style.display = 'none';
+  });
+  // Show selected
+  const sel = document.getElementById('exec-'+m);
+  if(sel) sel.style.display = 'block';
+  // Update tab styles
+  document.querySelectorAll('#exec-tabs button').forEach(btn => {
+    const bm = btn.getAttribute('data-m');
+    if(bm === m) {
+      btn.style.background = bm==='may' ? '#f59e0b' : colors[bm];
+      btn.style.borderColor = bm==='may' ? '#f59e0b' : colors[bm];
+      btn.style.color = bm==='may' ? '#1a1a2e' : 'white';
+      btn.style.fontWeight = '700';
+    } else {
+      btn.style.background = 'white';
+      btn.style.borderColor = '#e5e7eb';
+      btn.style.color = '#6b7280';
+      btn.style.fontWeight = '500';
+    }
+  });
+}
+</script>
+</body>
+</html>
