@@ -18,19 +18,21 @@ jobs:
         with:
           python-version: '3.11'
 
-      - run: pip install google-cloud-bigquery
+      - run: pip install google-cloud-bigquery google-auth
 
-      - uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+      - name: Setup GCP credentials
+        run: |
+          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > /tmp/gcp-creds.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-creds.json" >> $GITHUB_ENV
 
       - run: python scripts/update_dashboard.py
 
-      - run: |
+      - name: Commit and push
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data.json
-          git diff --cached --quiet && echo "No changes" || (
+          git diff --cached --quiet && echo "No changes to commit" || (
             git commit -m "Auto update $(date +'%d/%m/%Y')"
             git push
           )
