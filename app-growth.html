@@ -102,6 +102,7 @@ tr.sep td { border-top: 2px solid #c7d2fe; }
 
 /* GRID */
 .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.charts-grid > * { min-width: 0; overflow: hidden; }
 .chart-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 .chart-title { font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
 canvas { max-height: 320px; }
@@ -211,29 +212,32 @@ canvas { max-height: 320px; }
     <div class="kpi-card"><div class="kpi-label">New App MAU (login)</div><div class="kpi-value">197K</div><div class="kpi-sub">May 2026* | 66.5% login rate</div><div class="kpi-delta down">▼ vs Apr: −12K (−5.7%)</div></div>
   </div>
 
-  <div class="charts-grid">
-    <div class="card">
-      <div class="card-title">Monthly Metrics</div>
-      <table>
-        <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
-        <tbody>
-          <tr class="total-row"><td>Total App MAU (Android+iOS)</td><td>1,394,597</td><td>1,296,533</td><td>1,551,037</td><td>1,472,750</td><td class="apr">1,489,715</td></tr>
-          <tr><td>↳ Avg Daily DAU</td><td>225,026</td><td>204,524</td><td>252,967</td><td>240,367</td><td class="apr">235,047</td></tr>
-          <tr><td>↳ App MAU (login)</td><td>1,030,263</td><td>1,011,227</td><td>1,248,085</td><td>1,204,341</td><td class="apr">1,211,386</td></tr>
-          <tr><td>↳ % login / Total App MAU</td><td>73.9%</td><td>78.0%</td><td>80.5%</td><td>81.8%</td><td class="apr">81.3%</td></tr>
-          <tr><td>% App MAU / Total Chotot</td><td>22.3%</td><td>28.1%</td><td>21.8%</td><td>24.5%</td><td class="apr">24.8%</td></tr>
-          <tr class="sep"><td>New App MAU</td><td>261,241</td><td>234,333</td><td>344,562</td><td>293,506</td><td class="apr">295,688</td></tr>
-          <tr><td>↳ Avg Daily New DAU</td><td>8,429</td><td>8,370</td><td>11,116</td><td>9,785</td><td class="apr">9,538</td></tr>
-          <tr><td>↳ New App MAU (login)</td><td>120,641</td><td>151,255</td><td>246,121</td><td>209,296</td><td class="apr">196,680</td></tr>
-          <tr><td>↳ % login / New App MAU</td><td>46.2%</td><td>64.5%</td><td>71.4%</td><td>71.3%</td><td class="apr">66.5%</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="chart-card"><div class="chart-title">App MAU = Returning + New App MAU | % New line</div><canvas id="chartOverviewMAU"></canvas></div>
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-title">App MAU = Returning + New App MAU | % New line</div>
+    <div style="position:relative;height:280px"><canvas id="chartOverviewMAU"></canvas></div>
   </div>
   <div class="charts-grid">
-    <div class="chart-card"><div class="chart-title">App MAU = Login + Non-login | Login Rate % line</div><canvas id="chartLoginRate"></canvas></div>
-    <div class="chart-card"><div class="chart-title">Total Chotot MAU = Web/Other + App MAU</div><canvas id="chartCTMAU"></canvas></div>
+    <div class="chart-card"><div class="chart-title">App MAU = Login + Non-login | Login Rate % line</div><div style="position:relative;height:280px"><canvas id="chartLoginRate"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Total Chotot MAU = Web/Other + App MAU</div><div style="position:relative;height:280px"><canvas id="chartCTMAU"></canvas></div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Monthly Metrics</div>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+      <tbody>
+        <tr class="total-row"><td>Total App MAU (Android+iOS)</td><td>1,394,597</td><td>1,296,533</td><td>1,551,037</td><td>1,472,750</td><td class="apr">1,489,715</td></tr>
+        <tr><td>↳ Avg Daily DAU</td><td>225,026</td><td>204,524</td><td>252,967</td><td>240,367</td><td class="apr">235,047</td></tr>
+        <tr><td>↳ App MAU (login)</td><td>1,030,263</td><td>1,011,227</td><td>1,248,085</td><td>1,204,341</td><td class="apr">1,211,386</td></tr>
+        <tr><td>↳ % login / Total App MAU</td><td>73.9%</td><td>78.0%</td><td>80.5%</td><td>81.8%</td><td class="apr">81.3%</td></tr>
+        <tr><td>% App MAU / Total Chotot</td><td>22.3%</td><td>28.1%</td><td>21.8%</td><td>24.5%</td><td class="apr">24.8%</td></tr>
+        <tr class="sep"><td>New App MAU</td><td>261,241</td><td>234,333</td><td>344,562</td><td>293,506</td><td class="apr">295,688</td></tr>
+        <tr><td>↳ Avg Daily New DAU</td><td>8,429</td><td>8,370</td><td>11,116</td><td>9,785</td><td class="apr">9,538</td></tr>
+        <tr><td>↳ New App MAU (login)</td><td>120,641</td><td>151,255</td><td>246,121</td><td>209,296</td><td class="apr">196,680</td></tr>
+        <tr><td>↳ % login / New App MAU</td><td>46.2%</td><td>64.5%</td><td>71.4%</td><td>71.3%</td><td class="apr">66.5%</td></tr>
+      </tbody>
+    </table>
+    </div>
   </div>
 </div>
 
@@ -253,56 +257,65 @@ canvas { max-height: 320px; }
   </div>
 
   <div class="tab-content active" id="new-0">
-    <div class="charts-grid">
-      <div class="card">
-        <div class="card-title">New App MAU & Daily New DAU — Total</div>
-        <table>
-          <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
-          <tbody>
-            <tr class="total-row"><td>New App MAU</td><td>261,241</td><td>234,333</td><td>344,562</td><td>293,506</td><td class="apr">295,688</td></tr>
-            <tr><td>Avg Daily New DAU</td><td>8,429</td><td>8,370</td><td>11,116</td><td>9,785</td><td class="apr">9,538</td></tr>
-          </tbody>
-        </table>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-title">New App MAU Trend</div>
+      <div style="position:relative;height:280px"><canvas id="chartNewOverview"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">New App MAU & Daily New DAU — Total</div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+        <tbody>
+          <tr class="total-row"><td>New App MAU</td><td>261,241</td><td>234,333</td><td>344,562</td><td>293,506</td><td class="apr">295,688</td></tr>
+          <tr><td>Avg Daily New DAU</td><td>8,429</td><td>8,370</td><td>11,116</td><td>9,785</td><td class="apr">9,538</td></tr>
+        </tbody>
+      </table>
       </div>
-      <div class="chart-card"><div class="chart-title">New App MAU Trend</div><canvas id="chartNewOverview"></canvas></div>
     </div>
   </div>
 
   <div class="tab-content" id="new-1">
-    <div class="charts-grid">
-      <div class="card">
-        <div class="card-title">New App MAU by Channel</div>
-        <table>
-          <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
-          <tbody>
-            <tr class="total-row"><td>Total</td><td>261,241</td><td>234,333</td><td>344,562</td><td>293,506</td><td class="apr">295,688</td></tr>
-            <tr><td>Direct</td><td>142,590</td><td>122,781</td><td>192,791</td><td>157,824</td><td class="apr">154,320</td></tr>
-            <tr><td>Organic Search</td><td>55,700</td><td>61,101</td><td>64,173</td><td>53,038</td><td class="apr">52,992</td></tr>
-            <tr><td>Growth (Paid+Display+CRM)</td><td>54,439</td><td>41,702</td><td>77,942</td><td>75,796</td><td class="apr">80,424</td></tr>
-            <tr><td>(Other)</td><td>8,511</td><td>8,749</td><td>9,656</td><td>6,848</td><td class="apr">7,950</td></tr>
-          </tbody>
-        </table>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-title">New App MAU by Channel</div>
+      <div style="position:relative;height:280px"><canvas id="chartNewChannel"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">New App MAU by Channel</div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+        <tbody>
+          <tr class="total-row"><td>Total</td><td>261,241</td><td>234,333</td><td>344,562</td><td>293,506</td><td class="apr">295,688</td></tr>
+          <tr><td>Direct</td><td>142,590</td><td>122,781</td><td>192,791</td><td>157,824</td><td class="apr">154,320</td></tr>
+          <tr><td>Organic Search</td><td>55,700</td><td>61,101</td><td>64,173</td><td>53,038</td><td class="apr">52,992</td></tr>
+          <tr><td>Growth (Paid+Display+CRM)</td><td>54,439</td><td>41,702</td><td>77,942</td><td>75,796</td><td class="apr">80,424</td></tr>
+          <tr><td>(Other)</td><td>8,511</td><td>8,749</td><td>9,656</td><td>6,848</td><td class="apr">7,950</td></tr>
+        </tbody>
+      </table>
       </div>
-      <div class="chart-card"><div class="chart-title">New App MAU by Channel</div><canvas id="chartNewChannel"></canvas></div>
     </div>
   </div>
 
   <div class="tab-content" id="new-2">
-    <div class="charts-grid">
-      <div class="card">
-        <div class="card-title">Avg Daily New DAU by Channel</div>
-        <table>
-          <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
-          <tbody>
-            <tr class="total-row"><td>Total</td><td>8,429</td><td>8,370</td><td>11,116</td><td>9,785</td><td class="apr">9,538</td></tr>
-            <tr><td>Direct</td><td>4,601</td><td>4,386</td><td>6,220</td><td>5,263</td><td class="apr">—</td></tr>
-            <tr><td>Organic Search</td><td>1,797</td><td>2,182</td><td>2,070</td><td>1,768</td><td class="apr">—</td></tr>
-            <tr><td>Growth (Paid+Display+CRM)</td><td>1,756</td><td>1,489</td><td>2,515</td><td>2,527</td><td class="apr">—</td></tr>
-            <tr><td>(Other)</td><td>275</td><td>313</td><td>311</td><td>228</td><td class="apr">—</td></tr>
-          </tbody>
-        </table>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-title">Avg Daily New DAU by Channel</div>
+      <div style="position:relative;height:280px"><canvas id="chartNewChannelDaily"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Avg Daily New DAU by Channel</div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+        <tbody>
+          <tr class="total-row"><td>Total</td><td>8,429</td><td>8,370</td><td>11,116</td><td>9,785</td><td class="apr">9,538</td></tr>
+          <tr><td>Direct</td><td>4,601</td><td>4,386</td><td>6,220</td><td>5,263</td><td class="apr">4,978</td></tr>
+          <tr><td>Organic Search</td><td>1,797</td><td>2,182</td><td>2,070</td><td>1,768</td><td class="apr">1,709</td></tr>
+          <tr><td>Growth (Paid+Display+CRM)</td><td>1,756</td><td>1,489</td><td>2,515</td><td>2,527</td><td class="apr">2,594</td></tr>
+          <tr><td>(Other)</td><td>275</td><td>313</td><td>311</td><td>228</td><td class="apr">256</td></tr>
+        </tbody>
+      </table>
       </div>
-      <div class="chart-card"><div class="chart-title">Avg Daily New DAU by Channel</div><canvas id="chartNewChannelDaily"></canvas></div>
     </div>
   </div>
 </div>
@@ -323,30 +336,38 @@ canvas { max-height: 320px; }
   </div>
 
   <div class="tab-content active" id="act-0">
-    <div class="charts-grid">
-      <div class="card">
-        <div class="card-title">Monthly & Daily Activated — Total</div>
-        <table>
-          <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
-          <tbody>
-            <tr><td>Monthly Activated <span class="tag tag-adview">≥20 adview D7</span></td><td>78,119</td><td>72,962</td><td>108,592</td><td>87,006</td><td class="apr">88,399</td></tr>
-            <tr><td>Monthly Activated <span class="tag tag-lead">≥1 lead D7</span></td><td>66,422</td><td>63,191</td><td>95,807</td><td>77,935</td><td class="apr">76,894</td></tr>
-            <tr><td>Activation rate <span class="tag tag-adview">≥20 adview D7</span></td><td>29.9%</td><td>31.1%</td><td>31.5%</td><td>29.7%</td><td class="apr">29.9%</td></tr>
-            <tr><td>Activation rate <span class="tag tag-lead">≥1 lead D7</span></td><td>25.4%</td><td>27.0%</td><td>27.8%</td><td>26.6%</td><td class="apr">26.0%</td></tr>
-            <tr class="sep"><td>Daily Activated <span class="tag tag-adview">≥20 adview D7</span></td><td>2,520</td><td>2,606</td><td>3,503</td><td>2,900</td><td class="apr">2,852</td></tr>
-            <tr><td>Daily Activated <span class="tag tag-lead">≥1 lead D7</span></td><td>2,143</td><td>2,257</td><td>3,091</td><td>2,598</td><td class="apr">2,480</td></tr>
-          </tbody>
-        </table>
-        <div class="note">* Tổng 2 điều kiện riêng — Activation rate tính riêng theo từng điều kiện (adview D7 và lead D7).</div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-title">New App MAU & Activation Rate: ≥20 adview D7 vs ≥1 lead D7</div>
+      <div style="position:relative;height:280px"><canvas id="chartActOverview"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Monthly & Daily Activated — Total</div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+        <tbody>
+          <tr><td>Monthly Activated <span class="tag tag-adview">≥20 adview D7</span></td><td>78,119</td><td>72,962</td><td>108,592</td><td>87,006</td><td class="apr">88,399</td></tr>
+          <tr><td>Monthly Activated <span class="tag tag-lead">≥1 lead D7</span></td><td>66,422</td><td>63,191</td><td>95,807</td><td>77,935</td><td class="apr">76,894</td></tr>
+          <tr><td>Activation rate <span class="tag tag-adview">≥20 adview D7</span></td><td>29.9%</td><td>31.1%</td><td>31.5%</td><td>29.7%</td><td class="apr">29.9%</td></tr>
+          <tr><td>Activation rate <span class="tag tag-lead">≥1 lead D7</span></td><td>25.4%</td><td>27.0%</td><td>27.8%</td><td>26.6%</td><td class="apr">26.0%</td></tr>
+          <tr class="sep"><td>Daily Activated <span class="tag tag-adview">≥20 adview D7</span></td><td>2,520</td><td>2,606</td><td>3,503</td><td>2,900</td><td class="apr">2,852</td></tr>
+          <tr><td>Daily Activated <span class="tag tag-lead">≥1 lead D7</span></td><td>2,143</td><td>2,257</td><td>3,091</td><td>2,598</td><td class="apr">2,480</td></tr>
+        </tbody>
+      </table>
       </div>
-      <div class="chart-card"><div class="chart-title">New App MAU & Activation Rate: ≥20 adview D7 vs ≥1 lead D7</div><canvas id="chartActOverview"></canvas></div>
+      <div class="note">* Tổng 2 điều kiện riêng — Activation rate tính riêng theo từng điều kiện (adview D7 và lead D7).</div>
     </div>
   </div>
 
   <div class="tab-content" id="act-1">
+    <div class="charts-grid" style="margin-bottom:16px">
+      <div class="chart-card"><div class="chart-title">Monthly Activated by Channel (≥20 adview)</div><div style="position:relative;height:280px"><canvas id="chartActMonthCh1"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Monthly Activated by Channel (≥1 lead)</div><div style="position:relative;height:280px"><canvas id="chartActMonthCh2"></canvas></div></div>
+    </div>
     <div class="charts-grid">
       <div class="card">
         <div class="card-title">Monthly Activated by Channel — ≥20 adview D7</div>
+        <div style="overflow-x:auto">
         <table>
           <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
           <tbody>
@@ -356,9 +377,11 @@ canvas { max-height: 320px; }
             <tr><td>Growth (Paid+Display+CRM)</td><td>15,369</td><td>12,195</td><td>21,830</td><td>20,354</td><td class="apr">22,238</td></tr>
           </tbody>
         </table>
+        </div>
       </div>
       <div class="card">
         <div class="card-title">Monthly Activated by Channel — ≥1 lead D7</div>
+        <div style="overflow-x:auto">
         <table>
           <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
           <tbody>
@@ -368,18 +391,20 @@ canvas { max-height: 320px; }
             <tr><td>Growth (Paid+Display+CRM)</td><td>13,406</td><td>10,980</td><td>20,461</td><td>18,888</td><td class="apr">19,561</td></tr>
           </tbody>
         </table>
+        </div>
       </div>
-    </div>
-    <div class="charts-grid">
-      <div class="chart-card"><div class="chart-title">Monthly Activated by Channel (≥20 adview)</div><canvas id="chartActMonthCh1"></canvas></div>
-      <div class="chart-card"><div class="chart-title">Monthly Activated by Channel (≥1 lead)</div><canvas id="chartActMonthCh2"></canvas></div>
     </div>
   </div>
 
   <div class="tab-content" id="act-2">
+    <div class="charts-grid" style="margin-bottom:16px">
+      <div class="chart-card"><div class="chart-title">Daily Activated by Channel (≥20 adview)</div><div style="position:relative;height:280px"><canvas id="chartActDailyCh1"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Daily Activated by Channel (≥1 lead)</div><div style="position:relative;height:280px"><canvas id="chartActDailyCh2"></canvas></div></div>
+    </div>
     <div class="charts-grid">
       <div class="card">
         <div class="card-title">Daily Activated by Channel — ≥20 adview D7</div>
+        <div style="overflow-x:auto">
         <table>
           <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
           <tbody>
@@ -389,9 +414,11 @@ canvas { max-height: 320px; }
             <tr><td>Growth (Paid+Display+CRM)</td><td>496</td><td>436</td><td>704</td><td>678</td><td class="apr">717</td></tr>
           </tbody>
         </table>
+        </div>
       </div>
       <div class="card">
         <div class="card-title">Daily Activated by Channel — ≥1 lead D7</div>
+        <div style="overflow-x:auto">
         <table>
           <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
           <tbody>
@@ -401,11 +428,8 @@ canvas { max-height: 320px; }
             <tr><td>Growth (Paid+Display+CRM)</td><td>433</td><td>392</td><td>659</td><td>630</td><td class="apr">631</td></tr>
           </tbody>
         </table>
+        </div>
       </div>
-    </div>
-    <div class="charts-grid">
-      <div class="chart-card"><div class="chart-title">Daily Activated by Channel (≥20 adview)</div><canvas id="chartActDailyCh1"></canvas></div>
-      <div class="chart-card"><div class="chart-title">Daily Activated by Channel (≥1 lead)</div><canvas id="chartActDailyCh2"></canvas></div>
     </div>
   </div>
 </div>
@@ -421,80 +445,64 @@ canvas { max-height: 320px; }
   <div class="tabs" id="tabs-ret">
     <button class="tab active" onclick="switchTab('ret',0)">Overview</button>
     <button class="tab" onclick="switchTab('ret',1)">By Channel — NURR</button>
-    <button class="tab" onclick="switchTab('ret',2)">NURR Snapshot May*</button>
   </div>
 
   <div class="tab-content active" id="ret-0">
-    <div class="charts-grid">
-      <div class="card">
-        <div class="card-title">Total User & App User Retention — D1 / D7 / M1</div>
-        <table>
-          <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
-          <tbody>
-            <tr><td>Total User Retention D1</td><td>52.4%</td><td>52.6%</td><td>52.0%</td><td>51.7%</td><td class="apr">—</td></tr>
-            <tr><td>Total User Retention D7</td><td>43.9%</td><td>44.1%</td><td>43.6%</td><td>43.4%</td><td class="apr">—</td></tr>
-            <tr><td>Total User Retention M1</td><td>65.4%</td><td>65.2%</td><td>65.2%</td><td>64.9%</td><td class="apr">—</td></tr>
-            <tr class="sep"><td>App User Retention D1</td><td>55.0%</td><td>55.2%</td><td>54.5%</td><td class="ret-drop">51.0% ▼</td><td class="apr">49.3%</td></tr>
-            <tr><td>App User Retention D7</td><td>46.0%</td><td>46.4%</td><td>45.8%</td><td class="ret-drop">42.2% ▼</td><td class="apr">32.7%</td></tr>
-            <tr class="total-row"><td>App User Retention M1</td><td>68.2%</td><td>67.9%</td><td>68.1%</td><td class="ret-drop">63.8% ▼▼</td><td class="apr">—</td></tr>
-            <tr class="sep"><td>NURR D1 (New User)</td><td>36.1%</td><td>36.1%</td><td>37.9%</td><td>37.1%</td><td class="apr">36.1%</td></tr>
-            <tr><td>NURR D7 (New User)</td><td>14.5%</td><td>14.8%</td><td>15.7%</td><td>14.9%</td><td class="apr">11.7%</td></tr>
-            <tr><td>NURR M1 (New User)</td><td>6.8%</td><td>7.0%</td><td>7.3%</td><td>7.0%</td><td class="apr">—</td></tr>
-          </tbody>
-        </table>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-title">App User &amp; Total User Retention Trend (D1 / D7 / M1)</div>
+      <div style="position:relative;height:280px"><canvas id="chartRetComparison"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Total User & App User Retention — D1 / D7 / M1</div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+        <tbody>
+          <tr><td>Total User Retention D1</td><td>52.4%</td><td>52.6%</td><td>52.0%</td><td>51.7%</td><td class="apr">—</td></tr>
+          <tr><td>Total User Retention D7</td><td>43.9%</td><td>44.1%</td><td>43.6%</td><td>43.4%</td><td class="apr">—</td></tr>
+          <tr><td>Total User Retention M1</td><td>65.4%</td><td>65.2%</td><td>65.2%</td><td>64.9%</td><td class="apr">—</td></tr>
+          <tr class="sep"><td>App User Retention D1</td><td>55.0%</td><td>55.2%</td><td>54.5%</td><td class="ret-drop">51.0% ▼</td><td class="apr">49.3%</td></tr>
+          <tr><td>App User Retention D7</td><td>46.0%</td><td>46.4%</td><td>45.8%</td><td class="ret-drop">42.2% ▼</td><td class="apr">32.7%</td></tr>
+          <tr class="total-row"><td>App User Retention M1</td><td>68.2%</td><td>67.9%</td><td>68.1%</td><td class="ret-drop">63.8% ▼▼</td><td class="apr">—</td></tr>
+          <tr class="sep"><td>NURR D1 (New User)</td><td>36.1%</td><td>36.1%</td><td>37.9%</td><td>37.1%</td><td class="apr">36.1%</td></tr>
+          <tr><td>NURR D7 (New User)</td><td>14.5%</td><td>14.8%</td><td>15.7%</td><td>14.9%</td><td class="apr">11.7%</td></tr>
+          <tr><td>NURR M1 (New User)</td><td>6.8%</td><td>7.0%</td><td>7.3%</td><td>7.0%</td><td class="apr">—</td></tr>
+        </tbody>
+      </table>
       </div>
-      <div class="chart-card"><div class="chart-title">May 2026* — Retention Snapshot All Cohorts (D1 / D7 / M1)</div><canvas id="chartRetComparison"></canvas></div>
     </div>
   </div>
 
   <div class="tab-content" id="ret-1">
-    <div class="charts-grid">
-      <div class="card">
-        <div class="card-title">NURR by Channel — Monthly Avg</div>
-        <table>
-          <thead><tr><th>Channel</th><th class="left">Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
-          <tbody>
-            <tr class="total-row"><td rowspan="3">Total</td><td class="left">NURR D1</td><td>36.1%</td><td>36.1%</td><td>37.9%</td><td>37.1%</td><td class="apr">36.1%</td></tr>
-            <tr class="total-row"><td class="left">NURR D7</td><td>14.5%</td><td>14.8%</td><td>15.7%</td><td>14.9%</td><td class="apr">11.7%</td></tr>
-            <tr class="total-row"><td class="left">NURR M1</td><td>6.8%</td><td>7.0%</td><td>7.3%</td><td>7.0%</td><td class="apr">—</td></tr>
-            <tr><td rowspan="3">Direct</td><td class="left">NURR D1</td><td>36.8%</td><td>36.7%</td><td>38.5%</td><td>37.9%</td><td class="apr">34.7%</td></tr>
-            <tr><td class="left">NURR D7</td><td>14.9%</td><td>15.3%</td><td>16.3%</td><td>15.4%</td><td class="apr">11.5%</td></tr>
-            <tr><td class="left">NURR M1</td><td>6.9%</td><td>7.2%</td><td>7.6%</td><td>7.2%</td><td class="apr">—</td></tr>
-            <tr><td rowspan="3">Organic Search</td><td class="left">NURR D1</td><td>37.5%</td><td>37.4%</td><td>38.9%</td><td>37.3%</td><td class="apr">40.4%</td></tr>
-            <tr><td class="left">NURR D7</td><td>15.3%</td><td>15.8%</td><td>16.5%</td><td>15.5%</td><td class="apr">13.3%</td></tr>
-            <tr><td class="left">NURR M1</td><td>7.1%</td><td>7.4%</td><td>7.7%</td><td>7.2%</td><td class="apr">—</td></tr>
-            <tr><td rowspan="3">Growth (P+D+CRM)</td><td class="left">NURR D1</td><td>37.1%</td><td>36.1%</td><td>38.7%</td><td>37.5%</td><td class="apr">35.8%</td></tr>
-            <tr><td class="left">NURR D7</td><td>15.1%</td><td>14.8%</td><td>16.4%</td><td>15.9%</td><td class="apr">11.3%</td></tr>
-            <tr><td class="left">NURR M1</td><td>7.0%</td><td>6.9%</td><td>7.6%</td><td>7.4%</td><td class="apr">—</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="chart-card"><div class="chart-title">NURR D1 by Channel</div><canvas id="chartNURRD1Ch"></canvas></div>
+    <div class="charts-grid" style="margin-bottom:16px">
+      <div class="chart-card"><div class="chart-title">NURR D1 by Channel</div><div style="position:relative;height:280px"><canvas id="chartNURRD1Ch"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">NURR D7 by Channel</div><div style="position:relative;height:280px"><canvas id="chartNURRD7Ch"></canvas></div></div>
     </div>
-    <div class="charts-grid">
-      <div class="chart-card"><div class="chart-title">NURR D7 by Channel</div><canvas id="chartNURRD7Ch"></canvas></div>
-      <div class="chart-card"><div class="chart-title">NURR M1 by Channel</div><canvas id="chartNURRM1Ch"></canvas></div>
+    <div class="chart-card" style="margin-bottom:16px"><div class="chart-title">NURR M1 by Channel (full width)</div><div style="position:relative;height:280px"><canvas id="chartNURRM1Ch"></canvas></div></div>
+    <div class="card">
+      <div class="card-title">NURR by Channel — Monthly Avg</div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Channel</th><th class="left">Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
+        <tbody>
+          <tr class="total-row"><td rowspan="3">Total</td><td class="left">NURR D1</td><td>36.1%</td><td>36.1%</td><td>37.9%</td><td>37.1%</td><td class="apr">36.1%</td></tr>
+          <tr class="total-row"><td class="left">NURR D7</td><td>14.5%</td><td>14.8%</td><td>15.7%</td><td>14.9%</td><td class="apr">11.7%</td></tr>
+          <tr class="total-row"><td class="left">NURR M1</td><td>6.8%</td><td>7.0%</td><td>7.3%</td><td>7.0%</td><td class="apr">—</td></tr>
+          <tr><td rowspan="3">Direct</td><td class="left">NURR D1</td><td>36.8%</td><td>36.7%</td><td>38.5%</td><td>37.9%</td><td class="apr">34.7%</td></tr>
+          <tr><td class="left">NURR D7</td><td>14.9%</td><td>15.3%</td><td>16.3%</td><td>15.4%</td><td class="apr">11.5%</td></tr>
+          <tr><td class="left">NURR M1</td><td>6.9%</td><td>7.2%</td><td>7.6%</td><td>7.2%</td><td class="apr">—</td></tr>
+          <tr><td rowspan="3">Organic Search</td><td class="left">NURR D1</td><td>37.5%</td><td>37.4%</td><td>38.9%</td><td>37.3%</td><td class="apr">40.4%</td></tr>
+          <tr><td class="left">NURR D7</td><td>15.3%</td><td>15.8%</td><td>16.5%</td><td>15.5%</td><td class="apr">13.3%</td></tr>
+          <tr><td class="left">NURR M1</td><td>7.1%</td><td>7.4%</td><td>7.7%</td><td>7.2%</td><td class="apr">—</td></tr>
+          <tr><td rowspan="3">Growth (P+D+CRM)</td><td class="left">NURR D1</td><td>37.1%</td><td>36.1%</td><td>38.7%</td><td>37.5%</td><td class="apr">35.8%</td></tr>
+          <tr><td class="left">NURR D7</td><td>15.1%</td><td>14.8%</td><td>16.4%</td><td>15.9%</td><td class="apr">11.3%</td></tr>
+          <tr><td class="left">NURR M1</td><td>7.0%</td><td>6.9%</td><td>7.6%</td><td>7.4%</td><td class="apr">—</td></tr>
+        </tbody>
+      </table>
+      </div>
     </div>
   </div>
 
-  <div class="tab-content" id="ret-2">
-    <div class="charts-grid">
-      <div class="card">
-        <div class="card-title">NURR by Channel — May 2026* Snapshot</div>
-        <table>
-          <thead><tr><th>Channel</th><th>NURR D1</th><th>NURR D7</th><th class="apr">NURR M1</th></tr></thead>
-          <tbody>
-            <tr class="total-row"><td>Total</td><td>36.1%</td><td>11.7%</td><td class="apr">— *</td></tr>
-            <tr><td>Direct</td><td>34.7%</td><td>11.5%</td><td class="apr">— *</td></tr>
-            <tr><td>Organic Search</td><td>40.4%</td><td>13.3%</td><td class="apr">— *</td></tr>
-            <tr><td>Growth (Paid+Display+CRM)</td><td>35.8%</td><td>11.3%</td><td class="apr">— *</td></tr>
-          </tbody>
-        </table>
-        <div class="note">* NURR M1 May 2026 chưa có — partial month cohort chưa đủ 30 ngày để đo | Organic Search D1 cao nhất (40.4%) — intent-based traffic chất lượng cao</div>
-      </div>
-      <div class="chart-card"><div class="chart-title">NURR D1→D7→M1 Funnel by Channel (May*)</div><canvas id="chartNURRFunnel"></canvas></div>
-    </div>
-  </div>
 </div>
 
 <div class="divider"></div>
@@ -935,7 +943,7 @@ const C = {blue:'#4361ee',green:'#10b981',orange:'#f59e0b',purple:'#8b5cf6',red:
 function makeChart(id,type,labels,datasets,opts={}) {
   const ctx=document.getElementById(id); if(!ctx)return;
   new Chart(ctx,{type,data:{labels,datasets},options:{
-    responsive:true,maintainAspectRatio:true,
+    responsive:true,maintainAspectRatio:opts.noAR?false:true,
     plugins:{
       legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
       tooltip:{callbacks:{label:c=>{
@@ -968,7 +976,7 @@ const B=(label,data,color)=>({label,data,backgroundColor:color+'cc',borderColor:
     {label:'Returning App MAU',data:returning,backgroundColor:C.blue+'99',borderColor:C.blue,borderWidth:1,borderRadius:0,stack:'s'},
     {label:'New App MAU',data:newMAU,backgroundColor:C.green+'cc',borderColor:C.green,borderWidth:1,borderRadius:4,stack:'s'},
     {label:'% New / Total',data:pctNew,type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
-  ]},options:{responsive:true,maintainAspectRatio:true,
+  ]},options:{responsive:true,maintainAspectRatio:false,
     plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
       tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${v>=1e6?(v/1e6).toFixed(2)+'M':(v/1000).toFixed(0)+'K'}`;
     }}}},
@@ -988,7 +996,7 @@ const B=(label,data,color)=>({label,data,backgroundColor:color+'cc',borderColor:
     {label:'Non-login MAU',data:nonLogin,backgroundColor:C.gray+'88',borderColor:C.gray,borderWidth:1,borderRadius:0,stack:'s'},
     {label:'Login MAU',data:login,backgroundColor:C.blue+'cc',borderColor:C.blue,borderWidth:1,borderRadius:4,stack:'s'},
     {label:'Login Rate %',data:rate,type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
-  ]},options:{responsive:true,maintainAspectRatio:true,
+  ]},options:{responsive:true,maintainAspectRatio:false,
     plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
       tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${v>=1e6?(v/1e6).toFixed(2)+'M':(v/1000).toFixed(0)+'K'}`;
     }}}},
@@ -1008,7 +1016,7 @@ const B=(label,data,color)=>({label,data,backgroundColor:color+'cc',borderColor:
     {label:'Web/Other MAU',data:webMAU,backgroundColor:C.gray+'88',borderColor:C.gray,borderWidth:1,borderRadius:0,stack:'s'},
     {label:'App MAU',data:appMAU,backgroundColor:C.blue+'cc',borderColor:C.blue,borderWidth:1,borderRadius:4,stack:'s'},
     {label:'% App / Total CT',data:pctApp,type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
-  ]},options:{responsive:true,maintainAspectRatio:true,
+  ]},options:{responsive:true,maintainAspectRatio:false,
     plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
       tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${v>=1e6?(v/1e6).toFixed(2)+'M':(v/1000).toFixed(0)+'K'}`;
     }}}},
@@ -1019,9 +1027,9 @@ const B=(label,data,color)=>({label,data,backgroundColor:color+'cc',borderColor:
 })();
 
 // S2 charts
-makeChart('chartNewOverview','line',MONTHS,[L('New App MAU',[261241,234333,344562,293506,295688],C.blue)]);
-makeChart('chartNewChannel','bar',MONTHS,[B('Direct',[142590,122781,192791,157824,154320],C.blue),B('Organic Search',[55700,61101,64173,53038,52992],C.green),B('Growth (P+D+CRM)',[54439,41702,77942,75796,80424],C.orange),B('(Other)',[8511,8749,9656,6848,7950],C.gray)]);
-makeChart('chartNewChannelDaily','bar',MONTHS,[B('Direct',[4601,4386,6220,5263,null],C.blue),B('Organic Search',[1797,2182,2070,1768,null],C.green),B('Growth (P+D+CRM)',[1756,1489,2515,2527,null],C.orange)]);
+makeChart('chartNewOverview','line',MONTHS,[L('New App MAU',[261241,234333,344562,293506,295688],C.blue)],{noAR:true});
+makeChart('chartNewChannel','bar',MONTHS,[B('Direct',[142590,122781,192791,157824,154320],C.blue),B('Organic Search',[55700,61101,64173,53038,52992],C.green),B('Growth (P+D+CRM)',[54439,41702,77942,75796,80424],C.orange),B('(Other)',[8511,8749,9656,6848,7950],C.gray)],{noAR:true});
+makeChart('chartNewChannelDaily','bar',MONTHS,[B('Direct',[4601,4386,6220,5263,4978],C.blue),B('Organic Search',[1797,2182,2070,1768,1709],C.green),B('Growth (P+D+CRM)',[1756,1489,2515,2527,2594],C.orange)],{noAR:true});
 
 // S3 Activation: Bar = New App MAU, Lines = Activation rate adview & lead
 makeChart('chartActOverview','bar',MONTHS,[
@@ -1038,7 +1046,7 @@ makeChart('chartActOverview','bar',MONTHS,[
     {label:'New App MAU',data:[261241,234333,344562,293506,295688],backgroundColor:C.teal+'55',borderColor:C.teal,borderWidth:1,borderRadius:4,yAxisID:'y'},
     {label:'% ≥20 adview D7',data:[0.299,0.311,0.315,0.297,0.299],type:'line',borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'},
     {label:'% ≥1 lead D7',data:[0.254,0.270,0.278,0.266,0.260],type:'line',borderColor:C.green,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4],yAxisID:'y1'}
-  ]},options:{responsive:true,maintainAspectRatio:true,
+  ]},options:{responsive:true,maintainAspectRatio:false,
     plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
       tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${(v/1000).toFixed(0)}K`;
     }}}},
@@ -1047,18 +1055,35 @@ makeChart('chartActOverview','bar',MONTHS,[
       y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.45}
     }}});
 })();
-makeChart('chartActMonthCh1','bar',MONTHS,[B('Direct',[43962,39295,64746,49572,48310],C.blue),B('Organic Search',[16446,18812,18821,15040,15501],C.green),B('Growth (P+D+CRM)',[15369,12195,21830,20354,22238],C.orange)]);
-makeChart('chartActMonthCh2','bar',MONTHS,[B('Direct',[35891,32349,54007,42636,40994],C.blue),B('Organic Search',[14556,17170,17815,14117,13875],C.green),B('Growth (P+D+CRM)',[13406,10980,20461,18888,19561],C.orange)]);
-makeChart('chartActDailyCh1','bar',MONTHS,[B('Direct',[1418,1403,2089,1652,1558],C.blue),B('Organic Search',[531,672,607,501,500],C.green),B('Growth (P+D+CRM)',[496,436,704,678,717],C.orange)]);
-makeChart('chartActDailyCh2','bar',MONTHS,[B('Direct',[1158,1155,1742,1421,1323],C.blue),B('Organic Search',[470,613,575,471,448],C.green),B('Growth (P+D+CRM)',[433,392,659,630,631],C.orange)]);
+makeChart('chartActMonthCh1','bar',MONTHS,[B('Direct',[43962,39295,64746,49572,48310],C.blue),B('Organic Search',[16446,18812,18821,15040,15501],C.green),B('Growth (P+D+CRM)',[15369,12195,21830,20354,22238],C.orange)],{noAR:true});
+makeChart('chartActMonthCh2','bar',MONTHS,[B('Direct',[35891,32349,54007,42636,40994],C.blue),B('Organic Search',[14556,17170,17815,14117,13875],C.green),B('Growth (P+D+CRM)',[13406,10980,20461,18888,19561],C.orange)],{noAR:true});
+makeChart('chartActDailyCh1','bar',MONTHS,[B('Direct',[1418,1403,2089,1652,1558],C.blue),B('Organic Search',[531,672,607,501,500],C.green),B('Growth (P+D+CRM)',[496,436,704,678,717],C.orange)],{noAR:true});
+makeChart('chartActDailyCh2','bar',MONTHS,[B('Direct',[1158,1155,1742,1421,1323],C.blue),B('Organic Search',[470,613,575,471,448],C.green),B('Growth (P+D+CRM)',[433,392,659,630,631],C.orange)],{noAR:true});
 
 
 
-makeChart('chartRetComparison','bar',['D1','D7','M1'],[B('Total User (N/A for May)',[null,null,null],C.gray),B('App User',[0.493,0.327,null],C.blue),B('NURR (New)',[0.361,0.117,null],C.orange)],{pct:true});
-makeChart('chartNURRD1Ch','line',MONTHS,[L('Total',[0.361,0.361,0.379,0.371,0.361],C.blue),L('Direct',[0.368,0.367,0.385,0.379,0.347],C.green),L('Organic Search',[0.375,0.374,0.389,0.373,0.404],C.orange),L('Growth (P+D+CRM)',[0.371,0.361,0.387,0.375,0.358],C.purple)],{pct:true});
-makeChart('chartNURRD7Ch','line',MONTHS,[L('Total',[0.145,0.148,0.157,0.149,0.117],C.blue),L('Direct',[0.149,0.153,0.163,0.154,0.115],C.green),L('Organic Search',[0.153,0.158,0.165,0.155,0.133],C.orange),L('Growth (P+D+CRM)',[0.151,0.148,0.164,0.159,0.113],C.purple)],{pct:true});
-makeChart('chartNURRM1Ch','line',MONTHS,[L('Total',[0.068,0.070,0.073,0.070,null],C.blue),L('Direct',[0.069,0.072,0.076,0.072,null],C.green),L('Organic Search',[0.071,0.074,0.077,0.072,null],C.orange),L('Growth (P+D+CRM)',[0.070,0.069,0.076,0.074,null],C.purple)],{pct:true});
-makeChart('chartNURRFunnel','bar',['Direct','Organic Search','Growth (P+D+CRM)','Total'],[B('NURR D1',[0.347,0.404,0.358,0.361],C.blue),B('NURR D7',[0.115,0.133,0.113,0.117],C.orange),B('NURR M1',[null,null,null,null],C.green)],{pct:true});
+// S4 Ret Overview: line chart across all months
+(function(){
+  const existing=Object.values(Chart.instances).find(c=>c.canvas?.id==='chartRetComparison');
+  if(existing)existing.destroy();
+  const ctx=document.getElementById('chartRetComparison'); if(!ctx)return;
+  new Chart(ctx,{type:'line',data:{labels:MONTHS,datasets:[
+    {label:'App User D1',data:[0.550,0.552,0.545,0.510,0.493],borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2},
+    {label:'App User D7',data:[0.460,0.464,0.458,0.422,0.327],borderColor:C.teal,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2},
+    {label:'App User M1',data:[0.682,0.679,0.681,0.638,null],borderColor:C.purple,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2},
+    {label:'Total User D1',data:[0.524,0.526,0.520,0.517,null],borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4]},
+    {label:'Total User M1',data:[0.654,0.652,0.652,0.649,null],borderColor:C.purple,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4]}
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${(c.parsed.y*100).toFixed(1)}%`}}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
+      y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},min:0.2,max:0.75}
+    }}});
+})();
+makeChart('chartNURRD1Ch','line',MONTHS,[L('Total',[0.361,0.361,0.379,0.371,0.361],C.blue),L('Direct',[0.368,0.367,0.385,0.379,0.347],C.green),L('Organic Search',[0.375,0.374,0.389,0.373,0.404],C.orange),L('Growth (P+D+CRM)',[0.371,0.361,0.387,0.375,0.358],C.purple)],{pct:true,noAR:true});
+makeChart('chartNURRD7Ch','line',MONTHS,[L('Total',[0.145,0.148,0.157,0.149,0.117],C.blue),L('Direct',[0.149,0.153,0.163,0.154,0.115],C.green),L('Organic Search',[0.153,0.158,0.165,0.155,0.133],C.orange),L('Growth (P+D+CRM)',[0.151,0.148,0.164,0.159,0.113],C.purple)],{pct:true,noAR:true});
+makeChart('chartNURRM1Ch','line',MONTHS,[L('Total',[0.068,0.070,0.073,0.070,null],C.blue),L('Direct',[0.069,0.072,0.076,0.072,null],C.green),L('Organic Search',[0.071,0.074,0.077,0.072,null],C.orange),L('Growth (P+D+CRM)',[0.070,0.069,0.076,0.074,null],C.purple)],{pct:true,noAR:true});
+makeChart('chartNURRFunnel','bar',['Direct','Organic Search','Growth (P+D+CRM)','Total'],[B('NURR D1',[0.347,0.404,0.358,0.361],C.blue),B('NURR D7',[0.115,0.133,0.113,0.117],C.orange),B('NURR M1',[null,null,null,null],C.green)],{pct:true,noAR:true});
 
 // S5: Growth Channel charts
 // G5 Overview charts - maintainAspectRatio:false for crisp rendering
