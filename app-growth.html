@@ -928,16 +928,23 @@ function updateS5KPIs(month) {
   document.getElementById('kpi-s5-cost-delta') && (document.getElementById('kpi-s5-cost-delta').textContent = d.dCost, document.getElementById('kpi-s5-cost-delta').className = 'kpi-delta ' + d.costClr);
 }
 
-renderCommentary('s1');
-renderCommentary('s2');
-renderCommentary('s3');
-renderCommentary('s4');
-renderCommentary('s5');
+// ============================================================
+// DATA LOADING
+// ============================================================
+let D = null; // global data object
+
+async function loadDashboardData() {
+  try {
+    const res = await fetch('./data.json?v=' + Date.now());
+    D = await res.json();
+  } catch(e) {
+    console.error('Failed to load data.json:', e);
+  }
+}
 
 // ============================================================
-// CHARTS
+// CHARTS (defined as functions, called after D is loaded)
 // ============================================================
-const MONTHS = ['Jan 2026','Feb 2026','Mar 2026','Apr 2026','May 2026*'];
 const C = {blue:'#4361ee',green:'#10b981',orange:'#f59e0b',purple:'#8b5cf6',red:'#ef4444',gray:'#9ca3af',teal:'#0891b2'};
 
 function makeChart(id,type,labels,datasets,opts={}) {
@@ -961,223 +968,218 @@ function makeChart(id,type,labels,datasets,opts={}) {
   }});
 }
 
-
-
 const L=(label,data,color,dash=false)=>({label,data,borderColor:color,backgroundColor:color+'22',fill:true,tension:0.4,pointRadius:4,borderWidth:2,borderDash:dash?[4,4]:[]});
 const B=(label,data,color)=>({label,data,backgroundColor:color+'cc',borderColor:color,borderWidth:1,borderRadius:4});
 
-// S1 Chart 1: Stacked bar (Returning + New) + % new line
-(function(){
-  const ctx = document.getElementById('chartOverviewMAU'); if(!ctx) return;
-  const returning = [1133356,1062200,1206475,1179244,1194027];
-  const newMAU    = [261241,234333,344562,293506,295688];
-  const pctNew    = [0.187,0.181,0.222,0.199,0.198];
-  new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
-    {label:'Returning App MAU',data:returning,backgroundColor:C.blue+'99',borderColor:C.blue,borderWidth:1,borderRadius:0,stack:'s'},
-    {label:'New App MAU',data:newMAU,backgroundColor:C.green+'cc',borderColor:C.green,borderWidth:1,borderRadius:4,stack:'s'},
-    {label:'% New / Total',data:pctNew,type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
-  ]},options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
-      tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${v>=1e6?(v/1e6).toFixed(2)+'M':(v/1000).toFixed(0)+'K'}`;
-    }}}},
-    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
-      y:{stacked:true,grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':(v/1000).toFixed(0)+'K'},position:'left'},
-      y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.35}
-    }}});
-})();
+function renderAllCharts() {
+  const MONTHS = D.months;
+  const ov = D.overview;
+  const ac = D.acquisition;
+  const act = D.activation;
+  const ret = D.retention;
+  const gc = D.growth_channel;
 
-// S1 Chart 2: Stacked bar (Login + Non-login) + login rate line
-(function(){
-  const ctx = document.getElementById('chartLoginRate'); if(!ctx) return;
-  const login    = [1030263,1011227,1248085,1204341,1211386];
-  const nonLogin = [364334,285306,302952,268409,278329];
-  const rate     = [0.739,0.780,0.805,0.818,0.813];
-  new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
-    {label:'Non-login MAU',data:nonLogin,backgroundColor:C.gray+'88',borderColor:C.gray,borderWidth:1,borderRadius:0,stack:'s'},
-    {label:'Login MAU',data:login,backgroundColor:C.blue+'cc',borderColor:C.blue,borderWidth:1,borderRadius:4,stack:'s'},
-    {label:'Login Rate %',data:rate,type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
-  ]},options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
-      tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${v>=1e6?(v/1e6).toFixed(2)+'M':(v/1000).toFixed(0)+'K'}`;
-    }}}},
-    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
-      y:{stacked:true,grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':(v/1000).toFixed(0)+'K'},position:'left'},
-      y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0.5,max:1.0}
-    }}});
-})();
+  // S1 Chart 1: Stacked bar (Returning + New) + % new line
+  (function(){
+    const ctx = document.getElementById('chartOverviewMAU'); if(!ctx) return;
+    new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
+      {label:'Returning App MAU',data:ov.returning_mau,backgroundColor:C.blue+'99',borderColor:C.blue,borderWidth:1,borderRadius:0,stack:'s'},
+      {label:'New App MAU',data:ov.new_mau,backgroundColor:C.green+'cc',borderColor:C.green,borderWidth:1,borderRadius:4,stack:'s'},
+      {label:'% New / Total',data:ov.pct_new,type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
+    ]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
+        tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${v>=1e6?(v/1e6).toFixed(2)+'M':(v/1000).toFixed(0)+'K'}`;
+      }}}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
+        y:{stacked:true,grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':(v/1000).toFixed(0)+'K'},position:'left'},
+        y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.35}
+      }}});
+  })();
 
-// S1 Chart 3: Stacked bar Total CT MAU (App + Web/Other)
-(function(){
-  const ctx = document.getElementById('chartCTMAU'); if(!ctx) return;
-  const appMAU  = [1394597,1296533,1551037,1472750,1489715];
-  const webMAU  = [4864216,3310531,5564102,4529739,4512951];
-  const pctApp  = [0.223,0.281,0.218,0.245,0.248];
-  new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
-    {label:'Web/Other MAU',data:webMAU,backgroundColor:C.gray+'88',borderColor:C.gray,borderWidth:1,borderRadius:0,stack:'s'},
-    {label:'App MAU',data:appMAU,backgroundColor:C.blue+'cc',borderColor:C.blue,borderWidth:1,borderRadius:4,stack:'s'},
-    {label:'% App / Total CT',data:pctApp,type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
-  ]},options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
-      tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${v>=1e6?(v/1e6).toFixed(2)+'M':(v/1000).toFixed(0)+'K'}`;
-    }}}},
-    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
-      y:{stacked:true,grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':(v/1000).toFixed(0)+'K'},position:'left'},
-      y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.5}
-    }}});
-})();
+  // S1 Chart 2: Stacked bar (Login + Non-login) + login rate line
+  (function(){
+    const ctx = document.getElementById('chartLoginRate'); if(!ctx) return;
+    new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
+      {label:'Non-login MAU',data:ov.mau_nonlogin,backgroundColor:C.gray+'88',borderColor:C.gray,borderWidth:1,borderRadius:0,stack:'s'},
+      {label:'Login MAU',data:ov.mau_login,backgroundColor:C.blue+'cc',borderColor:C.blue,borderWidth:1,borderRadius:4,stack:'s'},
+      {label:'Login Rate %',data:ov.login_rate,type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
+    ]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
+        tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${v>=1e6?(v/1e6).toFixed(2)+'M':(v/1000).toFixed(0)+'K'}`;
+      }}}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
+        y:{stacked:true,grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':(v/1000).toFixed(0)+'K'},position:'left'},
+        y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0.5,max:1.0}
+      }}});
+  })();
 
-// S2 charts
-makeChart('chartNewOverview','line',MONTHS,[L('New App MAU',[261241,234333,344562,293506,295688],C.blue)],{noAR:true});
-makeChart('chartNewChannel','bar',MONTHS,[B('Direct',[142590,122781,192791,157824,154320],C.blue),B('Organic Search',[55700,61101,64173,53038,52992],C.green),B('Growth (P+D+CRM)',[54439,41702,77942,75796,80424],C.orange),B('(Other)',[8511,8749,9656,6848,7950],C.gray)],{noAR:true});
-makeChart('chartNewChannelDaily','bar',MONTHS,[B('Direct',[4601,4386,6220,5263,4978],C.blue),B('Organic Search',[1797,2182,2070,1768,1709],C.green),B('Growth (P+D+CRM)',[1756,1489,2515,2527,2594],C.orange)],{noAR:true});
+  // S1 Chart 3: Stacked bar Total CT MAU (App + Web/Other)
+  (function(){
+    const ctx = document.getElementById('chartCTMAU'); if(!ctx) return;
+    new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
+      {label:'Web/Other MAU',data:ov.web_other_mau,backgroundColor:C.gray+'88',borderColor:C.gray,borderWidth:1,borderRadius:0,stack:'s'},
+      {label:'App MAU',data:ov.mau_app,backgroundColor:C.blue+'cc',borderColor:C.blue,borderWidth:1,borderRadius:4,stack:'s'},
+      {label:'% App / Total CT',data:ov.pct_app_ct,type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
+    ]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
+        tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${v>=1e6?(v/1e6).toFixed(2)+'M':(v/1000).toFixed(0)+'K'}`;
+      }}}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
+        y:{stacked:true,grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':(v/1000).toFixed(0)+'K'},position:'left'},
+        y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.5}
+      }}});
+  })();
 
-// S3 Activation: Bar = New App MAU, Lines = Activation rate adview & lead
-makeChart('chartActOverview','bar',MONTHS,[
-  B('New App MAU',[261241,234333,344562,293506,295688],C.gray),
-  {label:'% ≥20 adview D7',data:[0.299,0.311,0.315,0.297,0.299],type:'line',borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'},
-  {label:'% ≥1 lead D7',data:[0.254,0.270,0.278,0.266,0.260],type:'line',borderColor:C.green,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4],yAxisID:'y1'}
-],{pct:false});
-// Fix dual axis for chartActOverview
-(function(){
-  const existing=Object.values(Chart.instances).find(c=>c.canvas?.id==='chartActOverview');
-  if(existing)existing.destroy();
-  const ctx=document.getElementById('chartActOverview'); if(!ctx)return;
-  new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
-    {label:'New App MAU',data:[261241,234333,344562,293506,295688],backgroundColor:C.teal+'55',borderColor:C.teal,borderWidth:1,borderRadius:4,yAxisID:'y'},
-    {label:'% ≥20 adview D7',data:[0.299,0.311,0.315,0.297,0.299],type:'line',borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'},
-    {label:'% ≥1 lead D7',data:[0.254,0.270,0.278,0.266,0.260],type:'line',borderColor:C.green,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4],yAxisID:'y1'}
-  ]},options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
-      tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${(v/1000).toFixed(0)}K`;
-    }}}},
-    scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
-      y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v/1000).toFixed(0)+'K'},position:'left'},
-      y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.45}
-    }}});
-})();
-makeChart('chartActMonthCh1','bar',MONTHS,[B('Direct',[43962,39295,64746,49572,48310],C.blue),B('Organic Search',[16446,18812,18821,15040,15501],C.green),B('Growth (P+D+CRM)',[15369,12195,21830,20354,22238],C.orange)],{noAR:true});
-makeChart('chartActMonthCh2','bar',MONTHS,[B('Direct',[35891,32349,54007,42636,40994],C.blue),B('Organic Search',[14556,17170,17815,14117,13875],C.green),B('Growth (P+D+CRM)',[13406,10980,20461,18888,19561],C.orange)],{noAR:true});
-makeChart('chartActDailyCh1','bar',MONTHS,[B('Direct',[1418,1403,2089,1652,1558],C.blue),B('Organic Search',[531,672,607,501,500],C.green),B('Growth (P+D+CRM)',[496,436,704,678,717],C.orange)],{noAR:true});
-makeChart('chartActDailyCh2','bar',MONTHS,[B('Direct',[1158,1155,1742,1421,1323],C.blue),B('Organic Search',[470,613,575,471,448],C.green),B('Growth (P+D+CRM)',[433,392,659,630,631],C.orange)],{noAR:true});
+  // S2 charts
+  makeChart('chartNewOverview','line',MONTHS,[L('New App MAU',ov.new_mau,C.blue)],{noAR:true});
+  makeChart('chartNewChannel','bar',MONTHS,[B('Direct',ac.direct,C.blue),B('Organic Search',ac.organic,C.green),B('Growth (P+D+CRM)',ac.growth,C.orange),B('(Other)',ac.other,C.gray)],{noAR:true});
+  makeChart('chartNewChannelDaily','bar',MONTHS,[B('Direct',ac.direct_daily,C.blue),B('Organic Search',ac.organic_daily,C.green),B('Growth (P+D+CRM)',ac.growth_daily,C.orange)],{noAR:true});
 
+  // S3 Activation: dual-axis bar+line
+  (function(){
+    const existing=Object.values(Chart.instances).find(c=>c.canvas?.id==='chartActOverview');
+    if(existing)existing.destroy();
+    const ctx=document.getElementById('chartActOverview'); if(!ctx)return;
+    new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
+      {label:'New App MAU',data:ov.new_mau,backgroundColor:C.teal+'55',borderColor:C.teal,borderWidth:1,borderRadius:4,yAxisID:'y'},
+      {label:'% ≥20 adview D7',data:act.adview_rate,type:'line',borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'},
+      {label:'% ≥1 lead D7',data:act.lead_rate,type:'line',borderColor:C.green,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4],yAxisID:'y1'}
+    ]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
+        tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${(v/1000).toFixed(0)}K`;
+      }}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
+        y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v/1000).toFixed(0)+'K'},position:'left'},
+        y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.45}
+      }}});
+  })();
+  makeChart('chartActMonthCh1','bar',MONTHS,[B('Direct',act.direct_adview,C.blue),B('Organic Search',act.organic_adview,C.green),B('Growth (P+D+CRM)',act.growth_adview,C.orange)],{noAR:true});
+  makeChart('chartActMonthCh2','bar',MONTHS,[B('Direct',act.direct_lead,C.blue),B('Organic Search',act.organic_lead,C.green),B('Growth (P+D+CRM)',act.growth_lead,C.orange)],{noAR:true});
+  makeChart('chartActDailyCh1','bar',MONTHS,[B('Direct',act.direct_adview_daily,C.blue),B('Organic Search',act.organic_adview_daily,C.green),B('Growth (P+D+CRM)',act.growth_adview_daily,C.orange)],{noAR:true});
+  makeChart('chartActDailyCh2','bar',MONTHS,[B('Direct',act.direct_lead_daily,C.blue),B('Organic Search',act.organic_lead_daily,C.green),B('Growth (P+D+CRM)',act.growth_lead_daily,C.orange)],{noAR:true});
 
+  // S4 Ret Overview: line chart across all months
+  (function(){
+    const existing=Object.values(Chart.instances).find(c=>c.canvas?.id==='chartRetComparison');
+    if(existing)existing.destroy();
+    const ctx=document.getElementById('chartRetComparison'); if(!ctx)return;
+    new Chart(ctx,{type:'line',data:{labels:MONTHS,datasets:[
+      {label:'App User D1',data:ret.app_d1,borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2},
+      {label:'App User D7',data:ret.app_d7,borderColor:C.teal,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2},
+      {label:'App User M1',data:ret.app_m1,borderColor:C.purple,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2},
+      {label:'Total User D1',data:ret.total_d1,borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4]},
+      {label:'Total User M1',data:ret.total_m1,borderColor:C.purple,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4]}
+    ]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${(c.parsed.y*100).toFixed(1)}%`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
+        y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},min:0.2,max:0.75}
+      }}});
+  })();
+  makeChart('chartNURRD1Ch','line',MONTHS,[L('Total',ret.nurr_d1,C.blue),L('Direct',ret.direct_d1,C.green),L('Organic Search',ret.organic_d1,C.orange),L('Growth (P+D+CRM)',ret.growth_d1,C.purple)],{pct:true,noAR:true});
+  makeChart('chartNURRD7Ch','line',MONTHS,[L('Total',ret.nurr_d7,C.blue),L('Direct',ret.direct_d7,C.green),L('Organic Search',ret.organic_d7,C.orange),L('Growth (P+D+CRM)',ret.growth_d7,C.purple)],{pct:true,noAR:true});
+  makeChart('chartNURRM1Ch','line',MONTHS,[L('Total',ret.nurr_m1,C.blue),L('Direct',ret.direct_m1,C.green),L('Organic Search',ret.organic_m1,C.orange),L('Growth (P+D+CRM)',ret.growth_m1,C.purple)],{pct:true,noAR:true});
+  // NURR funnel bar: use last month's values for each channel
+  const lastI = MONTHS.length - 1;
+  const prevI = lastI - 1; // Apr (last full month for M1)
+  makeChart('chartNURRFunnel','bar',['Direct','Organic Search','Growth (P+D+CRM)','Total'],[
+    B('NURR D1',[ret.direct_d1[lastI],ret.organic_d1[lastI],ret.growth_d1[lastI],ret.nurr_d1[lastI]],C.blue),
+    B('NURR D7',[ret.direct_d7[lastI],ret.organic_d7[lastI],ret.growth_d7[lastI],ret.nurr_d7[lastI]],C.orange),
+    B('NURR M1',[ret.direct_m1[prevI],ret.organic_m1[prevI],ret.growth_m1[prevI],ret.nurr_m1[prevI]],C.green)
+  ],{pct:true,noAR:true});
 
-// S4 Ret Overview: line chart across all months
-(function(){
-  const existing=Object.values(Chart.instances).find(c=>c.canvas?.id==='chartRetComparison');
-  if(existing)existing.destroy();
-  const ctx=document.getElementById('chartRetComparison'); if(!ctx)return;
-  new Chart(ctx,{type:'line',data:{labels:MONTHS,datasets:[
-    {label:'App User D1',data:[0.550,0.552,0.545,0.510,0.493],borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2},
-    {label:'App User D7',data:[0.460,0.464,0.458,0.422,0.327],borderColor:C.teal,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2},
-    {label:'App User M1',data:[0.682,0.679,0.681,0.638,null],borderColor:C.purple,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2},
-    {label:'Total User D1',data:[0.524,0.526,0.520,0.517,null],borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4]},
-    {label:'Total User M1',data:[0.654,0.652,0.652,0.649,null],borderColor:C.purple,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4]}
-  ]},options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
-      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${(c.parsed.y*100).toFixed(1)}%`}}},
-    scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
-      y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},min:0.2,max:0.75}
-    }}});
-})();
-makeChart('chartNURRD1Ch','line',MONTHS,[L('Total',[0.361,0.361,0.379,0.371,0.361],C.blue),L('Direct',[0.368,0.367,0.385,0.379,0.347],C.green),L('Organic Search',[0.375,0.374,0.389,0.373,0.404],C.orange),L('Growth (P+D+CRM)',[0.371,0.361,0.387,0.375,0.358],C.purple)],{pct:true,noAR:true});
-makeChart('chartNURRD7Ch','line',MONTHS,[L('Total',[0.145,0.148,0.157,0.149,0.117],C.blue),L('Direct',[0.149,0.153,0.163,0.154,0.115],C.green),L('Organic Search',[0.153,0.158,0.165,0.155,0.133],C.orange),L('Growth (P+D+CRM)',[0.151,0.148,0.164,0.159,0.113],C.purple)],{pct:true,noAR:true});
-makeChart('chartNURRM1Ch','line',MONTHS,[L('Total',[0.068,0.070,0.073,0.070,null],C.blue),L('Direct',[0.069,0.072,0.076,0.072,null],C.green),L('Organic Search',[0.071,0.074,0.077,0.072,null],C.orange),L('Growth (P+D+CRM)',[0.070,0.069,0.076,0.074,null],C.purple)],{pct:true,noAR:true});
-makeChart('chartNURRFunnel','bar',['Direct','Organic Search','Growth (P+D+CRM)','Total'],[B('NURR D1',[0.347,0.404,0.358,0.361],C.blue),B('NURR D7',[0.115,0.133,0.113,0.117],C.orange),B('NURR M1',[null,null,null,null],C.green)],{pct:true,noAR:true});
+  // S5: Growth Channel charts
+  (function(){
+    const ctx=document.getElementById('chartG5Overview'); if(!ctx)return;
+    new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
+      B('New App Users',gc.new_users,C.gray),
+      B('Activated ≥20 adview D7',gc.adview_activated,C.blue),
+      B('Activated ≥1 lead D7',gc.lead_activated,C.green)
+    ]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:12}}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${(c.parsed.y/1000).toFixed(0)}K`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:12}}},
+        y:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},callback:v=>(v/1000).toFixed(0)+'K'}}}}});
+  })();
+  // chartG5Acq with dual axis
+  (function(){
+    const existing = Object.values(Chart.instances).find(c=>c.canvas&&c.canvas.id==='chartG5Acq');
+    if(existing) existing.destroy();
+    const ctx = document.getElementById('chartG5Acq'); if(!ctx) return;
+    new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
+      {label:'New App Users (Growth)',data:gc.new_users,backgroundColor:C.blue+'cc',borderColor:C.blue,borderWidth:1,borderRadius:4,yAxisID:'y'},
+      {label:'% of Total New Users',data:gc.pct_of_total_new,type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
+    ]},options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${(v/1000).toFixed(0)}K`;}}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
+        y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v/1000).toFixed(0)+'K'},position:'left'},
+        y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.4}
+      }}});
+  })();
+  // chartG5Act: combo — bars = monthly activated adview/lead, lines = activation rates
+  (function(){
+    const existing=Object.values(Chart.instances).find(c=>c.canvas?.id==='chartG5Act');
+    if(existing)existing.destroy();
+    const ctx=document.getElementById('chartG5Act'); if(!ctx)return;
+    new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
+      {label:'Monthly Activated ≥20 adview D7',data:gc.adview_activated,backgroundColor:C.blue+'cc',borderColor:C.blue,borderWidth:1,borderRadius:4,yAxisID:'y'},
+      {label:'Monthly Activated ≥1 lead D7',data:gc.lead_activated,backgroundColor:C.green+'cc',borderColor:C.green,borderWidth:1,borderRadius:4,yAxisID:'y'},
+      {label:'Activation rate (≥20 adview D7)',data:gc.adview_rate,type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'},
+      {label:'Activation rate (≥1 lead D7)',data:gc.lead_rate,type:'line',borderColor:C.red,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4],yAxisID:'y1'}
+    ]},options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
+        tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${(v/1000).toFixed(0)}K`;}}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
+        y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v/1000).toFixed(0)+'K'},position:'left'},
+        y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.40}
+      }}});
+  })();
+  makeChart('chartG5Ret','line',MONTHS,[
+    {label:'Growth NURR D1',data:gc.nurr_d1,borderColor:C.blue,backgroundColor:C.blue+'22',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
+    L('Total NURR D1',ret.nurr_d1,C.blue,true),
+    {label:'Growth NURR M1',data:gc.nurr_m1,borderColor:C.green,backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
+    L('Total NURR M1',ret.nurr_m1,C.green,true)
+  ],{pct:true});
 
-// S5: Growth Channel charts
-// G5 Overview charts - maintainAspectRatio:false for crisp rendering
-(function(){
-  const ctx=document.getElementById('chartG5Overview'); if(!ctx)return;
-  new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
-    B('New App Users',[54439,41702,77942,75796,80424],C.gray),
-    B('Activated ≥20 adview D7',[15369,12195,21830,20354,22238],C.blue),
-    B('Activated ≥1 lead D7',[13406,10980,20461,18888,19561],C.green)
-  ]},options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:12}}},
-      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${(c.parsed.y/1000).toFixed(0)}K`}}},
-    scales:{x:{grid:{display:false},ticks:{font:{size:12}}},
-      y:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},callback:v=>(v/1000).toFixed(0)+'K'}}}}});
-})();
-makeChart('chartG5Acq','bar',MONTHS,[
-  B('New App Users (Growth)',[54439,41702,77942,75796],C.blue),
-  {label:'% of Total',data:[0.208,0.178,0.226,0.258],type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
-],{pct:false});
-// Fix chartG5Acq to use dual axis
-(function(){
-  const existing = Object.values(Chart.instances).find(c=>c.canvas&&c.canvas.id==='chartG5Acq');
-  if(existing) existing.destroy();
-  const ctx = document.getElementById('chartG5Acq'); if(!ctx) return;
-  new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
-    {label:'New App Users (Growth)',data:[54439,41702,77942,75796,80424],backgroundColor:C.blue+'cc',borderColor:C.blue,borderWidth:1,borderRadius:4,yAxisID:'y'},
-    {label:'% of Total New Users',data:[0.208,0.178,0.226,0.258,0.272],type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
-  ]},options:{responsive:true,maintainAspectRatio:true,
-    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${(v/1000).toFixed(0)}K`;}}}},
-    scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
-      y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v/1000).toFixed(0)+'K'},position:'left'},
-      y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.4}
-    }}});
-})();
-// chartG5Act: combo — bars = monthly activated adview/lead, lines = activation rates
-(function(){
-  const existing=Object.values(Chart.instances).find(c=>c.canvas?.id==='chartG5Act');
-  if(existing)existing.destroy();
-  const ctx=document.getElementById('chartG5Act'); if(!ctx)return;
-  new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
-    {label:'Monthly Activated ≥20 adview D7',data:[15369,12195,21830,20354,22238],backgroundColor:C.blue+'cc',borderColor:C.blue,borderWidth:1,borderRadius:4,yAxisID:'y'},
-    {label:'Monthly Activated ≥1 lead D7',data:[13406,10980,20461,18888,19561],backgroundColor:C.green+'cc',borderColor:C.green,borderWidth:1,borderRadius:4,yAxisID:'y'},
-    {label:'Activation rate (≥20 adview D7)',data:[0.282,0.292,0.280,0.269,0.277],type:'line',borderColor:C.orange,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'},
-    {label:'Activation rate (≥1 lead D7)',data:[0.246,0.263,0.263,0.249,0.243],type:'line',borderColor:C.red,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4],yAxisID:'y1'}
-  ]},options:{responsive:true,maintainAspectRatio:true,
-    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
-      tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v*100).toFixed(1)}%`;return ` ${c.dataset.label}: ${(v/1000).toFixed(0)}K`;}}}},
-    scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
-      y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v/1000).toFixed(0)+'K'},position:'left'},
-      y1:{grid:{display:false},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},position:'right',min:0,max:0.40}
-    }}});
-})();
-makeChart('chartG5Ret','line',MONTHS,[
-  {label:'Growth NURR D1',data:[0.371,0.361,0.387,0.375,0.358],borderColor:C.blue,backgroundColor:C.blue+'22',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
-  L('Total NURR D1',[0.361,0.361,0.379,0.371,0.361],C.blue,true),
-  {label:'Growth NURR M1',data:[0.070,0.069,0.076,0.074,null],borderColor:C.green,backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
-  L('Total NURR M1',[0.068,0.070,0.073,0.070,null],C.green,true)
-],{pct:true});
-
-// S5 Cost charts
-(function(){
-  const ctx=document.getElementById('chartG5Cost'); if(!ctx)return;
-  new Chart(ctx,{type:'line',data:{labels:MONTHS,datasets:[
-    L('CPA',[8845,7366,5311,5672,6481],C.blue),
-    L('CAA',[31331,25190,18960,21123,23434],C.orange),
-    L('CRR D1',[23842,20406,13720,15124,18099],C.green),
-    L('CRR D7',[58581,49770,32375,35669,57343],C.purple),
-    L('CRR M1',[126356,106782,69859,76643,null],C.red)
-  ]},options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:12}}},
-      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y?.toLocaleString('en')}₫`}}},
-    scales:{x:{grid:{display:false},ticks:{font:{size:12}}},
-      y:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v}}}}});
-})();
-(function(){
-  const ctx=document.getElementById('chartG5CostVsUsers'); if(!ctx)return;
-  const allLabels=[...MONTHS,'Jun 2026*','Jul 2026*','Aug 2026*','Sep 2026*','Oct 2026*','Nov 2026*','Dec 2026*'];
-  new Chart(ctx,{type:'bar',data:{labels:allLabels,datasets:[
-    {label:'Monthly Cost (VND)',data:[481535327,307196146,413829723,429898910,521127006,780000000,1000000000,1310000000,1360000000,1310000000,1160000000,1070000000],backgroundColor:[...Array(5).fill(C.purple+'cc'),...Array(7).fill(C.purple+'44')],borderColor:[...Array(5).fill(C.purple),...Array(7).fill(C.purple+'88')],borderWidth:1,borderRadius:4,yAxisID:'y'},
-    {label:'New Users (actual)',data:[54439,41702,77942,75796,80424,null,null,null,null,null,null,null],type:'line',borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
-  ]},options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:12}}},tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v/1000).toFixed(0)}K`;return ` ${c.dataset.label}: ${(v/1e6).toFixed(0)}M ₫`;}}}},
-    scales:{x:{grid:{display:false},ticks:{font:{size:11},maxRotation:45}},
-      y:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},callback:v=>(v/1e6).toFixed(0)+'M'},position:'left'},
-      y1:{grid:{display:false},ticks:{font:{size:11},callback:v=>(v/1000).toFixed(0)+'K'},position:'right'}
-    }}});
-})();
-makeChart('chartG5UnitEcon','bar',['CPA\n(cost/new user)','CAA\n(cost/activated)','CRR D1\n(cost/retained D1)','CRR D7\n(cost/retained D7)'],[
-  B('Jan',[8845,31331,23842,58581],C.gray),
-  B('Feb',[7366,25190,20406,49770],C.blue),
-  B('Mar',[5311,18960,13720,32375],C.green),
-  B('Apr',[5672,21123,15124,35669],C.orange),
-  B('May',[6481,23434,18099,57343],C.purple)
-]);
+  // S5 Cost charts
+  (function(){
+    const ctx=document.getElementById('chartG5Cost'); if(!ctx)return;
+    new Chart(ctx,{type:'line',data:{labels:MONTHS,datasets:[
+      L('CPA',gc.cpa,C.blue),
+      L('CAA',gc.caa,C.orange),
+      L('CRR D1',gc.crr_d1,C.green),
+      L('CRR D7',gc.crr_d7,C.purple),
+      L('CRR M1',gc.crr_m1,C.red)
+    ]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:12}}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y?.toLocaleString('en')}₫`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:12}}},
+        y:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v}}}}});
+  })();
+  (function(){
+    const ctx=document.getElementById('chartG5CostVsUsers'); if(!ctx)return;
+    const forecastLabels=['Jun 2026*','Jul 2026*','Aug 2026*','Sep 2026*','Oct 2026*','Nov 2026*','Dec 2026*'];
+    const allLabels=[...MONTHS,...forecastLabels];
+    const costData=[...gc.cost,...gc.cost_forecast];
+    const usersData=[...gc.new_users,...Array(gc.cost_forecast.length).fill(null)];
+    new Chart(ctx,{type:'bar',data:{labels:allLabels,datasets:[
+      {label:'Monthly Cost (VND)',data:costData,backgroundColor:[...Array(MONTHS.length).fill(C.purple+'cc'),...Array(gc.cost_forecast.length).fill(C.purple+'44')],borderColor:[...Array(MONTHS.length).fill(C.purple),...Array(gc.cost_forecast.length).fill(C.purple+'88')],borderWidth:1,borderRadius:4,yAxisID:'y'},
+      {label:'New Users (actual)',data:usersData,type:'line',borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
+    ]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:12}}},tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v/1000).toFixed(0)}K`;return ` ${c.dataset.label}: ${(v/1e6).toFixed(0)}M ₫`;}}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11},maxRotation:45}},
+        y:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},callback:v=>(v/1e6).toFixed(0)+'M'},position:'left'},
+        y1:{grid:{display:false},ticks:{font:{size:11},callback:v=>(v/1000).toFixed(0)+'K'},position:'right'}
+      }}});
+  })();
+  makeChart('chartG5UnitEcon','bar',['CPA\n(cost/new user)','CAA\n(cost/activated)','CRR D1\n(cost/retained D1)','CRR D7\n(cost/retained D7)'],[
+    B('Jan',[gc.cpa[0],gc.caa[0],gc.crr_d1[0],gc.crr_d7[0]],C.gray),
+    B('Feb',[gc.cpa[1],gc.caa[1],gc.crr_d1[1],gc.crr_d7[1]],C.blue),
+    B('Mar',[gc.cpa[2],gc.caa[2],gc.crr_d1[2],gc.crr_d7[2]],C.green),
+    B('Apr',[gc.cpa[3],gc.caa[3],gc.crr_d1[3],gc.crr_d7[3]],C.orange),
+    B('May',[gc.cpa[4],gc.caa[4],gc.crr_d1[4],gc.crr_d7[4]],C.purple)
+  ]);
+}
 
 // DATA TAB SWITCHER
 function switchTab(g,idx){
@@ -1212,6 +1214,25 @@ function selectExecMonth(m) {
     }
   });
 }
+
+// ============================================================
+// INIT — load data then render everything
+// ============================================================
+async function initDashboard() {
+  await loadDashboardData();
+  if (!D) { console.error('Dashboard data unavailable'); return; }
+
+  renderCommentary('s1');
+  renderCommentary('s2');
+  renderCommentary('s3');
+  renderCommentary('s4');
+  renderCommentary('s5');
+
+  renderAllCharts();
+  selectExecMonth('may');
+}
+
+document.addEventListener('DOMContentLoaded', initDashboard);
 </script>
 </body>
 </html>
