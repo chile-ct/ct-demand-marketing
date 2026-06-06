@@ -296,31 +296,28 @@ const VERT_ACT = {
 };
 
 // T5 per-vertical — DwL from dashboard__dauwlead__vertical_monthly, Lead from same
-// T6 partial (1-5/6/2026)
-Object.assign(VERT_ACT.PTY, {"2026-06":{dau:88392,  dwl:11727, lead:360674,  mau:271541,  mauLead:45206}});
-Object.assign(VERT_ACT.JOB, {"2026-06":{dau:47476,  dwl:9628,  lead:168839,  mau:140050,  mauLead:35153}});
-Object.assign(VERT_ACT.VEH, {"2026-06":{dau:91820,  dwl:7670,  lead:184733,  mau:267826,  mauLead:28253}});
-Object.assign(VERT_ACT.GDS, {"2026-06":{dau:317592, dwl:23576, lead:320965,  mau:801806,  mauLead:79641}});
-Object.assign(VERT_ACT.PTY, {"2026-05":{dau:84068,  dwl:10801, lead:1372581, mau:1443394, mauLead:187445}});
-Object.assign(VERT_ACT.JOB, {"2026-05":{dau:45562,  dwl:8723,  lead:917396,  mau:691746,  mauLead:136416}});
-Object.assign(VERT_ACT.VEH, {"2026-05":{dau:98122,  dwl:8033,  lead:1232264, mau:1435684, mauLead:129071}});
 
-// Generate T5 RAW channel data by scaling T4 channel proportions to T5 vertical totals
+// Generate RAW channel data for months after T4 by scaling T4 channel proportions
+// Automatically covers T5, T6, and any future months added to VERT_ACT
 (() => {
-  const T4M = "2026-04", T5M = "2026-05";
-  const vMap = {PTY:"PTY", JOB:"JOB", VEH:"VEH", GDS:"GDS"};
-  Object.entries(vMap).forEach(([v]) => {
-    const t4rows = RAW.filter(r=>r.v===v&&r.m===T4M);
-    const t4dau  = t4rows.reduce((s,r)=>s+r.dau,0)||1;
-    const t4dwl  = t4rows.reduce((s,r)=>s+r.dwl,0)||1;
-    const t4lead = t4rows.reduce((s,r)=>s+r.lead,0)||1;
-    const tgt = VERT_ACT[v][T5M];
-    t4rows.forEach(r => {
-      RAW.push({
-        v, ch:r.ch, m:T5M,
-        dau:  Math.round(r.dau  / t4dau  * tgt.dau),
-        dwl:  Math.round(r.dwl  / t4dwl  * tgt.dwl),
-        lead: Math.round(r.lead / t4lead * tgt.lead),
+  const BASE_M = "2026-04"; // last month with hardcoded channel data
+  const newMonths = MONTHS.filter(m => m > BASE_M);
+  newMonths.forEach(newM => {
+    VERTS.forEach(v => {
+      if (!VERT_ACT[v]?.[newM]) return; // skip if no actual data yet
+      if (RAW.some(r=>r.v===v&&r.m===newM)) return; // skip if already exists
+      const baseRows = RAW.filter(r=>r.v===v&&r.m===BASE_M);
+      const baseDau  = baseRows.reduce((s,r)=>s+r.dau,0)||1;
+      const baseDwl  = baseRows.reduce((s,r)=>s+r.dwl,0)||1;
+      const baseLead = baseRows.reduce((s,r)=>s+r.lead,0)||1;
+      const tgt = VERT_ACT[v][newM];
+      baseRows.forEach(r => {
+        RAW.push({
+          v, ch:r.ch, m:newM,
+          dau:  Math.round(r.dau  / baseDau  * tgt.dau),
+          dwl:  Math.round(r.dwl  / baseDwl  * tgt.dwl),
+          lead: Math.round(r.lead / baseLead * tgt.lead),
+        });
       });
     });
   });
