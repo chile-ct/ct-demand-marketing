@@ -1160,7 +1160,7 @@ const ALL_ML_S = Object.fromEntries(ALL_MONTHS.map(m=>[m, `T${parseInt(m.slice(5
 function GrowthSection() {
   const [met, setMet] = useState("dau");
   const [costTab, setCostTab] = useState("dwl");
-  const [unitVert, setUnitVert] = useState("__total__"); // which vertical to show in detail table
+  const [unitVert, setUnitVert] = useState("PTY"); // which vertical in unit economy table
   const metObj = METRICS.find(x=>x.key===met);
   const GROWTH_CHS = ["Growth (Paid)","Growth (CRM)"];
   const GROWTH_COLORS = {"Growth (Paid)":"#8b5cf6","Growth (CRM)":"#f59e0b"};
@@ -1301,21 +1301,46 @@ function GrowthSection() {
               </div>
               <BarChartWithTotals labels={ALL_MONTHS.map(m=>ALL_ML_S[m])} datasets={spendBarDs} height={300}/>
             </div>
-            {/* Row 2: 3 cost-per-unit charts — responsive, short labels */}
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:14,marginBottom:20}}>
-              {[
-                {key:"dau",  label:"Cost per DAU",  color:"#6366f1"},
-                {key:"dwl",  label:"Cost per DwL",  color:"#f59e0b"},
-                {key:"lead", label:"Cost per Lead", color:"#10b981"},
-              ].map(({key,label,color})=>(
-                <div key={key} style={{background:"#fff",borderRadius:12,padding:"16px 18px",
-                  boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
-                  <div style={{fontWeight:600,fontSize:13,marginBottom:2,color:"#374151"}}>{label}</div>
-                  <div style={{fontSize:10,color:"#9ca3af",marginBottom:10}}>₫ · {note}</div>
-                  <LineChart labels={MONTHS.map(m=>ALL_ML_S[m])} datasets={lnDs(key).map(d=>({...d,data:MONTHS.map((m,i)=>d.data[i])}))} height={200}/>
+            {/* Row 2: 3 cost-per-unit charts — each has Total line */}
+            {(()=>{
+              const gpMetricAll = (v, m, key) => {
+                const raw = DATA.find(x=>x.v===v&&x.ch===CH&&x.m===m)?.[key]??0;
+                const vr  = CHANNELS.reduce((s,c)=>s+(DATA.find(x=>x.v===v&&x.ch===c&&x.m===m)?.[key]??0),0);
+                const ct  = VERT_ACT[v]?.[m]?.[key]??0;
+                return vr ? Math.round(raw/vr*ct) : 0;
+              };
+              const cpTotal = (m, key) => {
+                const vol = VERTS.reduce((s,v)=>s+gpMetricAll(v,m,key),0);
+                const spend = VERTS.reduce((s,v)=>s+(GROWTH_COST[v]?.[m]||0),0);
+                if(!vol||!spend) return null;
+                const mv = (key==="dau"||key==="dwl") ? vol*daysIn(m) : vol;
+                return Math.round(spend/mv);
+              };
+              const lnDsWithTotal = (key) => [
+                ...lnDs(key).map(d=>({...d, data:MONTHS.map((m,i)=>d.data[i])})),
+                {
+                  label:"Total", borderColor:"#374151", backgroundColor:"#37415122",
+                  borderWidth:2, borderDash:[5,3], tension:0.3, pointRadius:4, fill:false,
+                  data:MONTHS.map(m=>cpTotal(m,key)),
+                }
+              ];
+              return (
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:14,marginBottom:20}}>
+                  {[
+                    {key:"dau",  label:"Cost per DAU",  color:"#6366f1"},
+                    {key:"dwl",  label:"Cost per DwL",  color:"#f59e0b"},
+                    {key:"lead", label:"Cost per Lead", color:"#10b981"},
+                  ].map(({key,label,color})=>(
+                    <div key={key} style={{background:"#fff",borderRadius:12,padding:"16px 18px",
+                      boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
+                      <div style={{fontWeight:600,fontSize:13,marginBottom:2,color:"#374151"}}>{label}</div>
+                      <div style={{fontSize:10,color:"#9ca3af",marginBottom:10}}>₫ · {note} · ╌╌ Total</div>
+                      <LineChart labels={MONTHS.map(m=>ALL_ML_S[m])} datasets={lnDsWithTotal(key)} height={200}/>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </>);
         })()}
 
@@ -1378,18 +1403,29 @@ function GrowthSection() {
               </div>
             );
           };
+          // Chip selector: PTY / JOB / VEH / GDS (no Total)
+          const chipVert = unitVert==="__total__" ? "PTY" : unitVert;
+          const chipColor = VC[chipVert]||"#374151";
           return (
-            <div>
-              <div style={{fontWeight:600,fontSize:13,color:"#374151",marginBottom:12}}>
-                Detail — Unit Economy
-                <span style={{fontSize:11,color:"#9ca3af",fontWeight:400,marginLeft:6}}>Growth (Paid) · * = FC · ₫/DAU & ₫/DwL adjusted for days/month</span>
+            <div style={{background:"#fff",borderRadius:12,padding:"16px 18px",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,flexWrap:"wrap"}}>
+                <div style={{fontWeight:600,fontSize:13,color:"#374151"}}>
+                  Detail — Unit Economy
+                  <span style={{fontSize:11,color:"#9ca3af",fontWeight:400,marginLeft:6}}>Growth (Paid) · * = FC · ₫/DAU & ₫/DwL ÷ days</span>
+                </div>
+                <div style={{display:"flex",gap:4}}>
+                  {VERTS.map(v=>(
+                    <button key={v} onClick={()=>setUnitVert(v)} style={{
+                      padding:"4px 12px",borderRadius:6,
+                      border:`1.5px solid ${chipVert===v?VC[v]:"#e5e7eb"}`,
+                      cursor:"pointer",fontSize:12,fontWeight:600,
+                      background:chipVert===v?VC[v]:"#fff",
+                      color:chipVert===v?"#fff":VC[v],
+                    }}>{v}</button>
+                  ))}
+                </div>
               </div>
-              {/* 4 vertical boxes */}
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:12,marginBottom:12}}>
-                {VERTS.map(v=><MiniTable key={v} vert={v} isT={false} color={VC[v]}/>)}
-              </div>
-              {/* Total below */}
-              <MiniTable vert="total" isT={true} color="#374151"/>
+              <MiniTable vert={chipVert} isT={false} color={chipColor}/>
             </div>
           );
         })()}
