@@ -163,8 +163,9 @@ const RAW = [
   {v:"GDS",ch:"(Other)",      m:"2026-04",dau:5026, dwl:1114,lead:81604},
 ];
 
-const MONTHS   = ["2026-01","2026-02","2026-03","2026-04","2026-05"];
-const ML       = {"2026-01":"T1/26","2026-02":"T2/26","2026-03":"T3/26","2026-04":"T4/26","2026-05":"T5/26"};
+const MONTHS   = ["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06"];
+const ML       = {"2026-01":"T1/26","2026-02":"T2/26","2026-03":"T3/26","2026-04":"T4/26","2026-05":"T5/26","2026-06":"T6/26*"};
+// T6/26* = partial (data 1-5/6/2026)
 const ML_FULL  = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 2026","2026-04":"Apr 2026"};
 const VERTS    = ["PTY","JOB","VEH","GDS"];
 
@@ -194,6 +195,67 @@ const KPI_MAU = {
   "2026-03":{mau:7613833, mauLead:967003, dauMau:8.3},
   "2026-04":{mau:6740920, mauLead:808602, dauMau:7.2},
   "2026-05":{mau:7030539, mauLead:858833, dauMau:7.1},
+};
+
+// ─── KPI PER VERTICAL (from screenshots — T1-T3 = 2026 Target, T4+ = FC1 2026) ─
+// KPI per vertical — T1-T3 = 2026 Target, T4-T12 = FC1 2026 (full year from screenshots)
+const KPI_VERT = {
+  PTY:{
+    "2026-01":{dau:87113,  dwl:11459, lead:1249043,  mau:1377058, mauLead:212160, dauMau:5.9},
+    "2026-02":{dau:62849,  dwl:8929,  lead:946430,   mau:850408,  mauLead:157378, dauMau:6.7},
+    "2026-03":{dau:129257, dwl:21174, lead:2413850,  mau:1854803, mauLead:317810, dauMau:6.4},
+    "2026-04":{dau:93097,  dwl:13512, lead:1579874,  mau:1566297, mauLead:225199, dauMau:5.94},
+    "2026-05":{dau:95528,  dwl:13510, lead:1655890,  mau:1566114, mauLead:225173, dauMau:6.10},
+    "2026-06":{dau:103848, dwl:14609, lead:1770424,  mau:1693458, mauLead:243482, dauMau:6.13},
+    "2026-07":{dau:109548, dwl:15472, lead:1891900,  mau:1793454, mauLead:257860, dauMau:6.11},
+    "2026-08":{dau:110382, dwl:15735, lead:1907409,  mau:1823976, mauLead:262248, dauMau:6.05},
+    "2026-09":{dau:102221, dwl:14541, lead:1754945,  mau:1685561, mauLead:242347, dauMau:6.06},
+    "2026-10":{dau:102522, dwl:14684, lead:1783997,  mau:1702103, mauLead:244725, dauMau:6.02},
+    "2026-11":{dau:100844, dwl:14589, lead:1726055,  mau:1691118, mauLead:243146, dauMau:5.96},
+    "2026-12":{dau:93324,  dwl:13792, lead:1629875,  mau:1598729, mauLead:229862, dauMau:5.84},
+  },
+  JOB:{
+    "2026-01":{dau:54805,  dwl:11021, lead:1264816,  mau:815854,  mauLead:167894, dauMau:6.72},
+    "2026-02":{dau:51625,  dwl:10423, lead:1081121,  mau:746130,  mauLead:152761, dauMau:6.92},
+    "2026-03":{dau:72982,  dwl:15287, lead:1752114,  mau:995098,  mauLead:199269, dauMau:7.33},
+    "2026-04":{dau:53082,  dwl:10088, lead:1102592,  mau:756015,  mauLead:155197, dauMau:7.02},
+    "2026-05":{dau:58100,  dwl:11748, lead:1349042,  mau:880404,  mauLead:180732, dauMau:6.60},
+    "2026-06":{dau:60086,  dwl:11805, lead:1297027,  mau:884674,  mauLead:181609, dauMau:6.79},
+    "2026-07":{dau:59952,  dwl:12083, lead:1347807,  mau:905541,  mauLead:185893, dauMau:6.62},
+    "2026-08":{dau:60034,  dwl:12111, lead:1384078,  mau:907650,  mauLead:186325, dauMau:6.61},
+    "2026-09":{dau:58557,  dwl:12319, lead:1374336,  mau:923203,  mauLead:189518, dauMau:6.34},
+    "2026-10":{dau:52848,  dwl:11180, lead:1299699,  mau:837846,  mauLead:171996, dauMau:6.31},
+    "2026-11":{dau:51648,  dwl:10922, lead:1274142,  mau:818506,  mauLead:168026, dauMau:6.31},
+    "2026-12":{dau:48594,  dwl:10254, lead:1146710,  mau:768457,  mauLead:157751, dauMau:6.32},
+  },
+  GDS:{
+    "2026-01":{dau:166707, dwl:23030, lead:1846540,  mau:1913751, mauLead:281539, dauMau:8.30},
+    "2026-02":{dau:158038, dwl:21652, lead:1736103,  mau:1732972, mauLead:247381, dauMau:8.70},
+    "2026-03":{dau:215495, dwl:29192, lead:2301814,  mau:2517624, mauLead:343076, dauMau:8.20},
+    "2026-04":{dau:204732, dwl:27807, lead:2144371,  mau:2277314, mauLead:317812, dauMau:8.99},
+    "2026-05":{dau:208305, dwl:28474, lead:2427716,  mau:2350439, mauLead:341242, dauMau:8.86},
+    "2026-06":{dau:219569, dwl:29802, lead:2491511,  mau:2408262, mauLead:343216, dauMau:9.12},
+    "2026-07":{dau:223491, dwl:29241, lead:2470579,  mau:2372688, mauLead:328549, dauMau:9.42},
+    "2026-08":{dau:223548, dwl:29263, lead:2316005,  mau:2308110, mauLead:338599, dauMau:9.69},
+    "2026-09":{dau:217712, dwl:28033, lead:2156918,  mau:2273922, mauLead:320678, dauMau:9.57},
+    "2026-10":{dau:210534, dwl:27510, lead:2251917,  mau:2220960, mauLead:311581, dauMau:9.48},
+    "2026-11":{dau:204185, dwl:26713, lead:2118725,  mau:2267342, mauLead:299556, dauMau:9.01},
+    "2026-12":{dau:198716, dwl:25768, lead:2045190,  mau:2146433, mauLead:286091, dauMau:9.26},
+  },
+  VEH:{
+    "2026-01":{dau:105767, dwl:9214,  lead:810966,   mau:1489683, mauLead:149483, dauMau:7.10},
+    "2026-02":{dau:102241, dwl:8686,  lead:726379,   mau:1462680, mauLead:128395, dauMau:6.99},
+    "2026-03":{dau:140041, dwl:11953, lead:1117331,  mau:1904522, mauLead:182998, dauMau:7.35},
+    "2026-04":{dau:135200, dwl:11734, lead:1085203,  mau:1838693, mauLead:174070, dauMau:7.35},
+    "2026-05":{dau:136804, dwl:11792, lead:1134315,  mau:1917980, mauLead:179318, dauMau:7.13},
+    "2026-06":{dau:155839, dwl:12519, lead:1162858,  mau:2135680, mauLead:186954, dauMau:7.30},
+    "2026-07":{dau:161043, dwl:12450, lead:1176153,  mau:2276139, mauLead:192501, dauMau:7.08},
+    "2026-08":{dau:141643, dwl:11630, lead:994322,   mau:2005007, mauLead:190908, dauMau:7.06},
+    "2026-09":{dau:155133, dwl:11894, lead:990915,   mau:2171043, mauLead:191838, dauMau:7.15},
+    "2026-10":{dau:153094, dwl:11812, lead:1048689,  mau:2157748, mauLead:194416, dauMau:7.10},
+    "2026-11":{dau:150822, dwl:11564, lead:992869,   mau:2123740, mauLead:188866, dauMau:7.10},
+    "2026-12":{dau:145471, dwl:11254, lead:967706,   mau:2044819, mauLead:183511, dauMau:7.11},
+  },
 };
 
 // ─── ACTUALS — from chotot_mtm BQ tables ──────────────────────────────────────
@@ -236,6 +298,11 @@ const VERT_ACT = {
 Object.assign(VERT_ACT.PTY, {"2026-05":{dau:84068,  dwl:10801, lead:1372581, mau:1443394, mauLead:187445}});
 Object.assign(VERT_ACT.JOB, {"2026-05":{dau:45562,  dwl:8723,  lead:917396,  mau:691746,  mauLead:136416}});
 Object.assign(VERT_ACT.VEH, {"2026-05":{dau:98122,  dwl:8033,  lead:1232264, mau:1435684, mauLead:129071}});
+// T6 partial (1-5/6/2026) — avg DAU 4 days, MAU rolling 28d, Lead 4-day total
+Object.assign(VERT_ACT.PTY, {"2026-06":{dau:88392,  dwl:11727, lead:360674,  mau:271541,  mauLead:45206}});
+Object.assign(VERT_ACT.JOB, {"2026-06":{dau:47476,  dwl:9628,  lead:168839,  mau:140050,  mauLead:35153}});
+Object.assign(VERT_ACT.VEH, {"2026-06":{dau:91820,  dwl:7670,  lead:184733,  mau:267826,  mauLead:28253}});
+Object.assign(VERT_ACT.GDS, {"2026-06":{dau:317592, dwl:23576, lead:320965,  mau:801806,  mauLead:79641}});
 
 // Generate T5 RAW channel data by scaling T4 channel proportions to T5 vertical totals
 (() => {
@@ -280,6 +347,7 @@ const ACT = {
   "2026-03":{dau:513685, dwl:58004, lead:6110237, mau:6988156, mauLead:814854, dauMau:parseFloat((513685/6988156*100).toFixed(1))},
   "2026-04":{dau:464605, dwl:52177, lead:5621250, mau:5867098, mauLead:700095, dauMau:parseFloat((464605/5867098*100).toFixed(1))},
   "2026-05":{dau:452432, dwl:50827, lead:5441300, mau:5855563, mauLead:712334, dauMau:parseFloat((452432/5855563*100).toFixed(1))},
+  "2026-06":{dau:616749, dwl:51805, lead:1035599, mau:1746194, mauLead:182026, dauMau:parseFloat((616749/1746194*100).toFixed(1))}, // partial 1-5/6
 };
 const ACT_MAU = {
   "2026-01":{mau:6155280, newMau:3968954, retMau:2186326},
@@ -287,6 +355,7 @@ const ACT_MAU = {
   "2026-03":{mau:6988156, newMau:4633289, retMau:2354867},
   "2026-04":{mau:5867098, newMau:3781648, retMau:2085450},
   "2026-05":{mau:5855563, newMau:3200000, retMau:2655563},
+  "2026-06":{mau:1746194, newMau:900000, retMau:846194},
 };
 
 // Marketplace Health actuals (PTY-JOBS-GDS-VEH actual sheet)
@@ -386,26 +455,44 @@ function genChannelCommentary(metric) {
 }
 
 // ─── CHART WRAPPERS ──────────────────────────────────────────────────────────
-function LineChart({labels,datasets,height=240,yFmt}) {
+function LineChart({labels,datasets,height=240,maxTicks}) {
   const ref=useRef(null), ch=useRef(null);
   useEffect(()=>{
     if(ch.current) ch.current.destroy();
     if(!ref.current) return;
+    const tickLimit = maxTicks || (labels.length > 7 ? 6 : labels.length);
     ch.current = new Chart(ref.current,{
       type:"line",
       data:{labels, datasets:datasets.map(d=>({pointHoverRadius:6,fill:false,...d}))},
       options:{
         responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}},
+        plugins:{legend:{display:false}}, // hide canvas legend — use HTML legend below
         scales:{
-          x:{grid:{color:"#f5f5f5"},ticks:{font:{size:11}}},
+          x:{grid:{color:"#f5f5f5"},ticks:{font:{size:10},maxTicksLimit:tickLimit,maxRotation:0}},
           y:{grid:{color:"#f5f5f5"},ticks:{font:{size:11},callback:v=>fmtK(v)}},
         }
       }
     });
     return ()=>ch.current?.destroy();
-  },[labels,datasets]);
-  return <div style={{position:"relative",height}}><canvas ref={ref}/></div>;
+  },[labels,datasets,maxTicks]);
+  // HTML legend — crisp DOM text, not canvas
+  return (
+    <div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:"6px 14px",marginBottom:10}}>
+        {datasets.map((d,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:5,fontSize:12,fontWeight:500,color:'#374151'}}>
+            <span style={{
+              display:"inline-block",width:20,height:3,borderRadius:2,
+              background: d.borderColor||d.backgroundColor||'#999',
+              flexShrink:0,
+            }}/>
+            {d.label}
+          </div>
+        ))}
+      </div>
+      <div style={{position:"relative",height}}><canvas ref={ref}/></div>
+    </div>
+  );
 }
 
 function BarChart({labels,datasets,height=220,stacked=false}) {
@@ -418,9 +505,9 @@ function BarChart({labels,datasets,height=220,stacked=false}) {
       data:{labels, datasets:datasets.map(d=>({borderRadius:3,borderSkipped:false,...d}))},
       options:{
         responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}},
+        plugins:{legend:{labels:{boxWidth:12,font:{size:12,weight:'500'},color:'#374151'}}},
         scales:{
-          x:{stacked,grid:{color:"#f5f5f5"},ticks:{font:{size:11}}},
+          x:{stacked,grid:{color:"#f5f5f5"},ticks:{font:{size:10},maxRotation:0,maxTicksLimit:labels.length>7?6:labels.length}},
           y:{stacked,grid:{color:"#f5f5f5"},ticks:{font:{size:11},callback:v=>fmtK(v)}},
         }
       }
@@ -453,7 +540,7 @@ function StackedBarLineChart({labels,barDatasets,lineDataset,height=300}) {
       options:{
         animation:false,
         responsive:true, maintainAspectRatio:false,
-        plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}},
+        plugins:{legend:{labels:{boxWidth:12,font:{size:12,weight:'500'},color:'#374151'}}},
         scales:{
           x:{stacked:true, grid:{color:"#f5f5f5"}, ticks:{font:{size:11}}},
           y:{stacked:true, grid:{color:"#f5f5f5"}, ticks:{font:{size:11}, callback:v=>fmtK(v)}},
@@ -871,56 +958,128 @@ function TrendSection({id, title, getBarVal, getKpiVal, getLineLabel, groupList,
 }
 
 function VerticalSection() {
-  return <TrendSection
-    id="vertical" title="Trendline — Từng Vertical (Stacked vs KPI)"
-    groupList={VERTS}
-    colorMap={VC}
-    getBarVal={(v,m,met)=>{
-      if(met==="mau")    return vertMonthMau(v,m).mau;
-      if(met==="mauLead")return vertMonthMau(v,m).mauLead;
-      if(met==="dauMau") return vertMonthMau(v,m).dauMau;
-      return vertMonthSum(v,m)[met]??0;
-    }}
-    getKpiVal={(m,met)=>{
-      if(met==="mau")    return KPI_MAU[m].mau;
-      if(met==="mauLead")return KPI_MAU[m].mauLead;
-      if(met==="dauMau") return KPI_MAU[m].dauMau;
-      return KPI[m][met];
-    }}
-  />;
+  const [met, setMet] = useState("dau");
+  const metObj = METRICS.find(x=>x.key===met)||METRICS[0];
+  const isRatio = met==="dauMau";
+  const labels = MONTHS.map(m=>ML[m]);
+
+  const getAct = (v,m) => {
+    if(met==="mau")     return vertMonthMau(v,m).mau;
+    if(met==="mauLead") return vertMonthMau(v,m).mauLead;
+    if(met==="dauMau")  return vertMonthMau(v,m).dauMau;
+    return vertMonthSum(v,m)[met]??0;
+  };
+  const getKpi = (v,m) => KPI_VERT[v]?.[m]?.[met]??null;
+
+  return (
+    <section id="vertical">
+      <div className="section-title">Trendline — Từng Vertical vs KPI</div>
+      <MetricTab opts={METRICS} sel={met} onChange={setMet}/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+        {["PTY","JOB","VEH","GDS"].map(v=>{
+          const actDs = {
+            label:"Actual",
+            data: MONTHS.map(m=>getAct(v,m)),
+            borderColor:VC[v], backgroundColor:VC[v]+"22",
+            borderWidth:2.5, tension:0.3, pointRadius:5, fill:false,
+          };
+          const kpiDs = {
+            label:"KPI",
+            data: MONTHS.map(m=>getKpi(v,m)),
+            borderColor:"#64748b", borderDash:[6,4], borderWidth:1.5,
+            pointStyle:"rectRot", pointRadius:4, pointBackgroundColor:"#64748b",
+            backgroundColor:"transparent", tension:0.2, fill:false,
+          };
+          // Attainment + MoM delta
+          const lastM = MONTHS[MONTHS.length-1];
+          const prevM = MONTHS[MONTHS.length-2];
+          const aVal = getAct(v,lastM), kVal = getKpi(v,lastM);
+          const aPrev = getAct(v,prevM);
+          const att = (aVal&&kVal) ? Math.round(aVal/kVal*100) : null;
+          const attC = att===null?"#9ca3af":att>=100?"#059669":att>=85?"#d97706":"#dc2626";
+          // MoM: % change in actual value (except DAU/MAU = ratio → pp)
+          const isRatioMet = met==="dauMau";
+          const momVal = (aVal&&aPrev) ? (
+            isRatioMet
+              ? parseFloat((aVal-aPrev).toFixed(2))          // pp
+              : parseFloat(((aVal-aPrev)/aPrev*100).toFixed(1)) // %
+          ) : null;
+          const momUnit = isRatioMet ? "pp" : "%";
+          const momC = momVal===null?"#9ca3af":momVal>=0?"#059669":"#dc2626";
+          return (
+            <div key={v} style={{background:"#fff",borderRadius:12,padding:"18px 20px",
+              boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+                <div style={{fontWeight:700,fontSize:14,color:VC[v],display:"flex",gap:8,alignItems:"center"}}>
+                  <span style={{width:10,height:10,borderRadius:99,background:VC[v],display:"inline-block"}}/>
+                  {v}
+                </div>
+                {att!==null&&(
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <span style={{fontSize:12,fontWeight:700,color:attC,
+                      background:attC+"18",padding:"2px 10px",borderRadius:99}}>
+                      {ML[lastM]} {att}% KPI
+                    </span>
+                    {momVal!==null&&(
+                      <span style={{fontSize:11,fontWeight:600,color:momC}}>
+                        {momVal>=0?"+":""}{momVal}{momUnit} MoM
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>
+                {metObj.label} · ── Actual · ╌╌ KPI
+              </div>
+              <LineChart labels={labels} datasets={[actDs, kpiDs]} height={200}/>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
 function ChannelSection() {
-  // Channel view replaces DAU/MAU (meaningless per channel) with Lead Rate % (DwL/DAU)
+  const [met, setMet] = useState("dau");
   const CH_METRICS = [
     ...METRICS.slice(0,3), // DAU, DwL, Lead
-    {key:"mau",      label:"MAU",          color:"#8b5cf6"},
-    {key:"mauLead",  label:"MAU w/ Lead",  color:"#ec4899"},
-    {key:"leadRate", label:"Lead Rate %",  color:"#14b8a6"}, // DwL/DAU per channel
+    {key:"mau",    label:"MAU",         color:"#8b5cf6"},
+    {key:"mauLead",label:"MAU w/ Lead", color:"#ec4899"},
+    {key:"dauMau", label:"DAU/MAU",     color:"#14b8a6"},
   ];
-  return <TrendSection
-    id="channel" title="Trendline — Từng Channel (Stacked vs KPI)"
-    groupList={CHANNELS}
-    colorMap={Object.fromEntries(CHANNELS.map((c,i)=>[c,CC[i]]))}
-    customMetrics={CH_METRICS}
-    getBarVal={(ch,m,met)=>{
-      if(met==="mau")      return chMonthMau(ch,m).mau;
-      if(met==="mauLead")  return chMonthMau(ch,m).mauLead;
-      if(met==="leadRate"){
-        const d=chMonthSum(ch,m); return d.dau ? parseFloat((d.dwl/d.dau*100).toFixed(1)) : 0;
-      }
-      const chRaw = chMonthSum(ch,m)[met]??0;
-      const totalChRaw = CHANNELS.reduce((s,c)=>s+chMonthSum(c,m)[met],0);
-      const correctTotal = ACT[m][met]??0;
-      return totalChRaw ? Math.round(chRaw/totalChRaw*correctTotal) : 0;
-    }}
-    getKpiVal={(m,met)=>{
-      if(met==="mau")      return KPI_MAU[m].mau;
-      if(met==="mauLead")  return KPI_MAU[m].mauLead;
-      if(met==="leadRate") return parseFloat((ACT[m].dwl/ACT[m].dau*100).toFixed(1));
-      return KPI[m][met];
-    }}
-  />;
+  const metObj = CH_METRICS.find(x=>x.key===met)||CH_METRICS[0];
+  const isRatio = met==="dauMau";
+
+  const getVal = (ch,m) => {
+    if(met==="mau")     return chMonthMau(ch,m).mau;
+    if(met==="mauLead") return chMonthMau(ch,m).mauLead;
+    if(met==="dauMau")  return chMonthMau(ch,m).dauMau;
+    const raw = chMonthSum(ch,m)[met]??0;
+    const tot = CHANNELS.reduce((s,c)=>s+chMonthSum(c,m)[met],0);
+    return tot ? Math.round(raw/tot*(ACT[m][met]??0)) : 0;
+  };
+
+  const datasets = CHANNELS.map((ch,i)=>({
+    label:ch,
+    data:MONTHS.map(m=>getVal(ch,m)),
+    borderColor:CC[i], backgroundColor:CC[i]+"22",
+    borderWidth:2, tension:0.3, pointRadius:4, fill:false,
+  }));
+
+  return (
+    <section id="channel">
+      <div className="section-title">Trendline — Từng Channel</div>
+      <MetricTab opts={CH_METRICS} sel={met} onChange={setMet}/>
+      <div style={{background:"#fff",borderRadius:12,padding:"18px 20px",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
+        <div style={{fontWeight:600,marginBottom:4,color:metObj.color,fontSize:13}}>
+          {metObj.label} by Channel
+        </div>
+        <div style={{fontSize:12,color:"#9ca3af",marginBottom:14}}>T1~T5/2026 · line per channel</div>
+        <LineChart labels={MONTHS.map(m=>ML[m])} datasets={datasets} height={300}/>
+      </div>
+    </section>
+  );
 }
 
 
@@ -931,12 +1090,12 @@ function ChannelSection() {
 const GROWTH_COST = {
   PTY:{
     "2026-01":234890760,"2026-02":132396000,"2026-03":360973800,"2026-04":416431277,
-    "2026-05":408916410,"2026-06":400000000,"2026-07":500000000,"2026-08":500000000,
+    "2026-05":408916410,"2026-06":450000000,"2026-07":500000000,"2026-08":500000000,
     "2026-09":500000000,"2026-10":500000000,"2026-11":500000000,"2026-12":400000000,
   },
   JOB:{
     "2026-01":111645340,"2026-02":75991201,"2026-03":520000000,"2026-04":342395675,
-    "2026-05":327636350,"2026-06":350000000,"2026-07":450000000,"2026-08":450000000,
+    "2026-05":327636350,"2026-06":400000000,"2026-07":450000000,"2026-08":450000000,
     "2026-09":400000000,"2026-10":400000000,"2026-11":400000000,"2026-12":300000000,
   },
   VEH:{
@@ -953,6 +1112,8 @@ const GROWTH_COST = {
 // All months including forecast T6-T12
 const ALL_MONTHS = [...MONTHS,"2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"];
 const ALL_ML = {...ML,"2026-06":"T6/26","2026-07":"T7/26","2026-08":"T8/26","2026-09":"T9/26","2026-10":"T10/26","2026-11":"T11/26","2026-12":"T12/26"};
+// Short labels for narrow charts (no "/26" suffix)
+const ALL_ML_S = Object.fromEntries(ALL_MONTHS.map(m=>[m, `T${parseInt(m.slice(5))}`]));
 
 function GrowthSection() {
   const [met, setMet] = useState("dau");
@@ -984,8 +1145,9 @@ function GrowthSection() {
           const lineDs = VERTS.map(v=>({
             label:v,
             data:MONTHS.map(m=>getData(ch,v,m,met)),
-            borderColor:VC[v], backgroundColor:VC[v]+"22",
-            tension:0.3, pointRadius:5, fill:false,
+            borderColor:VC[v], backgroundColor:VC[v]+"33",
+            borderWidth:2.5, tension:0.3, pointRadius:6, pointHoverRadius:8,
+            pointBorderWidth:2, pointBackgroundColor:VC[v], fill:false,
           }));
           return (
             <div key={ch} style={{background:"#fff",borderRadius:12,padding:"18px 20px",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
@@ -1083,10 +1245,10 @@ function GrowthSection() {
               <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>
                 ■ Darker = Actual (T1-T5) · ■ Lighter = Forecast (T6-T12)
               </div>
-              <BarChart labels={ALL_MONTHS.map(m=>ALL_ML[m])} datasets={spendBarDs} height={220} stacked/>
+              <BarChart labels={ALL_MONTHS.map(m=>ALL_ML_S[m])} datasets={spendBarDs} height={220} stacked/>
             </div>
-            {/* Row 2: 3 cost-per-unit charts */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:14,marginBottom:20}}>
+            {/* Row 2: 3 cost-per-unit charts — responsive, short labels */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:14,marginBottom:20}}>
               {[
                 {key:"dau",  label:"Cost per DAU",  color:"#6366f1"},
                 {key:"dwl",  label:"Cost per DwL",  color:"#f59e0b"},
@@ -1096,7 +1258,7 @@ function GrowthSection() {
                   boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
                   <div style={{fontWeight:600,fontSize:13,marginBottom:2,color:"#374151"}}>{label}</div>
                   <div style={{fontSize:10,color:"#9ca3af",marginBottom:10}}>₫ · {note}</div>
-                  <LineChart labels={ALL_MONTHS.map(m=>ALL_ML[m])} datasets={lnDs(key)} height={200}/>
+                  <LineChart labels={ALL_MONTHS.map(m=>ALL_ML_S[m])} datasets={lnDs(key)} height={200} maxTicks={6}/>
                 </div>
               ))}
             </div>
@@ -1210,7 +1372,7 @@ function DetailSection() {
   return (
     <section id="detail">
       <div className="section-title">Detail Table — By Vertical × Channel</div>
-      <MetricTab opts={DEMAND_METRICS} sel={metKey} onChange={setMetKey}/>
+      <MetricTab opts={METRICS} sel={metKey} onChange={setMetKey}/>
       {VERTS.map(vert=>(
         <div key={vert} style={{...card,marginBottom:14}}>
           <div style={{fontWeight:700,fontSize:13,marginBottom:10,
@@ -1232,9 +1394,20 @@ function DetailSection() {
               </thead>
               <tbody>
                 {CHANNELS.map(ch=>{
+                  const isMauMet = ["mau","mauLead","dauMau"].includes(metKey);
                   const vals = MONTHS.map(m=>{
+                    if(isMauMet) {
+                      // MAU metrics: proportional from vertical total using DAU share
+                      const mauVert = vertMonthMau(vert,m);
+                      const chDau = chMonthSum(ch,m).dau;
+                      const vertDau = vertMonthSum(vert,m).dau;
+                      const share = vertDau ? chDau/vertDau : 0;
+                      if(metKey==="mau")     return Math.round(mauVert.mau*share);
+                      if(metKey==="mauLead") return Math.round(mauVert.mauLead*share);
+                      if(metKey==="dauMau")  return parseFloat((chMonthSum(ch,m).dau/(mauVert.mau*share||1)*100).toFixed(1));
+                      return 0;
+                    }
                     const raw = DATA.find(x=>x.v===vert&&x.ch===ch&&x.m===m)?.[metKey]??0;
-                    // Scale to correct vertical total
                     const vertRawTotal = CHANNELS.reduce((s,c)=>s+(DATA.find(x=>x.v===vert&&x.ch===c&&x.m===m)?.[metKey]??0),0);
                     const correctTotal = VERT_ACT[vert]?.[m]?.[metKey]??0;
                     return vertRawTotal ? Math.round(raw/vertRawTotal*correctTotal) : 0;
@@ -1263,7 +1436,13 @@ function DetailSection() {
                 })}
                 {/* Subtotal row */}
                 {(()=>{
-                  const mTotals = MONTHS.map(m=>VERT_ACT[vert]?.[m]?.[metKey]??0);
+                  const mTotals = MONTHS.map(m=>{
+                    const mauVert = vertMonthMau(vert,m);
+                    if(metKey==="mau")     return mauVert.mau;
+                    if(metKey==="mauLead") return mauVert.mauLead;
+                    if(metKey==="dauMau")  return mauVert.dauMau;
+                    return VERT_ACT[vert]?.[m]?.[metKey]??0;
+                  });
                   const summary = metKey==="lead"
                     ? mTotals.reduce((a,x)=>a+x,0)
                     : Math.round(mTotals.filter(x=>x>0).reduce((a,x)=>a+x,0)/(mTotals.filter(x=>x>0).length||1));
