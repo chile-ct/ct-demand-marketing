@@ -1230,12 +1230,14 @@ function renderAllCharts() {
   })();
   (function(){
     const ctx=document.getElementById('chartG5CostVsUsers'); if(!ctx)return;
-    const forecastLabels=['Jun 2026*','Jul 2026*','Aug 2026*','Sep 2026*','Oct 2026*','Nov 2026*','Dec 2026*'];
+    // Forecast months = months NOT already in MONTHS (avoid duplicates)
+    const allFcLabels=['Jun 2026*','Jul 2026*','Aug 2026*','Sep 2026*','Oct 2026*','Nov 2026*','Dec 2026*'];
+    const forecastLabels=allFcLabels.filter(l=>!MONTHS.includes(l));
     const allLabels=[...MONTHS,...forecastLabels];
-    const costData=[...gc.cost,...gc.cost_forecast];
-    const usersData=[...gc.new_users,...Array(gc.cost_forecast.length).fill(null)];
+    const costData=[...gc.cost,...gc.cost_forecast.slice(allFcLabels.length-forecastLabels.length)];
+    const usersData=[...gc.new_users,...Array(forecastLabels.length).fill(null)];
     new Chart(ctx,{type:'bar',data:{labels:allLabels,datasets:[
-      {label:'Monthly Cost (VND)',data:costData,backgroundColor:[...Array(MONTHS.length).fill(C.purple+'cc'),...Array(gc.cost_forecast.length).fill(C.purple+'44')],borderColor:[...Array(MONTHS.length).fill(C.purple),...Array(gc.cost_forecast.length).fill(C.purple+'88')],borderWidth:1,borderRadius:4,yAxisID:'y'},
+      {label:'Monthly Cost (VND)',data:costData,backgroundColor:[...Array(MONTHS.length).fill(C.purple+'cc'),...Array(forecastLabels.length).fill(C.purple+'44')],borderColor:[...Array(MONTHS.length).fill(C.purple),...Array(forecastLabels.length).fill(C.purple+'88')],borderWidth:1,borderRadius:4,yAxisID:'y'},
       {label:'New Users (actual)',data:usersData,type:'line',borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
     ]},options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:12}}},tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v/1000).toFixed(0)}K`;return ` ${c.dataset.label}: ${(v/1e6).toFixed(0)}M ₫`;}}}},
