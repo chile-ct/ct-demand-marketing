@@ -347,26 +347,26 @@
   },
   "retention": {
     "total_d1": [
-      0.524,
-      0.526,
-      0.52,
-      0.517,
-      null,
-      null
+      0.442,
+      0.43,
+      0.437,
+      0.443,
+      0.437,
+      0.285
     ],
     "total_d7": [
-      0.439,
-      0.441,
-      0.436,
-      0.434,
-      null,
+      0.355,
+      0.33,
+      0.346,
+      0.351,
+      0.326,
       null
     ],
     "total_m1": [
-      0.654,
-      0.652,
-      0.652,
-      0.649,
+      0.647,
+      0.662,
+      0.619,
+      0.601,
       null,
       null
     ],
@@ -669,5 +669,127 @@
       null,
       null
     ]
-  }
+  },
+  "campaigns": [
+    {
+      "name": "Share_ad_via_iOS",
+      "new_users": 912,
+      "activated_adview": 397,
+      "activation_rate": 0.435,
+      "nurr_d1": 0.412,
+      "month": "May 2026"
+    },
+    {
+      "name": "digital_gg_job_vnd_dwa_banhang_pmax",
+      "new_users": 1276,
+      "activated_adview": 500,
+      "activation_rate": 0.392,
+      "nurr_d1": 0.361,
+      "month": "May 2026"
+    },
+    {
+      "name": "digital_activate_install7d_web",
+      "new_users": 1052,
+      "activated_adview": 405,
+      "activation_rate": 0.385,
+      "nurr_d1": 0.498,
+      "month": "May 2026"
+    },
+    {
+      "name": "digital_activate_install7d_app_reach",
+      "new_users": 1076,
+      "activated_adview": 391,
+      "activation_rate": 0.363,
+      "nurr_d1": 0.536,
+      "month": "May 2026"
+    },
+    {
+      "name": "digital_activate_install7d_web_reach",
+      "new_users": 1446,
+      "activated_adview": 496,
+      "activation_rate": 0.343,
+      "nurr_d1": 0.503,
+      "month": "May 2026"
+    },
+    {
+      "name": "pty_appinstall_inapp_action_user_android_view_item_list",
+      "new_users": 12464,
+      "activated_adview": 4226,
+      "activation_rate": 0.339,
+      "nurr_d1": 0.461,
+      "month": "May 2026"
+    },
+    {
+      "name": "job_appinstall_inapp_android_make_lead_30d",
+      "new_users": 9962,
+      "activated_adview": 3274,
+      "activation_rate": 0.329,
+      "nurr_d1": 0.457,
+      "month": "May 2026"
+    },
+    {
+      "name": "digital_activate_install7d_app",
+      "new_users": 858,
+      "activated_adview": 280,
+      "activation_rate": 0.326,
+      "nurr_d1": 0.465,
+      "month": "May 2026"
+    },
+    {
+      "name": "web_to_app_gds",
+      "new_users": 3374,
+      "activated_adview": 1098,
+      "activation_rate": 0.325,
+      "nurr_d1": 0.423,
+      "month": "May 2026"
+    },
+    {
+      "name": "job_appinstall_inapp_android_adview_7d",
+      "new_users": 16135,
+      "activated_adview": 5182,
+      "activation_rate": 0.321,
+      "nurr_d1": 0.366,
+      "month": "May 2026"
+    },
+    {
+      "name": "web_to_app_uni",
+      "new_users": 2352,
+      "activated_adview": 732,
+      "activation_rate": 0.311,
+      "nurr_d1": 0.488,
+      "month": "May 2026"
+    },
+    {
+      "name": "pty_appinstall_inapp_action_user_android_make_lead_30d",
+      "new_users": 8638,
+      "activated_adview": 2393,
+      "activation_rate": 0.277,
+      "nurr_d1": 0.395,
+      "month": "May 2026"
+    },
+    {
+      "name": "digital_app_install_android_mobile_hcm_make_lead",
+      "new_users": 13322,
+      "activated_adview": 3577,
+      "activation_rate": 0.269,
+      "nurr_d1": 0.366,
+      "month": "May 2026"
+    },
+    {
+      "name": "pty_appinstall_mass_android",
+      "new_users": 7351,
+      "activated_adview": 1629,
+      "activation_rate": 0.222,
+      "nurr_d1": 0.299,
+      "month": "May 2026"
+    },
+    {
+      "name": "job_appinstall_mass_android",
+      "new_users": 13923,
+      "activated_adview": 2907,
+      "activation_rate": 0.209,
+      "nurr_d1": 0.293,
+      "month": "May 2026"
+    }
+  ]
 }

@@ -204,12 +204,12 @@ canvas { max-height: 320px; }
   </div>
 
   <div class="chart-card" style="margin-bottom:16px">
-    <div class="chart-title">App MAU = Returning + New App MAU | % New line</div>
-    <div style="position:relative;height:280px"><canvas id="chartOverviewMAU"></canvas></div>
+    <div class="chart-title">Total Chotot MAU = Web/Other + App MAU</div>
+    <div style="position:relative;height:280px"><canvas id="chartCTMAU"></canvas></div>
   </div>
   <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">App MAU = Returning + New App MAU | % New line</div><div style="position:relative;height:280px"><canvas id="chartOverviewMAU"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">App MAU = Login + Non-login | Login Rate % line</div><div style="position:relative;height:280px"><canvas id="chartLoginRate"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">Total Chotot MAU = Web/Other + App MAU</div><div style="position:relative;height:280px"><canvas id="chartCTMAU"></canvas></div></div>
   </div>
   <div class="card">
     <div class="card-title">Monthly Metrics</div>
@@ -242,6 +242,15 @@ canvas { max-height: 320px; }
   </div>
 
   <div class="commentary-wrapper" id="cw-s2"><!-- JS will render --></div>
+
+  <div class="kpi-grid" id="s2-kpi-grid" style="margin-bottom:16px">
+    <div class="kpi-card"><div class="kpi-label">New App MAU (Total)</div><div class="kpi-value" id="kpi-s2-total">—</div><div class="kpi-sub" id="kpi-s2-total-sub">—</div><div class="kpi-delta" id="kpi-s2-total-delta">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Direct</div><div class="kpi-value" id="kpi-s2-direct">—</div><div class="kpi-sub" id="kpi-s2-direct-sub">—</div><div class="kpi-delta" id="kpi-s2-direct-delta">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Organic Search</div><div class="kpi-value" id="kpi-s2-organic">—</div><div class="kpi-sub" id="kpi-s2-organic-sub">—</div><div class="kpi-delta" id="kpi-s2-organic-delta">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Growth (Paid+Display+CRM)</div><div class="kpi-value" id="kpi-s2-growth">—</div><div class="kpi-sub" id="kpi-s2-growth-sub">—</div><div class="kpi-delta" id="kpi-s2-growth-delta">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg Daily New DAU</div><div class="kpi-value" id="kpi-s2-dau">—</div><div class="kpi-sub" id="kpi-s2-dau-sub">—</div><div class="kpi-delta" id="kpi-s2-dau-delta">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Growth % of Total</div><div class="kpi-value" id="kpi-s2-pct">—</div><div class="kpi-sub" id="kpi-s2-pct-sub">—</div><div class="kpi-delta" id="kpi-s2-pct-delta">—</div></div>
+  </div>
 
   <div class="tabs" id="tabs-new">
     <button class="tab active" onclick="switchTab('new',0)">Overview</button>
@@ -323,6 +332,15 @@ canvas { max-height: 320px; }
   </div>
 
   <div class="commentary-wrapper" id="cw-s3"><!-- JS will render --></div>
+
+  <div class="kpi-grid" id="s3-kpi-grid" style="margin-bottom:16px">
+    <div class="kpi-card"><div class="kpi-label">Monthly Activated (adview D7)</div><div class="kpi-value" id="kpi-s3-adview">—</div><div class="kpi-sub" id="kpi-s3-adview-sub">—</div><div class="kpi-delta" id="kpi-s3-adview-delta">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Monthly Activated (lead D7)</div><div class="kpi-value" id="kpi-s3-lead">—</div><div class="kpi-sub" id="kpi-s3-lead-sub">—</div><div class="kpi-delta" id="kpi-s3-lead-delta">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Activation Rate (adview)</div><div class="kpi-value" id="kpi-s3-rate-adv">—</div><div class="kpi-sub" id="kpi-s3-rate-adv-sub">—</div><div class="kpi-delta" id="kpi-s3-rate-adv-delta">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Activation Rate (lead)</div><div class="kpi-value" id="kpi-s3-rate-lead">—</div><div class="kpi-sub" id="kpi-s3-rate-lead-sub">—</div><div class="kpi-delta" id="kpi-s3-rate-lead-delta">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Daily Activated (adview)</div><div class="kpi-value" id="kpi-s3-daily-adv">—</div><div class="kpi-sub" id="kpi-s3-daily-adv-sub">—</div><div class="kpi-delta" id="kpi-s3-daily-adv-delta">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Daily Activated (lead)</div><div class="kpi-value" id="kpi-s3-daily-lead">—</div><div class="kpi-sub" id="kpi-s3-daily-lead-sub">—</div><div class="kpi-delta" id="kpi-s3-daily-lead-delta">—</div></div>
+  </div>
 
   <div class="tabs" id="tabs-act">
     <button class="tab active" onclick="switchTab('act',0)">Overview</button>
@@ -562,11 +580,9 @@ canvas { max-height: 320px; }
       <div class="card-title">Acquisition — Growth Channel</div>
       <div style="overflow-x:auto"><table id="g5AcqTable"></table></div>
     </div>
-    <div class="card" style="margin-top:16px">
-      <div class="card-title">🎯 Active Campaigns — Growth Channel</div>
-      <div style="padding:16px;color:#6b7280;font-size:12px">
-        ⏳ Campaign-level breakdown cần query thêm từ <code>ct_digital.dashboard__retention_mapping_activation_by_source_campaign</code> với filter <code>campaign != 'all'</code>. Sẽ được thêm vào data.json trong lần update tiếp theo.
-      </div>
+    <div class="card" style="margin-top:16px" id="campaignAcqCard">
+      <div class="card-title">🎯 Active Campaigns — ranked by New Users (May 2026)</div>
+      <div style="overflow-x:auto"><table id="campaignAcqTable"></table></div>
     </div>
   </div>
 
@@ -577,11 +593,9 @@ canvas { max-height: 320px; }
       <div class="card-title">Activation — Growth Channel</div>
       <div style="overflow-x:auto"><table id="g5ActTable"></table></div>
     </div>
-    <div class="card" style="margin-top:16px">
-      <div class="card-title">🎯 Active Campaigns — Activation</div>
-      <div style="padding:16px;color:#6b7280;font-size:12px">
-        ⏳ Campaign-level breakdown cần query thêm từ <code>ct_digital.dashboard__retention_mapping_activation_by_source_campaign</code> với filter <code>campaign != 'all'</code>. Sẽ được thêm vào data.json trong lần update tiếp theo.
-      </div>
+    <div class="card" style="margin-top:16px" id="campaignActCard">
+      <div class="card-title">🎯 Active Campaigns — ranked by Activation Rate ≥20 adview (May 2026)</div>
+      <div style="overflow-x:auto"><table id="campaignActTable"></table></div>
     </div>
   </div>
 
@@ -592,11 +606,9 @@ canvas { max-height: 320px; }
       <div class="card-title">Retention — Growth Channel vs Total</div>
       <div style="overflow-x:auto"><table id="g5NurrTable"></table></div>
     </div>
-    <div class="card" style="margin-top:16px">
-      <div class="card-title">🎯 Active Campaigns — Retention</div>
-      <div style="padding:16px;color:#6b7280;font-size:12px">
-        ⏳ Campaign-level breakdown cần query thêm từ <code>ct_digital.dashboard__retention_mapping_activation_by_source_campaign</code> với filter <code>campaign != 'all'</code>. Sẽ được thêm vào data.json trong lần update tiếp theo.
-      </div>
+    <div class="card" style="margin-top:16px" id="campaignRetCard">
+      <div class="card-title">🎯 Active Campaigns — ranked by NURR D1 (May 2026)</div>
+      <div style="overflow-x:auto"><table id="campaignRetTable"></table></div>
     </div>
   </div>
 
@@ -822,6 +834,56 @@ function renderCommentary(sectionId, defaultMonth='overall') {
     <div id="cm-${sectionId}">${html(defaultMonth)}</div>`;
 }
 
+function updateS2KPICards(i) {
+  if (!D || i == null) return;
+  const ac = D.acquisition, ov = D.overview;
+  const mn = D.months[i], prev = i > 0 ? i-1 : null;
+  function fmtN(v) { return v==null?'—':v>=1e6?(v/1e6).toFixed(2)+'M':v>=1000?Math.round(v/1000)+'K':v.toLocaleString('en'); }
+  function fmtP(v) { return v==null?'—':(v*100).toFixed(1)+'%'; }
+  function d(cur, prv, isR) {
+    if (cur==null||prv==null) return '';
+    const diff=cur-prv, pos=diff>=0;
+    const txt=isR?(pos?'+':'')+((diff)*100).toFixed(1)+'pp':(pos?'+':'')+fmtN(Math.abs(diff));
+    return `<span class="${pos?'up':'down'}">${pos?'▲':'▼'} ${txt} vs ${D.months[prv]}</span>`;
+  }
+  const set = (id, v, sub, delta) => {
+    const el=document.getElementById(id); if(el) el.textContent=v;
+    const se=document.getElementById(id+'-sub'); if(se) se.textContent=sub||mn;
+    const de=document.getElementById(id+'-delta'); if(de) de.innerHTML=delta||'—';
+  };
+  set('kpi-s2-total', fmtN(ov.new_mau[i]), mn, d(ov.new_mau[i], prev!=null?ov.new_mau[prev]:null, false));
+  set('kpi-s2-direct', fmtN(ac.direct[i]), mn, d(ac.direct[i], prev!=null?ac.direct[prev]:null, false));
+  set('kpi-s2-organic', fmtN(ac.organic[i]), mn, d(ac.organic[i], prev!=null?ac.organic[prev]:null, false));
+  set('kpi-s2-growth', fmtN(ac.growth[i]), mn, d(ac.growth[i], prev!=null?ac.growth[prev]:null, false));
+  set('kpi-s2-dau', fmtN(ov.avg_new_dau[i]), mn, d(ov.avg_new_dau[i], prev!=null?ov.avg_new_dau[prev]:null, false));
+  set('kpi-s2-pct', fmtP(ac.growth_pct_total[i]), mn, d(ac.growth_pct_total[i], prev!=null?ac.growth_pct_total[prev]:null, true));
+}
+
+function updateS3KPICards(i) {
+  if (!D || i == null) return;
+  const act = D.activation;
+  const mn = D.months[i], prev = i > 0 ? i-1 : null;
+  function fmtN(v) { return v==null?'—':v>=1000?Math.round(v/1000)+'K':v.toLocaleString('en'); }
+  function fmtP(v) { return v==null?'—':(v*100).toFixed(1)+'%'; }
+  function d(cur, prv, isR) {
+    if (cur==null||prv==null) return '';
+    const diff=cur-prv, pos=diff>=0;
+    const txt=isR?(pos?'+':'')+((diff)*100).toFixed(1)+'pp':(pos?'+':'')+fmtN(Math.abs(diff));
+    return `<span class="${pos?'up':'down'}">${pos?'▲':'▼'} ${txt} vs ${D.months[prv]}</span>`;
+  }
+  const set = (id, v, sub, delta) => {
+    const el=document.getElementById(id); if(el) el.textContent=v;
+    const se=document.getElementById(id+'-sub'); if(se) se.textContent=sub||mn;
+    const de=document.getElementById(id+'-delta'); if(de) de.innerHTML=delta||'—';
+  };
+  set('kpi-s3-adview', fmtN(act.adview_total[i]), mn, d(act.adview_total[i], prev!=null?act.adview_total[prev]:null, false));
+  set('kpi-s3-lead', fmtN(act.lead_total[i]), mn, d(act.lead_total[i], prev!=null?act.lead_total[prev]:null, false));
+  set('kpi-s3-rate-adv', fmtP(act.adview_rate[i]), mn, d(act.adview_rate[i], prev!=null?act.adview_rate[prev]:null, true));
+  set('kpi-s3-rate-lead', fmtP(act.lead_rate[i]), mn, d(act.lead_rate[i], prev!=null?act.lead_rate[prev]:null, true));
+  set('kpi-s3-daily-adv', fmtN(act.adview_daily[i]), mn, d(act.adview_daily[i], prev!=null?act.adview_daily[prev]:null, false));
+  set('kpi-s3-daily-lead', fmtN(act.lead_daily[i]), mn, d(act.lead_daily[i], prev!=null?act.lead_daily[prev]:null, false));
+}
+
 function selectMonth(sectionId, month) {
   const data = COMMENTARY[sectionId];
   document.querySelectorAll(`#ms-${sectionId} .month-chip`).forEach(c=>{
@@ -829,6 +891,13 @@ function selectMonth(sectionId, month) {
     c.classList.toggle('active', key.startsWith(month==='overall'?'overall':month.substring(0,3)));
   });
   if (sectionId === 's5') updateS5KPIs(month);
+  if ((sectionId === 's2' || sectionId === 's3') && D) {
+    const dM = D.months;
+    const mMap = {overall: dM.length-1, jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11};
+    const idx = mMap[month] !== undefined ? mMap[month] : dM.length-1;
+    if (sectionId === 's2') updateS2KPICards(idx);
+    if (sectionId === 's3') updateS3KPICards(idx);
+  }
   // Update KPI cards when Section 1 month changes
   if (sectionId === 's1' && typeof updateKPICards === 'function' && D) {
     const dMonths = D.months;
@@ -1272,6 +1341,30 @@ function selectExecMonth(m) {
 // ============================================================
 // INIT — load data then render everything
 // ============================================================
+function renderCampaignTables() {
+  if (!D || !D.campaigns) return;
+  const c = D.campaigns;
+  const fmtN = v => v==null?'—':v.toLocaleString('en');
+  const fmtP = v => v==null?'—':(v*100).toFixed(1)+'%';
+
+  const thead = `<tr><th style="text-align:left">Campaign</th><th>New Users</th><th>Activated (adview)</th><th>Activation Rate</th><th>NURR D1</th></tr>`;
+
+  function tableHTML(sortedCampaigns) {
+    const rows = sortedCampaigns.slice(0,12).map(r =>
+      `<tr><td style="font-size:11px;max-width:250px;word-break:break-word">${r.name}</td><td>${fmtN(r.new_users)}</td><td>${fmtN(r.activated_adview)}</td><td style="color:${r.activation_rate>0.30?'#10b981':'#374151'};font-weight:${r.activation_rate>0.30?'700':'400'}">${fmtP(r.activation_rate)}</td><td style="color:${r.nurr_d1>0.40?'#10b981':'#374151'};font-weight:${r.nurr_d1>0.40?'700':'400'}">${fmtP(r.nurr_d1)}</td></tr>`
+    ).join('');
+    return `<thead>${thead}</thead><tbody>${rows}</tbody>`;
+  }
+
+  const byUsers = [...c].sort((a,b)=>b.new_users-a.new_users);
+  const byAct = [...c].sort((a,b)=>b.activation_rate-a.activation_rate);
+  const byNURR = [...c].sort((a,b)=>b.nurr_d1-a.nurr_d1);
+
+  const t1=document.getElementById('campaignAcqTable'); if(t1) t1.innerHTML=tableHTML(byUsers);
+  const t2=document.getElementById('campaignActTable'); if(t2) t2.innerHTML=tableHTML(byAct);
+  const t3=document.getElementById('campaignRetTable'); if(t3) t3.innerHTML=tableHTML(byNURR);
+}
+
 // ── Growth Channel Tables: dynamic from D + MoM delta ────────────────────────
 function renderGrowthTables() {
   if (!D) return;
@@ -1421,6 +1514,9 @@ async function initDashboard() {
   renderStaticTables();
   renderGrowthTables();
   updateKPICards(D.months.length-1);
+  updateS2KPICards(D.months.length-1);
+  updateS3KPICards(D.months.length-1);
+  renderCampaignTables();
   // Default to latest month
   const latestKey = D.months[D.months.length-1].replace(/[^a-zA-Z]/g,'').toLowerCase().substring(0,3);
   selectExecMonth(latestKey);
