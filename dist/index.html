@@ -3544,8 +3544,7 @@ function GrowthSection() {
       datasets: lineDs,
       height: 220
     }));
-  })), VERTS.map(vert => /*#__PURE__*/React.createElement("div", {
-    key: vert,
+  })), /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#fff",
       borderRadius: 12,
@@ -3555,23 +3554,37 @@ function GrowthSection() {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 12,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
       fontWeight: 700,
       fontSize: 13,
-      marginBottom: 10,
-      color: VC[vert],
-      display: "flex",
-      gap: 8,
-      alignItems: "center"
+      color: "#374151"
     }
-  }, /*#__PURE__*/React.createElement("span", {
+  }, metObj.label, " by Channel"), /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 10,
-      height: 10,
-      borderRadius: 99,
-      background: VC[vert],
-      display: "inline-block"
+      display: "flex",
+      gap: 4
     }
-  }), vert, " \u2014 ", metObj.label), /*#__PURE__*/React.createElement("div", {
+  }, VERTS.map(v => /*#__PURE__*/React.createElement("button", {
+    key: v,
+    onClick: () => setUnitVert(v),
+    style: {
+      padding: "3px 11px",
+      borderRadius: 6,
+      fontSize: 12,
+      fontWeight: 600,
+      cursor: "pointer",
+      border: "none",
+      background: unitVert === v ? VC[v] : "#f3f4f6",
+      color: unitVert === v ? "#fff" : VC[v]
+    }
+  }, v)))), /*#__PURE__*/React.createElement("div", {
     style: {
       overflowX: "auto"
     }
@@ -3602,7 +3615,7 @@ function GrowthSection() {
       color: "#9ca3af"
     }
   }, "MoM ", ML[MONTHS[MONTHS.length - 1]]))), /*#__PURE__*/React.createElement("tbody", null, GROWTH_CHS.map(ch => {
-    const vals = MONTHS.map(m => getData(ch, vert, m, met));
+    const vals = MONTHS.map(m => getData(ch, unitVert, m, met));
     const li = vals.length - 1;
     const mom = vals[li] && vals[li - 1] ? delta(vals[li], vals[li - 1]) : null;
     const mc = mom === null ? "#9ca3af" : mom > 0 ? "#059669" : "#dc2626";
@@ -3631,7 +3644,7 @@ function GrowthSection() {
         color: mc
       }
     }, mom !== null ? sign(mom) + "%" : "—")) : null;
-  })))))), /*#__PURE__*/React.createElement("div", {
+  }))))), /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#fff",
       borderRadius: 12,
@@ -3931,29 +3944,12 @@ function GrowthSection() {
         }, clead ? fmtK(clead) : "—"));
       }))));
     };
-    // Chip selector: PTY / JOB / VEH / GDS (no Total)
-    const chipVert = unitVert === "__total__" ? "PTY" : unitVert;
-    const chipColor = VC[chipVert] || "#374151";
-    return /*#__PURE__*/React.createElement("div", {
-      style: {
-        background: "#fff",
-        borderRadius: 12,
-        padding: "16px 18px",
-        boxShadow: "0 1px 4px rgba(0,0,0,.07)"
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        marginBottom: 14,
-        flexWrap: "wrap"
-      }
-    }, /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       style: {
         fontWeight: 600,
         fontSize: 13,
-        color: "#374151"
+        color: "#374151",
+        marginBottom: 12
       }
     }, "Detail \u2014 Unit Economy", /*#__PURE__*/React.createElement("span", {
       style: {
@@ -3964,27 +3960,16 @@ function GrowthSection() {
       }
     }, "Growth (Paid) \xB7 * = FC \xB7 \u20AB/DAU & \u20AB/DwL \xF7 days")), /*#__PURE__*/React.createElement("div", {
       style: {
-        display: "flex",
-        gap: 4
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 12
       }
-    }, VERTS.map(v => /*#__PURE__*/React.createElement("button", {
+    }, VERTS.map(v => /*#__PURE__*/React.createElement(MiniTable, {
       key: v,
-      onClick: () => setUnitVert(v),
-      style: {
-        padding: "4px 12px",
-        borderRadius: 6,
-        border: `1.5px solid ${chipVert === v ? VC[v] : "#e5e7eb"}`,
-        cursor: "pointer",
-        fontSize: 12,
-        fontWeight: 600,
-        background: chipVert === v ? VC[v] : "#fff",
-        color: chipVert === v ? "#fff" : VC[v]
-      }
-    }, v)))), /*#__PURE__*/React.createElement(MiniTable, {
-      vert: chipVert,
+      vert: v,
       isT: false,
-      color: chipColor
-    }));
+      color: VC[v]
+    }))));
   })()));
 }
 function DetailSection() {

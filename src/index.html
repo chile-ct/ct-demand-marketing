@@ -1210,42 +1210,50 @@ function GrowthSection() {
         })}
       </div>
 
-      {/* Summary table: both channels side by side */}
-      {VERTS.map(vert=>(
-        <div key={vert} style={{background:"#fff",borderRadius:12,padding:"16px 20px",
-          boxShadow:"0 1px 4px rgba(0,0,0,.07)",marginBottom:12}}>
-          <div style={{fontWeight:700,fontSize:13,marginBottom:10,color:VC[vert],display:"flex",gap:8,alignItems:"center"}}>
-            <span style={{width:10,height:10,borderRadius:99,background:VC[vert],display:"inline-block"}}/>
-            {vert} — {metObj.label}
+      {/* Summary table: chip selector per vertical — 1 table */}
+      <div style={{background:"#fff",borderRadius:12,padding:"16px 20px",
+        boxShadow:"0 1px 4px rgba(0,0,0,.07)",marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
+          <div style={{fontWeight:700,fontSize:13,color:"#374151"}}>
+            {metObj.label} by Channel
           </div>
-          <div style={{overflowX:"auto"}}>
-            <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-              <thead>
-                <tr style={{background:"#f8f9ff"}}>
-                  <th style={{...TH,textAlign:"left"}}>Channel</th>
-                  {MONTHS.map(m=><th key={m} style={{...TH,color:metObj.color}}>{ML[m]}</th>)}
-                  <th style={{...TH,color:"#9ca3af"}}>MoM {ML[MONTHS[MONTHS.length-1]]}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {GROWTH_CHS.map(ch=>{
-                  const vals=MONTHS.map(m=>getData(ch,vert,m,met));
-                  const li=vals.length-1;
-                  const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;
-                  const mc=mom===null?"#9ca3af":mom>0?"#059669":"#dc2626";
-                  return vals.some(v=>v>0) ? (
-                    <tr key={ch} style={{borderTop:"1px solid #f5f5f5"}}>
-                      <td style={{...TD,textAlign:"left",fontWeight:500,color:GROWTH_COLORS[ch]}}>{ch}</td>
-                      {vals.map((v,i)=><td key={i} style={{...TD,color:v?"#111":"#ddd"}}>{v?fmtN(v):"—"}</td>)}
-                      <td style={{...TD,fontWeight:600,color:mc}}>{mom!==null?sign(mom)+"%":"—"}</td>
-                    </tr>
-                  ) : null;
-                })}
-              </tbody>
-            </table>
+          <div style={{display:"flex",gap:4}}>
+            {VERTS.map(v=>(
+              <button key={v} onClick={()=>setUnitVert(v)} style={{
+                padding:"3px 11px",borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer",border:"none",
+                background:unitVert===v?VC[v]:"#f3f4f6",
+                color:unitVert===v?"#fff":VC[v],
+              }}>{v}</button>
+            ))}
           </div>
         </div>
-      ))}
+        <div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+            <thead>
+              <tr style={{background:"#f8f9ff"}}>
+                <th style={{...TH,textAlign:"left"}}>Channel</th>
+                {MONTHS.map(m=><th key={m} style={{...TH,color:metObj.color}}>{ML[m]}</th>)}
+                <th style={{...TH,color:"#9ca3af"}}>MoM {ML[MONTHS[MONTHS.length-1]]}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {GROWTH_CHS.map(ch=>{
+                const vals=MONTHS.map(m=>getData(ch,unitVert,m,met));
+                const li=vals.length-1;
+                const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;
+                const mc=mom===null?"#9ca3af":mom>0?"#059669":"#dc2626";
+                return vals.some(v=>v>0) ? (
+                  <tr key={ch} style={{borderTop:"1px solid #f5f5f5"}}>
+                    <td style={{...TD,textAlign:"left",fontWeight:500,color:GROWTH_COLORS[ch]}}>{ch}</td>
+                    {vals.map((v,i)=><td key={i} style={{...TD,color:v?"#111":"#ddd"}}>{v?fmtN(v):"—"}</td>)}
+                    <td style={{...TD,fontWeight:600,color:mc}}>{mom!==null?sign(mom)+"%":"—"}</td>
+                  </tr>
+                ) : null;
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Cost & Unit Economy — from Google Sheets */}
       <div style={{background:"#fff",borderRadius:12,padding:"18px 20px",
@@ -1403,29 +1411,16 @@ function GrowthSection() {
               </div>
             );
           };
-          // Chip selector: PTY / JOB / VEH / GDS (no Total)
-          const chipVert = unitVert==="__total__" ? "PTY" : unitVert;
-          const chipColor = VC[chipVert]||"#374151";
           return (
-            <div style={{background:"#fff",borderRadius:12,padding:"16px 18px",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
-              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,flexWrap:"wrap"}}>
-                <div style={{fontWeight:600,fontSize:13,color:"#374151"}}>
-                  Detail — Unit Economy
-                  <span style={{fontSize:11,color:"#9ca3af",fontWeight:400,marginLeft:6}}>Growth (Paid) · * = FC · ₫/DAU & ₫/DwL ÷ days</span>
-                </div>
-                <div style={{display:"flex",gap:4}}>
-                  {VERTS.map(v=>(
-                    <button key={v} onClick={()=>setUnitVert(v)} style={{
-                      padding:"4px 12px",borderRadius:6,
-                      border:`1.5px solid ${chipVert===v?VC[v]:"#e5e7eb"}`,
-                      cursor:"pointer",fontSize:12,fontWeight:600,
-                      background:chipVert===v?VC[v]:"#fff",
-                      color:chipVert===v?"#fff":VC[v],
-                    }}>{v}</button>
-                  ))}
-                </div>
+            <div>
+              <div style={{fontWeight:600,fontSize:13,color:"#374151",marginBottom:12}}>
+                Detail — Unit Economy
+                <span style={{fontSize:11,color:"#9ca3af",fontWeight:400,marginLeft:6}}>Growth (Paid) · * = FC · ₫/DAU & ₫/DwL ÷ days</span>
               </div>
-              <MiniTable vert={chipVert} isT={false} color={chipColor}/>
+              {/* 4 boxes, 2 rows × 2 cols */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                {VERTS.map(v=><MiniTable key={v} vert={v} isT={false} color={VC[v]}/>)}
+              </div>
             </div>
           );
         })()}
