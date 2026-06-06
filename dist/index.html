@@ -3895,26 +3895,23 @@ function GrowthSection() {
           color: "#10b981",
           fontWeight: 600
         }
-      }, "\u20AB/Lead"))), /*#__PURE__*/React.createElement("tbody", null, ALL_MONTHS.map(m => {
+      }, "\u20AB/Lead"))), /*#__PURE__*/React.createElement("tbody", null, MONTHS.map(m => {
         const s = spendV(m);
-        const isFc = !MONTHS.includes(m);
         const cdau = cpuV(m, "dau"),
           cdwl = cpuV(m, "dwl"),
           clead = cpuV(m, "lead");
         return /*#__PURE__*/React.createElement("tr", {
           key: m,
           style: {
-            borderBottom: "1px solid #fafafa",
-            background: isFc ? "#fffbf0" : "transparent",
-            opacity: isFc ? 0.65 : 1
+            borderBottom: "1px solid #fafafa"
           }
         }, /*#__PURE__*/React.createElement("td", {
           style: {
             padding: "3px 4px",
-            color: isFc ? "#92400e" : "#374151",
+            color: "#374151",
             fontWeight: 500
           }
-        }, ALL_ML_S[m], isFc ? "*" : ""), /*#__PURE__*/React.createElement("td", {
+        }, ALL_ML_S[m]), /*#__PURE__*/React.createElement("td", {
           style: {
             textAlign: "right",
             padding: "3px 4px",

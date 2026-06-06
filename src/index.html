@@ -1392,13 +1392,12 @@ function GrowthSection() {
                     </tr>
                   </thead>
                   <tbody>
-                    {ALL_MONTHS.map(m=>{
-                      const s=spendV(m); const isFc=!MONTHS.includes(m);
+                    {MONTHS.map(m=>{
+                      const s=spendV(m);
                       const cdau=cpuV(m,"dau"), cdwl=cpuV(m,"dwl"), clead=cpuV(m,"lead");
                       return (
-                        <tr key={m} style={{borderBottom:"1px solid #fafafa",
-                          background:isFc?"#fffbf0":"transparent",opacity:isFc?0.65:1}}>
-                          <td style={{padding:"3px 4px",color:isFc?"#92400e":"#374151",fontWeight:500}}>{ALL_ML_S[m]}{isFc?"*":""}</td>
+                        <tr key={m} style={{borderBottom:"1px solid #fafafa"}}>
+                          <td style={{padding:"3px 4px",color:"#374151",fontWeight:500}}>{ALL_ML_S[m]}</td>
                           <td style={{textAlign:"right",padding:"3px 4px",color:s?"#374151":"#ddd"}}>{s?fmtK(s):"—"}</td>
                           <td style={{textAlign:"right",padding:"3px 4px",fontWeight:600,color:cpColor(cdau)}}>{cdau?fmtK(cdau):"—"}</td>
                           <td style={{textAlign:"right",padding:"3px 4px",fontWeight:600,color:cpColor(cdwl)}}>{cdwl?fmtK(cdwl):"—"}</td>
