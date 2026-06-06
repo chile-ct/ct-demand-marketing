@@ -1317,9 +1317,9 @@ function selectExecMonth(m) {
     }
   });
   // Update KPI cards
-  const months = D ? D.months : [];
-  const monthMap = {overall: months.length-1, jan:0, feb:1, mar:2, apr:3, may:4, jun:5};
-  const idx = monthMap[m] !== undefined ? monthMap[m] : months.length-1;
+  const dMonths = D ? D.months : [];
+  const monthMap = {overall: dMonths.length-1, jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11};
+  const idx = monthMap[m] !== undefined ? monthMap[m] : dMonths.length-1;
   updateKPICards(idx);
 }
 
