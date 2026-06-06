@@ -1437,7 +1437,7 @@ const KPI_VERT = {
 //         chotot-dwh.chotot_mtm.dashboard__dauwlead__vertical_monthly (DwL monthly, Lead)
 //         chotot-dwh.chotot_mtm.dashboard__mauwlead__vertical_monthly (MAU w/Lead)
 
-// Per-vertical actuals by month — vertical keys: PTY, JOB, VEH, GDS (=C2C in BQ)
+// Per-vertical actuals — auto-updated by update_marketplace.py
 const VERT_ACT = {
   PTY: {
     "2026-01": {
@@ -1467,6 +1467,20 @@ const VERT_ACT = {
       lead: 1330043,
       mau: 1347596,
       mauLead: 178785
+    },
+    "2026-05": {
+      dau: 84068,
+      dwl: 10801,
+      lead: 1372581,
+      mau: 1443394,
+      mauLead: 187413
+    },
+    "2026-06": {
+      dau: 88392,
+      dwl: 11727,
+      lead: 360674,
+      mau: 271541,
+      mauLead: 45200
     }
   },
   JOB: {
@@ -1497,6 +1511,20 @@ const VERT_ACT = {
       lead: 854574,
       mau: 721012,
       mauLead: 130989
+    },
+    "2026-05": {
+      dau: 45562,
+      dwl: 8723,
+      lead: 917396,
+      mau: 691746,
+      mauLead: 136416
+    },
+    "2026-06": {
+      dau: 47476,
+      dwl: 9628,
+      lead: 168839,
+      mau: 140050,
+      mauLead: 35151
     }
   },
   VEH: {
@@ -1527,6 +1555,20 @@ const VERT_ACT = {
       lead: 1488142,
       mau: 1488175,
       mauLead: 131833
+    },
+    "2026-05": {
+      dau: 98122,
+      dwl: 8033,
+      lead: 1232264,
+      mau: 1435684,
+      mauLead: 129071
+    },
+    "2026-06": {
+      dau: 91820,
+      dwl: 7670,
+      lead: 184733,
+      mau: 267826,
+      mauLead: 28216
     }
   },
   GDS: {
@@ -1560,10 +1602,17 @@ const VERT_ACT = {
     },
     "2026-05": {
       dau: 164992,
-      dwl: 23602,
+      dwl: 24083,
       lead: 1917473,
       mau: 1953978,
       mauLead: 309708
+    },
+    "2026-06": {
+      dau: 317592,
+      dwl: 23576,
+      lead: 320965,
+      mau: 801806,
+      mauLead: 79411
     }
   }
 };
@@ -1618,8 +1667,7 @@ const DATA = (() => {
   return Object.values(map);
 })();
 
-// Total platform actuals — sum from VERT_ACT (chotot_mtm "all" vertical)
-// DAU/MAU: chotot_mtm.dashboard__dau_vertical_daily / _monthly (vertical="all")
+// Total platform actuals — auto-updated by update_marketplace.py
 const ACT = {
   "2026-01": {
     dau: 443370,
@@ -1627,7 +1675,7 @@ const ACT = {
     lead: 4386843,
     mau: 6155280,
     mauLead: 621917,
-    dauMau: parseFloat((443370 / 6155280 * 100).toFixed(1))
+    dauMau: 7.2
   },
   "2026-02": {
     dau: 372449,
@@ -1635,7 +1683,7 @@ const ACT = {
     lead: 3222671,
     mau: 4519975,
     mauLead: 532248,
-    dauMau: parseFloat((372449 / 4519975 * 100).toFixed(1))
+    dauMau: 8.2
   },
   "2026-03": {
     dau: 513685,
@@ -1643,7 +1691,7 @@ const ACT = {
     lead: 6110237,
     mau: 6988156,
     mauLead: 814854,
-    dauMau: parseFloat((513685 / 6988156 * 100).toFixed(1))
+    dauMau: 7.4
   },
   "2026-04": {
     dau: 464605,
@@ -1651,24 +1699,24 @@ const ACT = {
     lead: 5621250,
     mau: 5867098,
     mauLead: 700095,
-    dauMau: parseFloat((464605 / 5867098 * 100).toFixed(1))
+    dauMau: 7.9
   },
   "2026-05": {
     dau: 452432,
     dwl: 50827,
     lead: 5441300,
     mau: 5855563,
-    mauLead: 712334,
-    dauMau: parseFloat((452432 / 5855563 * 100).toFixed(1))
+    mauLead: 712850,
+    dauMau: 7.7
   },
   "2026-06": {
     dau: 616749,
     dwl: 51805,
     lead: 1035599,
     mau: 1746194,
-    mauLead: 182026,
-    dauMau: parseFloat((616749 / 1746194 * 100).toFixed(1))
-  } // partial 1-5/6
+    mauLead: 182125,
+    dauMau: 35.3
+  }
 };
 const ACT_MAU = {
   "2026-01": {
