@@ -2,7 +2,8 @@ name: Update Dashboard Data
 
 on:
   schedule:
-    - cron: '30 3 * * 1'
+    # Every day at 11:00 AM Asia/Saigon = 04:00 UTC
+    - cron: '0 4 * * *'
   workflow_dispatch:
 
 jobs:
@@ -13,9 +14,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -30,7 +33,7 @@ jobs:
           echo '${{ secrets.GCP_USER_CREDENTIALS }}' > /tmp/gcp-creds.json
           echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-creds.json" >> $GITHUB_ENV
 
-      - name: Update data + pre-compile
+      - name: Update data + build
         run: |
           python scripts/update_dashboard.py
           node build.js
@@ -40,10 +43,10 @@ jobs:
         run: |
           git config user.name "dashboard-bot"
           git config user.email "chile@chotot.vn"
-          git add index.html dist/index.html
+          git add index.html dist/index.html src/index.html
           if git diff --staged --quiet; then
             echo "No changes"
           else
-            git commit -m "data: auto-update $(date -u '+%Y-%m') [skip ci]"
+            git commit -m "data: auto-update $(date -u '+%Y-%m-%d') [skip ci]"
             git push
           fi
