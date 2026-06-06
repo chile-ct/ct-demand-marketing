@@ -3451,6 +3451,7 @@ const ALL_ML_S = Object.fromEntries(ALL_MONTHS.map(m => [m, `T${parseInt(m.slice
 function GrowthSection() {
   const [met, setMet] = useState("dau");
   const [costTab, setCostTab] = useState("dwl");
+  const [unitVert, setUnitVert] = useState("__total__"); // which vertical to show in detail table
   const metObj = METRICS.find(x => x.key === met);
   const GROWTH_CHS = ["Growth (Paid)", "Growth (CRM)"];
   const GROWTH_COLORS = {
@@ -3744,143 +3745,182 @@ function GrowthSection() {
       return vr ? Math.round(raw / vr * ct) : 0;
     };
     const cpColor = c => !c ? "#ddd" : c > 500000 ? "#dc2626" : c > 200000 ? "#d97706" : "#059669";
-    const allVerts = [...VERTS, "__total__"];
-    return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    const isTotal = unitVert === "__total__";
+    const spend = m => isTotal ? VERTS.reduce((s, v) => s + (GROWTH_COST[v]?.[m] || 0), 0) : GROWTH_COST[unitVert]?.[m] || 0;
+    const vol = (m, k) => isTotal ? VERTS.reduce((s, v) => s + gpMetric(v, m, k), 0) : gpMetric(unitVert, m, k);
+    const cpu = (m, k) => {
+      const v2 = vol(m, k),
+        s = spend(m);
+      return v2 && s ? Math.round(s / v2) : null;
+    };
+    const tabColor = isTotal ? "#374151" : VC[unitVert];
+    const VERT_TABS = [{
+      key: "__total__",
+      label: "Total"
+    }, ...VERTS.map(v => ({
+      key: v,
+      label: v
+    }))];
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        background: "#fff",
+        borderRadius: 12,
+        padding: "16px 18px",
+        boxShadow: "0 1px 4px rgba(0,0,0,.07)"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        marginBottom: 14,
+        flexWrap: "wrap"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
       style: {
         fontWeight: 600,
         fontSize: 13,
-        color: "#374151",
-        marginBottom: 12
+        color: "#374151"
       }
-    }, "Detail \u2014 Unit Economy ", /*#__PURE__*/React.createElement("span", {
+    }, "Detail \u2014 Unit Economy", /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: 11,
         color: "#9ca3af",
-        fontWeight: 400
+        fontWeight: 400,
+        marginLeft: 6
       }
-    }, "Growth (Paid) channel")), /*#__PURE__*/React.createElement("div", {
+    }, "Growth (Paid)")), /*#__PURE__*/React.createElement("div", {
       style: {
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
-        gap: 12
+        display: "flex",
+        gap: 4,
+        flexWrap: "wrap"
       }
-    }, allVerts.map(vert => {
-      const isTotal = vert === "__total__";
-      const spend = m => isTotal ? VERTS.reduce((s, v) => s + (GROWTH_COST[v]?.[m] || 0), 0) : GROWTH_COST[vert]?.[m] || 0;
-      const vol = (m, k) => isTotal ? VERTS.reduce((s, v) => s + gpMetric(v, m, k), 0) : gpMetric(vert, m, k);
-      const cpu = (m, k) => {
-        const v = vol(m, k),
-          s = spend(m);
-        return v && s ? Math.round(s / v) : null;
-      };
-      return /*#__PURE__*/React.createElement("div", {
-        key: vert,
+    }, VERT_TABS.map(({
+      key,
+      label
+    }) => {
+      const isT = key === "__total__";
+      const c = isT ? "#374151" : VC[key];
+      const active = unitVert === key;
+      return /*#__PURE__*/React.createElement("button", {
+        key: key,
+        onClick: () => setUnitVert(key),
         style: {
-          background: "#fff",
-          borderRadius: 12,
-          padding: "14px 16px",
-          boxShadow: "0 1px 4px rgba(0,0,0,.07)",
-          borderTop: `3px solid ${isTotal ? "#374151" : VC[vert]}`
+          padding: "4px 12px",
+          borderRadius: 6,
+          border: `1.5px solid ${active ? c : "#e5e7eb"}`,
+          cursor: "pointer",
+          fontSize: 12,
+          fontWeight: 600,
+          transition: "all .15s",
+          background: active ? c : "#fff",
+          color: active ? "#fff" : c
         }
-      }, /*#__PURE__*/React.createElement("div", {
+      }, label);
+    }))), /*#__PURE__*/React.createElement("table", {
+      style: {
+        width: "100%",
+        borderCollapse: "collapse",
+        fontSize: 12
+      }
+    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
+      style: {
+        background: "#f8f9ff",
+        borderBottom: "2px solid #e5e7eb"
+      }
+    }, /*#__PURE__*/React.createElement("th", {
+      style: {
+        textAlign: "left",
+        padding: "7px 10px",
+        color: "#6b7280",
+        fontWeight: 600,
+        fontSize: 11
+      }
+    }, "Month"), /*#__PURE__*/React.createElement("th", {
+      style: {
+        textAlign: "right",
+        padding: "7px 10px",
+        color: "#6b7280",
+        fontWeight: 600,
+        fontSize: 11
+      }
+    }, "Spend (VND)"), /*#__PURE__*/React.createElement("th", {
+      style: {
+        textAlign: "right",
+        padding: "7px 10px",
+        color: "#6366f1",
+        fontWeight: 600,
+        fontSize: 11
+      }
+    }, "\u20AB/DAU"), /*#__PURE__*/React.createElement("th", {
+      style: {
+        textAlign: "right",
+        padding: "7px 10px",
+        color: "#f59e0b",
+        fontWeight: 600,
+        fontSize: 11
+      }
+    }, "\u20AB/DwL"), /*#__PURE__*/React.createElement("th", {
+      style: {
+        textAlign: "right",
+        padding: "7px 10px",
+        color: "#10b981",
+        fontWeight: 600,
+        fontSize: 11
+      }
+    }, "\u20AB/Lead"))), /*#__PURE__*/React.createElement("tbody", null, ALL_MONTHS.map(m => {
+      const s = spend(m);
+      const isForecast = !MONTHS.includes(m);
+      const cdau = cpu(m, "dau"),
+        cdwl = cpu(m, "dwl"),
+        clead = cpu(m, "lead");
+      return /*#__PURE__*/React.createElement("tr", {
+        key: m,
         style: {
-          fontWeight: 700,
-          color: isTotal ? "#374151" : VC[vert],
-          marginBottom: 10,
-          fontSize: 13
+          borderBottom: "1px solid #f5f5f5",
+          background: isForecast ? "#fffbf0" : "transparent",
+          opacity: isForecast ? 0.7 : 1
         }
-      }, isTotal ? "Total" : vert), /*#__PURE__*/React.createElement("table", {
+      }, /*#__PURE__*/React.createElement("td", {
         style: {
-          width: "100%",
-          borderCollapse: "collapse",
-          fontSize: 11
+          padding: "6px 10px",
+          color: isForecast ? "#92400e" : "#374151",
+          fontWeight: 500,
+          fontSize: 12
         }
-      }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
-        style: {
-          borderBottom: "1px solid #f0f0f0"
-        }
-      }, /*#__PURE__*/React.createElement("th", {
-        style: {
-          textAlign: "left",
-          padding: "3px 6px",
-          color: "#9ca3af",
-          fontWeight: 500
-        }
-      }, "Month"), /*#__PURE__*/React.createElement("th", {
+      }, ALL_ML[m], isForecast ? " (FC)" : ""), /*#__PURE__*/React.createElement("td", {
         style: {
           textAlign: "right",
-          padding: "3px 6px",
-          color: "#6b7280",
-          fontWeight: 600
+          padding: "6px 10px",
+          color: s ? "#374151" : "#ddd",
+          fontSize: 12
         }
-      }, "Spend"), /*#__PURE__*/React.createElement("th", {
+      }, s ? fmtK(s) : "—"), /*#__PURE__*/React.createElement("td", {
         style: {
           textAlign: "right",
-          padding: "3px 6px",
-          color: "#6366f1",
-          fontWeight: 600
+          padding: "6px 10px",
+          fontWeight: 600,
+          color: cpColor(cdau),
+          fontSize: 12
         }
-      }, "\u20AB/DAU"), /*#__PURE__*/React.createElement("th", {
+      }, cdau ? fmtK(cdau) : "—"), /*#__PURE__*/React.createElement("td", {
         style: {
           textAlign: "right",
-          padding: "3px 6px",
-          color: "#f59e0b",
-          fontWeight: 600
+          padding: "6px 10px",
+          fontWeight: 600,
+          color: cpColor(cdwl),
+          fontSize: 12
         }
-      }, "\u20AB/DwL"), /*#__PURE__*/React.createElement("th", {
+      }, cdwl ? fmtK(cdwl) : "—"), /*#__PURE__*/React.createElement("td", {
         style: {
           textAlign: "right",
-          padding: "3px 6px",
-          color: "#10b981",
-          fontWeight: 600
+          padding: "6px 10px",
+          fontWeight: 600,
+          color: cpColor(clead),
+          fontSize: 12
         }
-      }, "\u20AB/Lead"))), /*#__PURE__*/React.createElement("tbody", null, MONTHS.map(m => {
-        const s = spend(m);
-        if (!s) return null;
-        const cdau = cpu(m, "dau"),
-          cdwl = cpu(m, "dwl"),
-          clead = cpu(m, "lead");
-        return /*#__PURE__*/React.createElement("tr", {
-          key: m,
-          style: {
-            borderBottom: "1px solid #f9f9f9"
-          }
-        }, /*#__PURE__*/React.createElement("td", {
-          style: {
-            padding: "4px 6px",
-            color: "#374151",
-            fontWeight: 500
-          }
-        }, ALL_ML[m]), /*#__PURE__*/React.createElement("td", {
-          style: {
-            textAlign: "right",
-            padding: "4px 6px",
-            color: "#374151"
-          }
-        }, fmtK(s)), /*#__PURE__*/React.createElement("td", {
-          style: {
-            textAlign: "right",
-            padding: "4px 6px",
-            fontWeight: 600,
-            color: cpColor(cdau)
-          }
-        }, cdau ? fmtK(cdau) : "—"), /*#__PURE__*/React.createElement("td", {
-          style: {
-            textAlign: "right",
-            padding: "4px 6px",
-            fontWeight: 600,
-            color: cpColor(cdwl)
-          }
-        }, cdwl ? fmtK(cdwl) : "—"), /*#__PURE__*/React.createElement("td", {
-          style: {
-            textAlign: "right",
-            padding: "4px 6px",
-            fontWeight: 600,
-            color: cpColor(clead)
-          }
-        }, clead ? fmtK(clead) : "—"));
-      }))));
-    })));
+      }, clead ? fmtK(clead) : "—"));
+    }))));
   })()));
 }
 function DetailSection() {

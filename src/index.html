@@ -1158,6 +1158,7 @@ const ALL_ML_S = Object.fromEntries(ALL_MONTHS.map(m=>[m, `T${parseInt(m.slice(5
 function GrowthSection() {
   const [met, setMet] = useState("dau");
   const [costTab, setCostTab] = useState("dwl");
+  const [unitVert, setUnitVert] = useState("__total__"); // which vertical to show in detail table
   const metObj = METRICS.find(x=>x.key===met);
   const GROWTH_CHS = ["Growth (Paid)","Growth (CRM)"];
   const GROWTH_COLORS = {"Growth (Paid)":"#8b5cf6","Growth (CRM)":"#f59e0b"};
@@ -1305,7 +1306,7 @@ function GrowthSection() {
           </>);
         })()}
 
-        {/* Detail — Unit Economy: card per vertical, rows=months, cols=Spend/DAU/DwL/Lead */}
+        {/* Detail — Unit Economy: tabs per vertical, default Total */}
         {(()=>{
           const CH = "Growth (Paid)";
           const gpMetric = (v, m, key) => {
@@ -1315,56 +1316,74 @@ function GrowthSection() {
             return vr ? Math.round(raw/vr*ct) : 0;
           };
           const cpColor = c => !c?"#ddd":c>500000?"#dc2626":c>200000?"#d97706":"#059669";
-          const allVerts = [...VERTS, "__total__"];
+          const isTotal = unitVert==="__total__";
+          const spend = m => isTotal ? VERTS.reduce((s,v)=>s+(GROWTH_COST[v]?.[m]||0),0) : GROWTH_COST[unitVert]?.[m]||0;
+          const vol   = (m,k) => isTotal ? VERTS.reduce((s,v)=>s+gpMetric(v,m,k),0) : gpMetric(unitVert,m,k);
+          const cpu   = (m,k) => { const v2=vol(m,k),s=spend(m); return (v2&&s)?Math.round(s/v2):null; };
+          const tabColor = isTotal?"#374151":VC[unitVert];
+          const VERT_TABS = [{key:"__total__",label:"Total"},...VERTS.map(v=>({key:v,label:v}))];
           return (
-            <div>
-              <div style={{fontWeight:600,fontSize:13,color:"#374151",marginBottom:12}}>
-                Detail — Unit Economy <span style={{fontSize:11,color:"#9ca3af",fontWeight:400}}>Growth (Paid) channel</span>
+            <div style={{background:"#fff",borderRadius:12,padding:"16px 18px",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,flexWrap:"wrap"}}>
+                <div style={{fontWeight:600,fontSize:13,color:"#374151"}}>
+                  Detail — Unit Economy
+                  <span style={{fontSize:11,color:"#9ca3af",fontWeight:400,marginLeft:6}}>Growth (Paid)</span>
+                </div>
+                {/* Vertical tabs */}
+                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                  {VERT_TABS.map(({key,label})=>{
+                    const isT = key==="__total__";
+                    const c = isT?"#374151":VC[key];
+                    const active = unitVert===key;
+                    return (
+                      <button key={key} onClick={()=>setUnitVert(key)} style={{
+                        padding:"4px 12px",borderRadius:6,border:`1.5px solid ${active?c:"#e5e7eb"}`,
+                        cursor:"pointer",fontSize:12,fontWeight:600,transition:"all .15s",
+                        background:active?c:"#fff",color:active?"#fff":c,
+                      }}>{label}</button>
+                    );
+                  })}
+                </div>
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12}}>
-                {allVerts.map(vert=>{
-                  const isTotal = vert==="__total__";
-                  const spend = m => isTotal ? VERTS.reduce((s,v)=>s+(GROWTH_COST[v]?.[m]||0),0) : GROWTH_COST[vert]?.[m]||0;
-                  const vol   = (m,k) => isTotal ? VERTS.reduce((s,v)=>s+gpMetric(v,m,k),0) : gpMetric(vert,m,k);
-                  const cpu   = (m,k) => { const v=vol(m,k),s=spend(m); return (v&&s)?Math.round(s/v):null; };
-                  return (
-                    <div key={vert} style={{background:"#fff",borderRadius:12,padding:"14px 16px",
-                      boxShadow:"0 1px 4px rgba(0,0,0,.07)",
-                      borderTop:`3px solid ${isTotal?"#374151":VC[vert]}`}}>
-                      <div style={{fontWeight:700,color:isTotal?"#374151":VC[vert],marginBottom:10,fontSize:13}}>
-                        {isTotal?"Total":vert}
-                      </div>
-                      <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-                        <thead>
-                          <tr style={{borderBottom:"1px solid #f0f0f0"}}>
-                            <th style={{textAlign:"left",padding:"3px 6px",color:"#9ca3af",fontWeight:500}}>Month</th>
-                            <th style={{textAlign:"right",padding:"3px 6px",color:"#6b7280",fontWeight:600}}>Spend</th>
-                            <th style={{textAlign:"right",padding:"3px 6px",color:"#6366f1",fontWeight:600}}>₫/DAU</th>
-                            <th style={{textAlign:"right",padding:"3px 6px",color:"#f59e0b",fontWeight:600}}>₫/DwL</th>
-                            <th style={{textAlign:"right",padding:"3px 6px",color:"#10b981",fontWeight:600}}>₫/Lead</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {MONTHS.map(m=>{
-                            const s=spend(m);
-                            if(!s) return null;
-                            const cdau=cpu(m,"dau"), cdwl=cpu(m,"dwl"), clead=cpu(m,"lead");
-                            return (
-                              <tr key={m} style={{borderBottom:"1px solid #f9f9f9"}}>
-                                <td style={{padding:"4px 6px",color:"#374151",fontWeight:500}}>{ALL_ML[m]}</td>
-                                <td style={{textAlign:"right",padding:"4px 6px",color:"#374151"}}>{fmtK(s)}</td>
-                                <td style={{textAlign:"right",padding:"4px 6px",fontWeight:600,color:cpColor(cdau)}}>{cdau?fmtK(cdau):"—"}</td>
-                                <td style={{textAlign:"right",padding:"4px 6px",fontWeight:600,color:cpColor(cdwl)}}>{cdwl?fmtK(cdwl):"—"}</td>
-                                <td style={{textAlign:"right",padding:"4px 6px",fontWeight:600,color:cpColor(clead)}}>{clead?fmtK(clead):"—"}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  );
-                })}
-              </div>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                <thead>
+                  <tr style={{background:"#f8f9ff",borderBottom:"2px solid #e5e7eb"}}>
+                    <th style={{textAlign:"left",padding:"7px 10px",color:"#6b7280",fontWeight:600,fontSize:11}}>Month</th>
+                    <th style={{textAlign:"right",padding:"7px 10px",color:"#6b7280",fontWeight:600,fontSize:11}}>Spend (VND)</th>
+                    <th style={{textAlign:"right",padding:"7px 10px",color:"#6366f1",fontWeight:600,fontSize:11}}>₫/DAU</th>
+                    <th style={{textAlign:"right",padding:"7px 10px",color:"#f59e0b",fontWeight:600,fontSize:11}}>₫/DwL</th>
+                    <th style={{textAlign:"right",padding:"7px 10px",color:"#10b981",fontWeight:600,fontSize:11}}>₫/Lead</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ALL_MONTHS.map(m=>{
+                    const s=spend(m);
+                    const isForecast = !MONTHS.includes(m);
+                    const cdau=cpu(m,"dau"), cdwl=cpu(m,"dwl"), clead=cpu(m,"lead");
+                    return (
+                      <tr key={m} style={{borderBottom:"1px solid #f5f5f5",
+                        background:isForecast?"#fffbf0":"transparent",
+                        opacity:isForecast?0.7:1}}>
+                        <td style={{padding:"6px 10px",color:isForecast?"#92400e":"#374151",fontWeight:500,fontSize:12}}>
+                          {ALL_ML[m]}{isForecast?" (FC)":""}
+                        </td>
+                        <td style={{textAlign:"right",padding:"6px 10px",color:s?"#374151":"#ddd",fontSize:12}}>
+                          {s?fmtK(s):"—"}
+                        </td>
+                        <td style={{textAlign:"right",padding:"6px 10px",fontWeight:600,color:cpColor(cdau),fontSize:12}}>
+                          {cdau?fmtK(cdau):"—"}
+                        </td>
+                        <td style={{textAlign:"right",padding:"6px 10px",fontWeight:600,color:cpColor(cdwl),fontSize:12}}>
+                          {cdwl?fmtK(cdwl):"—"}
+                        </td>
+                        <td style={{textAlign:"right",padding:"6px 10px",fontWeight:600,color:cpColor(clead),fontSize:12}}>
+                          {clead?fmtK(clead):"—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           );
         })()}
