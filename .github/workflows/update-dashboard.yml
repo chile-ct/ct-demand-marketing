@@ -2,10 +2,7 @@ name: Update Dashboard Data
 
 on:
   schedule:
-    # Daily at 10:30 AM Asia/Saigon = 03:30 UTC (Mon-Fri for latest partial data)
-    - cron: '30 3 * * 1-5'
-    # Also run Saturday and Sunday
-    - cron: '30 3 * * 6,0'
+    - cron: '30 3 * * 1'
   workflow_dispatch:
 
 jobs:
@@ -16,26 +13,37 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      - run: pip install google-cloud-bigquery google-auth
+      - name: Install dependencies
+        run: |
+          pip install google-cloud-bigquery google-auth
+          npm install
 
       - name: Setup GCP credentials
         run: |
-          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > /tmp/gcp-creds.json
+          echo '${{ secrets.GCP_USER_CREDENTIALS }}' > /tmp/gcp-creds.json
           echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-creds.json" >> $GITHUB_ENV
 
-      - run: python scripts/update_dashboard.py
+      - name: Update data + pre-compile
+        run: |
+          python scripts/update_dashboard.py
+          node build.js
+          cp dist/index.html index.html
 
       - name: Commit and push if changed
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data.json
-          git diff --cached --quiet && echo "No changes" || (
-            git commit -m "Auto update $(date +'%d/%m/%Y %H:%M UTC')"
+          git config user.name "dashboard-bot"
+          git config user.email "chile@chotot.vn"
+          git add index.html dist/index.html
+          if git diff --staged --quiet; then
+            echo "No changes"
+          else
+            git commit -m "data: auto-update $(date -u '+%Y-%m') [skip ci]"
             git push
-          )
+          fi
