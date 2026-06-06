@@ -1110,7 +1110,7 @@ const GROWTH_COST = {
   },
 };
 // All months including forecast T6-T12
-const ALL_MONTHS = [...MONTHS,"2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"];
+const ALL_MONTHS = [...MONTHS,"2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"];
 const ALL_ML = {...ML,"2026-06":"T6/26","2026-07":"T7/26","2026-08":"T8/26","2026-09":"T9/26","2026-10":"T10/26","2026-11":"T11/26","2026-12":"T12/26"};
 // Short labels for narrow charts (no "/26" suffix)
 const ALL_ML_S = Object.fromEntries(ALL_MONTHS.map(m=>[m, `T${parseInt(m.slice(5))}`]));
