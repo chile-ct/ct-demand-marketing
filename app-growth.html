@@ -829,6 +829,13 @@ function selectMonth(sectionId, month) {
     c.classList.toggle('active', key.startsWith(month==='overall'?'overall':month.substring(0,3)));
   });
   if (sectionId === 's5') updateS5KPIs(month);
+  // Update KPI cards when Section 1 month changes
+  if (sectionId === 's1' && typeof updateKPICards === 'function' && D) {
+    const dMonths = D.months;
+    const monthMap = {overall: dMonths.length-1, jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11};
+    const idx = monthMap[month] !== undefined ? monthMap[month] : dMonths.length-1;
+    updateKPICards(idx);
+  }
   const d = data[month];
   const nextLabel = d.rc.next ? `<div class="next-month">📅 Actions cho ${d.rc.next}:</div>` : '';
   const lbl = d.rc.next
@@ -1196,11 +1203,12 @@ function updateKPICards(monthIndex) {
   }
   function delta(cur, prv, isRate) {
     if (cur == null || prv == null) return '';
-    const d = isRate ? ((cur-prv)*100).toFixed(1)+'pp' : fmt(cur-prv);
-    const sign = cur >= prv ? '▲' : '▼';
-    const cls = cur >= prv ? 'up' : 'down';
-    const prevMn = D.months[prv] || '';
-    return `<span class="${cls}">${sign} vs ${prevMn}: ${cur >= prv ? '+' : ''}${d}</span>`;
+    const d = isRate ? ((cur-prv)*100).toFixed(1)+'pp' : fmt(Math.abs(cur-prv));
+    const isPos = cur >= prv;
+    const sign = isPos ? '▲' : '▼';
+    const cls = isPos ? 'up' : 'down';
+    const prevMn = prev != null ? D.months[prev] : '';
+    return `<span class="${cls}">${sign} vs ${prevMn}: ${isPos ? '+' : '−'}${d}</span>`;
   }
 
   const cards = document.querySelectorAll('#s1-kpi-grid .kpi-card');
