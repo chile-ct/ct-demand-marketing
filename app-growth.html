@@ -577,37 +577,9 @@ canvas { max-height: 320px; }
       <div style="position:relative;height:300px"><canvas id="chartG5CostVsUsers"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">Growth Channel — All Metrics Summary</div>
-      <div style="overflow-x:auto">
-      <table>
-        <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
-        <tbody>
-          <tr class="total-row"><td colspan="6" style="font-size:11px;color:#4361ee;text-transform:uppercase;letter-spacing:.5px">Acquisition</td></tr>
-          <tr><td>New App Users</td><td>54,439</td><td>41,702</td><td>77,942</td><td>75,796</td><td class="apr">80,424</td></tr>
-          <tr><td>Avg Daily New DAU</td><td>1,756</td><td>1,489</td><td>2,515</td><td>2,527</td><td class="apr">2,594</td></tr>
-          <tr class="total-row"><td colspan="6" style="font-size:11px;color:#4361ee;text-transform:uppercase;letter-spacing:.5px">Activation</td></tr>
-          <tr><td>Monthly Activated (≥20 adview D7)</td><td>15,369</td><td>12,195</td><td>21,830</td><td>20,354</td><td class="apr">22,238</td></tr>
-          <tr><td>Monthly Activated (≥1 lead D7)</td><td>13,406</td><td>10,980</td><td>20,461</td><td>18,888</td><td class="apr">19,561</td></tr>
-          <tr><td>Activation rate (≥20 adview D7)</td><td>28.2%</td><td>29.2%</td><td>28.0%</td><td>26.9%</td><td class="apr">27.7%</td></tr>
-            <tr><td>Activation rate (≥1 lead D7)</td><td>24.6%</td><td>26.3%</td><td>26.3%</td><td>24.9%</td><td class="apr">24.3%</td></tr>
-          <tr class="total-row"><td colspan="6" style="font-size:11px;color:#4361ee;text-transform:uppercase;letter-spacing:.5px">Retention</td></tr>
-          <tr><td>NURR D1</td><td>37.1%</td><td>36.1%</td><td>38.7%</td><td>37.5%</td><td class="apr">35.8%</td></tr>
-          <tr><td>NURR D7</td><td>15.1%</td><td>14.8%</td><td>16.4%</td><td>15.9%</td><td class="apr">11.3%</td></tr>
-          <tr><td>NURR M1</td><td>7.0%</td><td>6.9%</td><td>7.6%</td><td>7.4%</td><td class="apr">—</td></tr>
-          <tr class="total-row"><td colspan="6" style="font-size:11px;color:#059669;text-transform:uppercase;letter-spacing:.5px">Cost &amp; Unit Economics</td></tr>
-          <tr><td>Monthly Cost (VND)</td><td>481,535,327</td><td>307,196,146</td><td>413,829,723</td><td>429,898,910</td><td class="apr">521,127,006</td></tr>
-          <tr><td>Retained D1 (NURR D1 × new)</td><td>20,197</td><td>15,054</td><td>30,163</td><td>28,424</td><td class="apr">28,792</td></tr>
-          <tr><td>Retained D7 (NURR D7 × new)</td><td>8,220</td><td>6,172</td><td>12,782</td><td>12,051</td><td class="apr">9,088</td></tr>
-          <tr><td>Retained M1 (NURR M1 × new)</td><td>3,811</td><td>2,877</td><td>5,924</td><td>5,609</td><td class="apr">—</td></tr>
-          <tr><td>CPA — Cost / New User</td><td>8,845 ₫</td><td>7,366 ₫</td><td style="color:#10b981;font-weight:700">5,311 ₫ ↓</td><td>5,672 ₫</td><td class="apr">6,481 ₫</td></tr>
-          <tr><td>CAA — Cost / Activated User</td><td>31,331 ₫</td><td>25,190 ₫</td><td style="color:#10b981;font-weight:700">18,960 ₫ ↓</td><td>21,123 ₫</td><td class="apr">23,434 ₫</td></tr>
-          <tr><td>CRR D1 — Cost / Retained (D1)</td><td>23,842 ₫</td><td>20,406 ₫</td><td style="color:#10b981;font-weight:700">13,720 ₫ ↓</td><td>15,124 ₫</td><td class="apr">18,099 ₫</td></tr>
-          <tr><td>CRR D7 — Cost / Retained (D7)</td><td>58,581 ₫</td><td>49,770 ₫</td><td style="color:#10b981;font-weight:700">32,375 ₫ ↓</td><td>35,669 ₫</td><td class="apr">57,343 ₫</td></tr>
-          <tr><td>CRR M1 — Cost / Retained (M1)</td><td>126,356 ₫</td><td>106,782 ₫</td><td style="color:#10b981;font-weight:700">69,859 ₫ ↓</td><td>76,643 ₫</td><td class="apr">—</td></tr>
-        </tbody>
-      </table>
-      </div>
-      <div class="note">Cost = tổng 5 dòng "app growth" từ sheet Data for Claude | ↓ = best trong kỳ</div>
+      <div class="card-title">Growth Channel — All Metrics Summary <span style="font-size:10px;color:#10b981;font-weight:400">| Δ = vs tháng trước</span></div>
+      <div style="overflow-x:auto"><table id="g5SummaryTable"></table></div>
+      <div class="note">Cost = tổng 5 dòng "app growth" từ sheet Data for Claude | ↓ = best trong kỳ | Activated combine = MAX(adview, lead)</div>
     </div>
   </div>
 
@@ -615,15 +587,8 @@ canvas { max-height: 320px; }
   <div class="tab-content" id="g5-1">
     <div class="chart-card" style="margin-bottom:16px"><div class="chart-title">New App Users (Growth) vs Total — % Share</div><canvas id="chartG5Acq"></canvas></div>
     <div class="card">
-      <div class="card-title">Acquisition — Growth Channel</div>
-      <div style="overflow-x:auto"><table>
-        <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
-        <tbody>
-          <tr class="total-row"><td>New App Users (Growth)</td><td>54,439</td><td>41,702</td><td>77,942</td><td>75,796</td><td class="apr">80,424</td></tr>
-          <tr><td>% of Total New App Users</td><td>20.8%</td><td>17.8%</td><td>22.6%</td><td>25.8%</td><td class="apr">27.2%</td></tr>
-          <tr><td>Avg Daily New DAU</td><td>1,756</td><td>1,489</td><td>2,515</td><td>2,527</td><td class="apr">2,594</td></tr>
-        </tbody>
-      </table></div>
+      <div class="card-title">Acquisition — Growth Channel <span style="font-size:10px;color:#10b981;font-weight:400">| Δ = vs tháng trước</span></div>
+      <div style="overflow-x:auto"><table id="g5AcqTable"></table></div>
     </div>
     <div class="card" style="margin-top:16px">
       <div class="card-title">🎯 Active Campaigns — Growth Channel</div>
@@ -637,18 +602,8 @@ canvas { max-height: 320px; }
   <div class="tab-content" id="g5-2">
     <div class="chart-card" style="margin-bottom:16px"><div class="chart-title">Activation Trend — Growth Channel</div><canvas id="chartG5Act"></canvas></div>
     <div class="card">
-      <div class="card-title">Activation — Growth Channel</div>
-      <div style="overflow-x:auto"><table>
-        <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
-        <tbody>
-          <tr><td>Monthly Activated (≥20 adview D7)</td><td>15,369</td><td>12,195</td><td>21,830</td><td>20,354</td><td class="apr">22,238</td></tr>
-          <tr><td>Monthly Activated (≥1 lead D7)</td><td>13,406</td><td>10,980</td><td>20,461</td><td>18,888</td><td class="apr">19,561</td></tr>
-          <tr><td>Activation rate (≥20 adview D7)</td><td>28.2%</td><td>29.2%</td><td>28.0%</td><td>26.9%</td><td class="apr">27.7%</td></tr>
-          <tr><td>Activation rate (≥1 lead D7)</td><td>24.6%</td><td>26.3%</td><td>26.3%</td><td>24.9%</td><td class="apr">24.3%</td></tr>
-          <tr><td>Daily Activated (adview D7)</td><td>496</td><td>436</td><td>704</td><td>678</td><td class="apr">717</td></tr>
-          <tr><td>Daily Activated (lead D7)</td><td>433</td><td>392</td><td>659</td><td>630</td><td class="apr">631</td></tr>
-        </tbody>
-      </table></div>
+      <div class="card-title">Activation — Growth Channel <span style="font-size:10px;color:#10b981;font-weight:400">| Δ = vs tháng trước</span></div>
+      <div style="overflow-x:auto"><table id="g5ActTable"></table></div>
     </div>
     <div class="card" style="margin-top:16px">
       <div class="card-title">🎯 Active Campaigns — Activation</div>
@@ -662,21 +617,8 @@ canvas { max-height: 320px; }
   <div class="tab-content" id="g5-3">
     <div class="chart-card" style="margin-bottom:16px"><div class="chart-title">Growth NURR vs Total NURR Trend</div><canvas id="chartG5Ret"></canvas></div>
     <div class="card">
-      <div class="card-title">NURR — Growth Channel vs Total</div>
-      <div style="overflow-x:auto"><table>
-          <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
-          <tbody>
-            <tr class="total-row"><td>Growth NURR D1</td><td>37.1%</td><td>36.1%</td><td>38.7%</td><td>37.5%</td><td class="apr">35.8%</td></tr>
-            <tr><td>Total NURR D1</td><td>36.1%</td><td>36.1%</td><td>37.9%</td><td>37.1%</td><td class="apr">36.1%</td></tr>
-            <tr><td>Δ vs Total (D1)</td><td style="color:#10b981">+1.0pp</td><td style="color:#6b7280">0pp</td><td style="color:#10b981">+0.8pp</td><td style="color:#10b981">+0.4pp</td><td class="apr" style="color:#ef4444">−0.3pp</td></tr>
-            <tr class="sep total-row"><td>Growth NURR D7</td><td>15.1%</td><td>14.8%</td><td>16.4%</td><td>15.9%</td><td class="apr">11.3%</td></tr>
-            <tr><td>Total NURR D7</td><td>14.5%</td><td>14.8%</td><td>15.7%</td><td>14.9%</td><td class="apr">11.7%</td></tr>
-            <tr><td>Δ vs Total (D7)</td><td style="color:#10b981">+0.6pp</td><td style="color:#6b7280">0pp</td><td style="color:#10b981">+0.7pp</td><td style="color:#10b981">+1.0pp</td><td class="apr" style="color:#ef4444">−0.4pp</td></tr>
-            <tr class="sep total-row"><td>Growth NURR M1</td><td>7.0%</td><td>6.9%</td><td>7.6%</td><td>7.4%</td><td class="apr">—</td></tr>
-            <tr><td>Total NURR M1</td><td>6.8%</td><td>7.0%</td><td>7.3%</td><td>7.0%</td><td class="apr">—</td></tr>
-            <tr><td>Δ vs Total (M1)</td><td style="color:#10b981">+0.2pp</td><td style="color:#ef4444">−0.1pp</td><td style="color:#10b981">+0.3pp</td><td style="color:#10b981">+0.4pp</td><td class="apr" style="color:#9ca3af">—</td></tr>
-          </tbody>
-        </table></div>
+      <div class="card-title">NURR — Growth Channel vs Total <span style="font-size:10px;color:#10b981;font-weight:400">| Δ = vs tháng trước</span></div>
+      <div style="overflow-x:auto"><table id="g5NurrTable"></table></div>
     </div>
     <div class="card" style="margin-top:16px">
       <div class="card-title">🎯 Active Campaigns — Retention</div>
@@ -1384,6 +1326,89 @@ function selectExecMonth(m) {
 // ============================================================
 // INIT — load data then render everything
 // ============================================================
+// ── Growth Channel Tables: dynamic from D + MoM delta ────────────────────────
+function renderGrowthTables() {
+  if (!D) return;
+  const gc = D.growth_channel, ac = D.acquisition, ret = D.retention;
+  const MONTHS = D.months, n = MONTHS.length;
+  const fmtN = v => v==null?'—':Math.round(v).toLocaleString('en');
+  const fmtP = v => v==null?'—':(v*100).toFixed(1)+'%';
+  const fmtC = v => v==null?'—':Math.round(v).toLocaleString('en')+'₫';
+
+  function dCell(arr, i, isRate) {
+    if (i===0||arr[i]==null||arr[i-1]==null) return '<td style="color:#9ca3af;font-size:10px;text-align:right">—</td>';
+    const d=arr[i]-arr[i-1], pos=d>=0;
+    const col=pos?'#10b981':'#ef4444', sign=pos?'+':'';
+    const txt=isRate ? sign+(d*100).toFixed(1)+'pp' : sign+Math.round(d).toLocaleString('en');
+    return `<td style="color:${col};font-size:11px;text-align:right">${txt}</td>`;
+  }
+
+  function buildTable(id, rows) {
+    const el=document.getElementById(id); if(!el) return;
+    const isPartial=MONTHS[n-1]?.includes('*');
+    const ths=MONTHS.map((m,i)=>`<th${i===n-1?' class="apr"':''}>${m}</th>`).join('');
+    const thead=`<tr><th>Metric</th>${ths}<th style="background:#fffbeb;font-size:10px;color:#92400e;white-space:nowrap">Δ prev</th></tr>`;
+    const tbody=rows.map(r=>{
+      if(r.sec) return `<tr class="total-row"><td colspan="${n+2}" style="font-size:11px;color:#4361ee;text-transform:uppercase;letter-spacing:.5px">${r.sec}</td></tr>`;
+      const cells=MONTHS.map((m,i)=>`<td${i===n-1?' class="apr"':''}>${r.fmt(r.arr[i])}</td>`).join('');
+      return `<tr class="${r.cls||''}"><td>${r.lbl}</td>${cells}${dCell(r.arr,n-1,r.rate)}</tr>`;
+    }).join('');
+    el.innerHTML=`<thead>${thead}</thead><tbody>${tbody}</tbody>`;
+  }
+
+  buildTable('g5AcqTable',[
+    {lbl:'New App Users (Growth)',arr:gc.new_users,fmt:fmtN,cls:'total-row'},
+    {lbl:'% of Total New App Users',arr:gc.pct_of_total_new,fmt:fmtP,rate:true},
+    {lbl:'Avg Daily New DAU',arr:gc.avg_new_dau,fmt:fmtN}
+  ]);
+
+  buildTable('g5ActTable',[
+    {sec:'≥20 Adview D7'},
+    {lbl:'Monthly Activated',arr:gc.adview_activated,fmt:fmtN,cls:'total-row'},
+    {lbl:'Activation rate',arr:gc.adview_rate,fmt:fmtP,rate:true},
+    {lbl:'Daily Activated',arr:gc.adview_daily,fmt:fmtN},
+    {sec:'≥1 Lead D7'},
+    {lbl:'Monthly Activated',arr:gc.lead_activated,fmt:fmtN,cls:'total-row'},
+    {lbl:'Activation rate',arr:gc.lead_rate,fmt:fmtP,rate:true},
+    {lbl:'Daily Activated',arr:gc.lead_daily,fmt:fmtN}
+  ]);
+
+  buildTable('g5NurrTable',[
+    {sec:'NURR D1'},
+    {lbl:'Growth NURR D1',arr:gc.nurr_d1,fmt:fmtP,cls:'total-row',rate:true},
+    {lbl:'Total NURR D1',arr:ret.nurr_d1,fmt:fmtP,rate:true},
+    {sec:'NURR D7'},
+    {lbl:'Growth NURR D7',arr:gc.nurr_d7,fmt:fmtP,cls:'total-row',rate:true},
+    {lbl:'Total NURR D7',arr:ret.nurr_d7,fmt:fmtP,rate:true},
+    {sec:'NURR M1'},
+    {lbl:'Growth NURR M1',arr:gc.nurr_m1,fmt:fmtP,cls:'total-row',rate:true},
+    {lbl:'Total NURR M1',arr:ret.nurr_m1,fmt:fmtP,rate:true}
+  ]);
+
+  buildTable('g5SummaryTable',[
+    {sec:'Acquisition'},
+    {lbl:'New App Users',arr:gc.new_users,fmt:fmtN,cls:'total-row'},
+    {lbl:'Avg Daily New DAU',arr:gc.avg_new_dau,fmt:fmtN},
+    {sec:'Activation (≥20 adview D7)'},
+    {lbl:'Monthly Activated',arr:gc.adview_activated,fmt:fmtN,cls:'total-row'},
+    {lbl:'Activation rate',arr:gc.adview_rate,fmt:fmtP,rate:true},
+    {sec:'Activation (≥1 lead D7)'},
+    {lbl:'Monthly Activated',arr:gc.lead_activated,fmt:fmtN,cls:'total-row'},
+    {lbl:'Activation rate',arr:gc.lead_rate,fmt:fmtP,rate:true},
+    {sec:'Retention (NURR)'},
+    {lbl:'NURR D1',arr:gc.nurr_d1,fmt:fmtP,rate:true},
+    {lbl:'NURR D7',arr:gc.nurr_d7,fmt:fmtP,rate:true},
+    {lbl:'NURR M1',arr:gc.nurr_m1,fmt:fmtP,rate:true},
+    {sec:'Cost & Unit Economics'},
+    {lbl:'Monthly Cost (VND)',arr:gc.cost,fmt:fmtN,cls:'total-row'},
+    {lbl:'CPA — Cost/New User',arr:gc.cpa,fmt:fmtC},
+    {lbl:'CAA — Cost/Activated',arr:gc.caa,fmt:fmtC},
+    {lbl:'CRR D1',arr:gc.crr_d1,fmt:fmtC},
+    {lbl:'CRR D7',arr:gc.crr_d7,fmt:fmtC},
+    {lbl:'CRR M1',arr:gc.crr_m1,fmt:fmtC}
+  ]);
+}
+
 async function initDashboard() {
   await loadDashboardData();
   if (!D) { console.error('Dashboard data unavailable'); return; }
@@ -1396,8 +1421,11 @@ async function initDashboard() {
 
   renderAllCharts();
   renderRetAbsolutes();
+  renderGrowthTables();
   updateKPICards(D.months.length-1);
-  selectExecMonth('may');
+  // Default to latest month
+  const latestKey = D.months[D.months.length-1].replace(/[^a-zA-Z]/g,'').toLowerCase().substring(0,3);
+  selectExecMonth(latestKey);
 }
 
 document.addEventListener('DOMContentLoaded', initDashboard);

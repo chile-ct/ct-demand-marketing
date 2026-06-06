@@ -2,7 +2,10 @@ name: Update Dashboard Data
 
 on:
   schedule:
-    - cron: '30 3 * * 1'
+    # Daily at 10:30 AM Asia/Saigon = 03:30 UTC (Mon-Fri for latest partial data)
+    - cron: '30 3 * * 1-5'
+    # Also run Saturday and Sunday
+    - cron: '30 3 * * 6,0'
   workflow_dispatch:
 
 jobs:
@@ -22,19 +25,17 @@ jobs:
 
       - name: Setup GCP credentials
         run: |
-          echo '${{ secrets.GCP_USER_CREDENTIALS }}' > /tmp/gcp-creds.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > /tmp/gcp-creds.json
           echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-creds.json" >> $GITHUB_ENV
 
       - run: python scripts/update_dashboard.py
 
-      - name: Commit and push
+      - name: Commit and push if changed
         run: |
-          git config user.name "dashboard-bot"
-          git config user.email "chile@chotot.vn"
-          git add index.html
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "data: auto-update $(date -u '+%Y-%m') [skip ci]"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git diff --cached --quiet && echo "No changes" || (
+            git commit -m "Auto update $(date +'%d/%m/%Y %H:%M UTC')"
             git push
-          fi
+          )
