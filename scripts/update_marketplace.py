@@ -97,6 +97,8 @@ def fetch_growth_cost():
             row=r+['']*(max(col_info,default=0)+1-len(r))
             v=str(row[0]).strip().upper()
             if v not in ['PTY','JOB','VEH','GDS']: continue
+            activity=str(row[2]) if len(row)>2 else ''
+            if 'DwL' not in activity: continue  # only DwL campaign spend
             for col,(mk,_) in col_info.items():
                 if col<len(row):
                     n=pn(row[col])
