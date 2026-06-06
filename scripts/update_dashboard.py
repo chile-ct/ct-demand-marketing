@@ -5,7 +5,7 @@ No Claude/Anthropic API. $0 token cost.
 
 Run: python3 scripts/update_dashboard.py
 """
-import re, os, datetime, subprocess, calendar
+import re, os, datetime, subprocess, calendar, urllib.request, json
 from google.cloud import bigquery
 
 PROJECT   = "chotot-dwh"
@@ -122,6 +122,89 @@ def build_act(vert_act):
 vert_act = build_vert_act()
 act = build_act(vert_act)
 
+# ── 3b. Fetch GROWTH_COST from Google Sheets ───────────────────────────────────
+SHEETS_ID = "1D-2eQcfDMzy42wHUF4bpwCY4cWtrJNvp-kdv9R_iFUI"
+SHEET_NAME = "FC & Actual cost "
+
+def fetch_growth_cost():
+    """Fetch cost data from Google Sheets using ADC token. Returns {vert: {month: cost}}"""
+    import subprocess as sp
+    try:
+        gcloud = os.path.expanduser("~/google-cloud-sdk/bin/gcloud")
+        token = sp.run(
+            [gcloud, "auth", "print-access-token", "--account=chile@chotot.vn"],
+            capture_output=True, text=True
+        ).stdout.strip()
+        if not token:
+            print("  WARNING: No gcloud token — GROWTH_COST not updated")
+            return None
+
+        range_enc = SHEET_NAME.replace(' ', '%20').replace('&', '%26')
+        url = f"https://sheets.googleapis.com/v4/spreadsheets/{SHEETS_ID}/values/'{range_enc}'!A1:R500"
+        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.loads(r.read())
+
+        rows = data.get('values', [])
+        if not rows:
+            print("  WARNING: Empty Sheets response")
+            return None
+
+        hdr0 = rows[0]   # actual/forecast row
+        hdr1 = rows[1]   # month names row
+        month_map = {
+            'Jan':'2026-01','Feb':'2026-02','Mar':'2026-03','Apr':'2026-04',
+            'May':'2026-05','June':'2026-06','Jun':'2026-06','Jul':'2026-07',
+            'Aug':'2026-08','Sep':'2026-09','Oct':'2026-10','Nov':'2026-11','Dec':'2026-12'
+        }
+        col_info = {}
+        for i, h in enumerate(hdr1):
+            if h in month_map:
+                is_actual = i < len(hdr0) and 'actual' in str(hdr0[i]).lower()
+                col_info[i] = (month_map[h], is_actual)
+
+        def parse_num(s):
+            try: return int(str(s).replace(',', '').replace(' ', '').replace('\xa0', ''))
+            except: return 0
+
+        result = {}
+        for r in rows[2:]:
+            row = r + [''] * (max(col_info.keys(), default=0) + 1 - len(r))
+            vert = str(row[0]).strip().upper()
+            if vert not in ['PTY','JOB','VEH','GDS']:
+                continue
+            for col, (mk, is_act) in col_info.items():
+                if col < len(row):
+                    v = parse_num(row[col])
+                    if v:
+                        result.setdefault(vert, {}).setdefault(mk, {'total': 0, 'is_actual': is_act})
+                        result[vert][mk]['total'] += v
+
+        print(f"  Sheets OK — {sum(len(v) for v in result.values())} month entries across {len(result)} verticals")
+        return result
+
+    except Exception as e:
+        print(f"  WARNING: Sheets fetch failed — {e}")
+        return None
+
+def js_growth_cost(cost_data):
+    """Build GROWTH_COST JS constant from Sheets data."""
+    lines = [
+        '// Cost data — auto-updated from Google Sheets "FC & Actual cost"',
+        '// actual = accrued spend | forecast = planned budget (VND)',
+        'const GROWTH_COST = {'
+    ]
+    for vert in ['PTY','JOB','VEH','GDS']:
+        lines.append(f'  {vert}:{{')
+        for mk, d in sorted(cost_data.get(vert, {}).items()):
+            lines.append(f'    "{mk}":{d["total"]},')
+        lines.append('  },')
+    lines.append('};')
+    return '\n'.join(lines)
+
+print("Fetching cost data from Google Sheets...")
+growth_cost_data = fetch_growth_cost()
+
 # ── 4. Build JS constants ───────────────────────────────────────────────────────
 def js_months():
     arr = ', '.join(f'"{m}"' for m in months)
@@ -192,6 +275,17 @@ html = re.sub(
     js_act_mau(),
     html, flags=re.MULTILINE
 )
+
+# Replace GROWTH_COST if Sheets data available
+if growth_cost_data:
+    html = re.sub(
+        r'// Cost data.*?const GROWTH_COST = \{[\s\S]*?^};',
+        js_growth_cost(growth_cost_data),
+        html, flags=re.MULTILINE
+    )
+    print(f"  GROWTH_COST patched from Sheets")
+else:
+    print(f"  GROWTH_COST kept as-is (Sheets unavailable)")
 
 with open(SRC_HTML, 'w') as f:
     f.write(html)
