@@ -517,6 +517,50 @@ function BarChart({labels,datasets,height=220,stacked=false}) {
   return <div style={{position:"relative",height}}><canvas ref={ref}/></div>;
 }
 
+// Stacked bar with total sum label on top of each column
+function BarChartWithTotals({labels,datasets,height=220}) {
+  const ref=useRef(null), ch=useRef(null);
+  useEffect(()=>{
+    if(ch.current) ch.current.destroy();
+    if(!ref.current) return;
+    const totals = labels.map((_,i)=>datasets.reduce((s,d)=>s+(d.data[i]||0),0));
+    const totalPlugin = {
+      id:'totalLabels',
+      afterDatasetsDraw(chart){
+        const {ctx,scales:{x,y}}=chart;
+        totals.forEach((total,i)=>{
+          if(!total) return;
+          const xPos=x.getPixelForValue(i);
+          const yPos=y.getPixelForValue(total);
+          ctx.save();
+          ctx.fillStyle='#374151';
+          ctx.font='bold 10px Inter,sans-serif';
+          ctx.textAlign='center';
+          ctx.textBaseline='bottom';
+          ctx.fillText(fmtK(total), xPos, yPos-3);
+          ctx.restore();
+        });
+      }
+    };
+    ch.current = new Chart(ref.current,{
+      type:"bar",
+      data:{labels, datasets:datasets.map(d=>({borderRadius:3,borderSkipped:false,...d}))},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        layout:{padding:{top:20}},
+        plugins:{legend:{labels:{boxWidth:12,font:{size:12,weight:'500'},color:'#374151'}}},
+        scales:{
+          x:{stacked:true,grid:{color:"#f5f5f5"},ticks:{font:{size:10},maxRotation:0,maxTicksLimit:labels.length>7?6:labels.length}},
+          y:{stacked:true,grid:{color:"#f5f5f5"},ticks:{font:{size:11},callback:v=>fmtK(v)}},
+        }
+      },
+      plugins:[totalPlugin],
+    });
+    return ()=>ch.current?.destroy();
+  },[labels,datasets]);
+  return <div style={{position:"relative",height}}><canvas ref={ref}/></div>;
+}
+
 // Mixed: stacked bars (verticals) + KPI line overlay
 function StackedBarLineChart({labels,barDatasets,lineDataset,height=300}) {
   const ref=useRef(null), ch=useRef(null);
@@ -1245,9 +1289,9 @@ function GrowthSection() {
               <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>
                 ■ Darker = Actual (T1-T5) · ■ Lighter = Forecast (T6-T12)
               </div>
-              <BarChart labels={ALL_MONTHS.map(m=>ALL_ML_S[m])} datasets={spendBarDs} height={220} stacked/>
+              <BarChartWithTotals labels={ALL_MONTHS.map(m=>ALL_ML_S[m])} datasets={spendBarDs} height={220}/>
             </div>
-            {/* Row 2: 3 cost-per-unit charts — responsive, short labels */}
+            {/* Row 2: 3 cost-per-unit charts — actual months only */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:14,marginBottom:20}}>
               {[
                 {key:"dau",  label:"Cost per DAU",  color:"#6366f1"},
@@ -1258,7 +1302,7 @@ function GrowthSection() {
                   boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
                   <div style={{fontWeight:600,fontSize:13,marginBottom:2,color:"#374151"}}>{label}</div>
                   <div style={{fontSize:10,color:"#9ca3af",marginBottom:10}}>₫ · {note}</div>
-                  <LineChart labels={ALL_MONTHS.map(m=>ALL_ML_S[m])} datasets={lnDs(key)} height={200} maxTicks={6}/>
+                  <LineChart labels={MONTHS.map(m=>ALL_ML_S[m])} datasets={lnDs(key).map(d=>({...d,data:MONTHS.map((m,i)=>d.data[i])}))} height={200}/>
                 </div>
               ))}
             </div>
