@@ -1230,14 +1230,30 @@ function renderAllCharts() {
   })();
   (function(){
     const ctx=document.getElementById('chartG5CostVsUsers'); if(!ctx)return;
-    // Forecast months = months NOT already in MONTHS (avoid duplicates)
+    // Build cost chart: actual = dark, forecast = light (even if month is in MONTHS with null actual)
     const allFcLabels=['Jun 2026*','Jul 2026*','Aug 2026*','Sep 2026*','Oct 2026*','Nov 2026*','Dec 2026*'];
     const forecastLabels=allFcLabels.filter(l=>!MONTHS.includes(l));
     const allLabels=[...MONTHS,...forecastLabels];
-    const costData=[...gc.cost,...gc.cost_forecast.slice(allFcLabels.length-forecastLabels.length)];
+    const costData=[], bgColors=[], borderColors=[];
+    // For months in D.months: actual if gc.cost[i] != null, else use forecast value with light color
+    MONTHS.forEach((m,i)=>{
+      const actual=gc.cost[i];
+      if(actual!=null){costData.push(actual);bgColors.push(C.purple+'cc');borderColors.push(C.purple);}
+      else{
+        const fi=allFcLabels.indexOf(m);
+        const fcVal=fi>=0&&gc.cost_forecast[fi]?gc.cost_forecast[fi]:null;
+        costData.push(fcVal);bgColors.push(C.purple+'44');borderColors.push(C.purple+'88');
+      }
+    });
+    // Remaining forecast-only months
+    forecastLabels.forEach(m=>{
+      const fi=allFcLabels.indexOf(m);
+      costData.push(fi>=0?gc.cost_forecast[fi]:null);
+      bgColors.push(C.purple+'44');borderColors.push(C.purple+'88');
+    });
     const usersData=[...gc.new_users,...Array(forecastLabels.length).fill(null)];
     new Chart(ctx,{type:'bar',data:{labels:allLabels,datasets:[
-      {label:'Monthly Cost (VND)',data:costData,backgroundColor:[...Array(MONTHS.length).fill(C.purple+'cc'),...Array(forecastLabels.length).fill(C.purple+'44')],borderColor:[...Array(MONTHS.length).fill(C.purple),...Array(forecastLabels.length).fill(C.purple+'88')],borderWidth:1,borderRadius:4,yAxisID:'y'},
+      {label:'Monthly Cost (VND)',data:costData,backgroundColor:bgColors,borderColor:borderColors,borderWidth:1,borderRadius:4,yAxisID:'y'},
       {label:'New Users (actual)',data:usersData,type:'line',borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,yAxisID:'y1'}
     ]},options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:12}}},tooltip:{callbacks:{label:c=>{const v=c.parsed.y;if(c.dataset.yAxisID==='y1')return ` ${c.dataset.label}: ${(v/1000).toFixed(0)}K`;return ` ${c.dataset.label}: ${(v/1e6).toFixed(0)}M ₫`;}}}},
