@@ -1,307 +1,366 @@
 """
-Chotot Marketplace Dashboard — Auto Update Script
-Queries BigQuery chotot_mtm tables for latest data, patches src/index.html, then calls node build.js.
-No Claude/Anthropic API. $0 token cost.
-
-Run: python3 scripts/update_dashboard.py
+App Growth Dashboard — Auto Update Script
+Queries BigQuery directly. No Claude/Anthropic API. $0 token cost.
 """
-import re, os, datetime, subprocess, calendar, urllib.request, json
+import json, os, datetime
 from google.cloud import bigquery
 
-PROJECT   = "chotot-dwh"
-SRC_HTML  = os.path.join(os.path.dirname(__file__), '..', 'src', 'index.html')
-DIST_HTML = os.path.join(os.path.dirname(__file__), '..', 'dist', 'index.html')
-ROOT_HTML = os.path.join(os.path.dirname(__file__), '..', 'index.html')
+PROJECT = "chotot-dwh"
+DATA_JSON = os.path.join(os.path.dirname(__file__), '..', 'data.json')
 
 client = bigquery.Client(project=PROJECT)
 
-def q(sql):
+def run(sql):
     return [dict(r) for r in client.query(sql).result()]
 
-def fmt_m(date_val):
-    """date → '2026-05'"""
-    if isinstance(date_val, str): return date_val[:7]
-    return date_val.strftime('%Y-%m')
+def to_date(val):
+    if isinstance(val, datetime.date): return val
+    return datetime.datetime.strptime(str(val)[:10], '%Y-%m-%d').date()
 
-def days_in_month(ym):
-    y, m = int(ym[:4]), int(ym[5:7])
-    return calendar.monthrange(y, m)[1]
+def month_label(d, today):
+    label = d.strftime("%b %Y")
+    return label + "*" if d >= datetime.date(today.year, today.month, 1) else label
 
-# ── 1. Find latest available month ─────────────────────────────────────────────
-print("Finding latest month in BQ...")
-latest_rows = q("""
-    SELECT FORMAT_DATE('%Y-%m', MAX(date)) AS latest
-    FROM `chotot-dwh.chotot_mtm.dashboard__dau_vertical_daily`
-""")
-latest_m = latest_rows[0]['latest']
-print(f"  Latest month: {latest_m}")
+def get_arr(rows, key, months, channel=None):
+    lookup = {}
+    for r in rows:
+        m = to_date(r['month'])
+        ch = str(r.get('channel', r.get('channelGrouping', '')))
+        if channel is None or ch == channel:
+            lookup[m] = r.get(key)
+    return [lookup.get(m) for m in months]
 
-# Build months T1/2026 → latest
-year = int(latest_m[:4])
-last_mo = int(latest_m[5:7])
-months = [f"{year}-{m:02d}" for m in range(1, last_mo + 1)]
-print(f"  Months: {months}")
+def safe_div(a, b):
+    return round(a/b, 4) if a and b else None
 
-# ── 2. Query all metrics ────────────────────────────────────────────────────────
-m_range_start = f"{months[0]}-01"
-m_range_end   = f"{latest_m}-31"
+def daily(arr, days):
+    return [round(arr[i]/days[i]) if arr[i] else None for i in range(len(arr))]
 
-print("Querying DAU by vertical...")
-dau_rows = q(f"""
-    SELECT FORMAT_DATE('%Y-%m', date) AS month, vertical,
-           ROUND(AVG(dau), 0) AS avg_dau
-    FROM `chotot-dwh.chotot_mtm.dashboard__dau_vertical_daily`
-    WHERE date BETWEEN '{m_range_start}' AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
-    GROUP BY 1, 2 ORDER BY 1, 2
-""")
+print("Loading current data.json...")
+with open(DATA_JSON) as f:
+    D = json.load(f)
 
-print("Querying MAU by vertical...")
-mau_rows = q(f"""
-    SELECT FORMAT_DATE('%Y-%m', date) AS month, vertical, dau AS mau
-    FROM `chotot-dwh.chotot_mtm.dashboard__dau_vertical_monthly`
-    WHERE date BETWEEN '{m_range_start}' AND '{latest_m}-01'
-    ORDER BY 1, 2
+print("Querying BigQuery...")
+today = datetime.date.today()
+
+# MAU
+mau_rows = run("""
+SELECT month,
+  SUM(mau) as mau_app,
+  SUM(CASE WHEN login_status='login' THEN mau END) as mau_login
+FROM ct_product.dashboard__user_management_login_monthly
+WHERE platform IN ('Android','iOS') AND month >= '2026-01-01'
+GROUP BY 1 ORDER BY 1
 """)
 
-print("Querying DwL + Lead by vertical...")
-dwl_rows = q(f"""
-    SELECT FORMAT_DATE('%Y-%m', date) AS month, vertical,
-           ROUND(dauwlead, 0) AS dwl, lead, mauwlead
-    FROM `chotot-dwh.chotot_mtm.dashboard__dauwlead__vertical_monthly`
-    WHERE date BETWEEN '{m_range_start}' AND '{latest_m}-01'
-    ORDER BY 1, 2
+# DAU
+dau_rows = run("""
+SELECT DATE_TRUNC(date,MONTH) as month, AVG(daily_dau) as avg_dau
+FROM (SELECT date, SUM(dau) as daily_dau
+FROM ct_product.dashboard__user_management_DAU
+WHERE platform IN ('Android','iOS') AND date >= '2026-01-01' GROUP BY date)
+GROUP BY 1 ORDER BY 1
 """)
 
-print("Querying MAU w/Lead...")
-maulead_rows = q(f"""
-    SELECT FORMAT_DATE('%Y-%m', date) AS month, vertical, mauwlead
-    FROM `chotot-dwh.chotot_mtm.dashboard__mauwlead__vertical_monthly`
-    WHERE date BETWEEN '{m_range_start}' AND '{latest_m}-01'
-    ORDER BY 1, 2
+# Total CT MAU
+ct_rows = run("""
+SELECT month, SUM(mau) as total_ct_mau
+FROM ct_product.dashboard__user_management_login_monthly
+WHERE month >= '2026-01-01' GROUP BY 1 ORDER BY 1
 """)
 
-# ── 3. Build lookup dicts ───────────────────────────────────────────────────────
-BQ_VERTS = {'pty':'PTY', 'jobs':'JOB', 'veh':'VEH', 'gds':'GDS'}
+# New users
+new_rows = run("""
+SELECT DATE_TRUNC(date,MONTH) as month, channelGrouping,
+  COUNT(DISTINCT clientId) as new_mau,
+  COUNT(DISTINCT CASE WHEN account_id IS NOT NULL THEN clientId END) as new_login_mau
+FROM chotot_data.traffic_visit_detail
+WHERE newVisits=1 AND platform IN ('iOS','Android') AND date >= '2026-01-01'
+GROUP BY 1,2 ORDER BY 1,2
+""")
+print(f"  MAU: {len(mau_rows)} months | New users: {len(new_rows)} rows")
 
-def build_vert_act():
-    data = {v: {} for v in ['PTY','JOB','VEH','GDS']}
-    for r in dau_rows:
-        v = BQ_VERTS.get(r['vertical'])
-        if v: data[v].setdefault(r['month'], {})['dau'] = int(r['avg_dau'])
-    for r in mau_rows:
-        v = BQ_VERTS.get(r['vertical'])
-        if v: data[v].setdefault(r['month'], {})['mau'] = int(r['mau'])
-    for r in dwl_rows:
-        v = BQ_VERTS.get(r['vertical'])
-        if v:
-            data[v].setdefault(r['month'], {})['dwl']  = int(r['dwl'])
-            data[v].setdefault(r['month'], {})['lead'] = int(r['lead'])
-    for r in maulead_rows:
-        v = BQ_VERTS.get(r['vertical'])
-        if v: data[v].setdefault(r['month'], {})['mauLead'] = int(r['mauwlead'])
-    return data
+# Activation (may fail with 403)
+act_rows = []
+try:
+    act_rows = run("""
+    SELECT DATE_TRUNC(visit_date,MONTH) as month,
+      CASE WHEN channel='all' THEN 'Total' ELSE channel END as channel,
+      AVG(dau) as avg_new_dau,
+      SUM(user_20adview_7d) as adview_total, SUM(user_1lead_7d) as lead_total,
+      SAFE_DIVIDE(SUM(d1),SUM(d0)) as nurr_d1,
+      SAFE_DIVIDE(SUM(d7),SUM(d0)) as nurr_d7,
+      SAFE_DIVIDE(SUM(m1),SUM(d0)) as nurr_m1
+    FROM ct_digital.dashboard__retention_mapping_activation_by_source_campaign
+    WHERE return_status='new' AND campaign='all' AND vertical_user='all'
+    AND channel IN ('all','Direct','Organic Search','Paid Search','Display','Growth','Social')
+    AND visit_date >= '2026-01-01' GROUP BY 1,2 ORDER BY 1,2
+    """)
+    print(f"  Activation: {len(act_rows)} rows OK")
+except Exception as e:
+    print(f"  WARNING Activation skipped: {e}")
 
-def build_act(vert_act):
-    """Platform totals from 'all' vertical rows"""
-    act = {}
-    dau_all  = {r['month']: int(r['avg_dau']) for r in dau_rows  if r['vertical']=='all'}
-    mau_all  = {r['month']: int(r['mau'])     for r in mau_rows  if r['vertical']=='all'}
-    dwl_all  = {r['month']: int(r['dwl'])     for r in dwl_rows  if r['vertical']=='all'}
-    lead_all = {r['month']: int(r['lead'])    for r in dwl_rows  if r['vertical']=='all'}
-    mauL_all = {r['month']: int(r['mauwlead'])for r in maulead_rows if r['vertical']=='all'}
-    for m in months:
-        dau  = dau_all.get(m, 0)
-        mau  = mau_all.get(m, 0)
-        dwl  = dwl_all.get(m, 0)
-        lead = lead_all.get(m, 0)
-        mauL = mauL_all.get(m, 0)
-        dauMau = round(dau/mau*100, 1) if mau else 0
-        act[m] = dict(dau=dau, dwl=dwl, lead=lead, mau=mau, mauLead=mauL, dauMau=dauMau)
-    return act
+# Retention (may fail with 403)
+ret_rows = []
+try:
+    ret_rows = run("""
+    SELECT DATE_TRUNC(min_date,MONTH) as month,
+      SAFE_DIVIDE(SUM(d1),SUM(d0)) as ret_d1,
+      SAFE_DIVIDE(SUM(d7),SUM(d0)) as ret_d7,
+      SAFE_DIVIDE(SUM(m1),SUM(d0)) as ret_m1
+    FROM ct_digital.dashboard__retention_90d
+    WHERE new_status='return' AND platform IN ('iOS','Android') AND min_date >= '2026-01-01'
+    GROUP BY 1 ORDER BY 1
+    """)
+    print(f"  Retention: {len(ret_rows)} rows OK")
+except Exception as e:
+    print(f"  WARNING Retention skipped: {e}")
 
-vert_act = build_vert_act()
-act = build_act(vert_act)
+# Build month list
+all_months = sorted(set(to_date(r['month']) for r in mau_rows))
+months_labels = [month_label(m, today) for m in all_months]
+partial = [m for m in months_labels if m.endswith("*")]
+n = len(all_months)
 
-# ── 3b. Fetch GROWTH_COST from Google Sheets ───────────────────────────────────
-SHEETS_ID = "1D-2eQcfDMzy42wHUF4bpwCY4cWtrJNvp-kdv9R_iFUI"
-SHEET_NAME = "FC & Actual cost "
-
-def fetch_growth_cost():
-    """Fetch cost data from Google Sheets using ADC token. Returns {vert: {month: cost}}"""
-    import subprocess as sp
+# ── Google Sheets cost sync ───────────────────────────────────────────────────
+def fetch_sheet_cost(spreadsheet_id, months_list, current_month_idx):
+    """Read FC & Actual cost sheet, extract app growth rows, return cost per month."""
     try:
-        gcloud = os.path.expanduser("~/google-cloud-sdk/bin/gcloud")
-        token = sp.run(
-            [gcloud, "auth", "print-access-token", "--account=chile@chotot.vn"],
-            capture_output=True, text=True
-        ).stdout.strip()
-        if not token:
-            print("  WARNING: No gcloud token — GROWTH_COST not updated")
-            return None
+        import gspread
+        import google.auth
+        from google.auth.transport.requests import Request
 
-        range_enc = SHEET_NAME.replace(' ', '%20').replace('&', '%26')
-        url = f"https://sheets.googleapis.com/v4/spreadsheets/{SHEETS_ID}/values/'{range_enc}'!A1:R500"
-        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
-        with urllib.request.urlopen(req, timeout=15) as r:
-            data = json.loads(r.read())
+        creds, _ = google.auth.default(scopes=[
+            'https://www.googleapis.com/auth/spreadsheets.readonly',
+            'https://www.googleapis.com/auth/drive.readonly'
+        ])
+        creds.refresh(Request())
 
-        rows = data.get('values', [])
-        if not rows:
-            print("  WARNING: Empty Sheets response")
-            return None
+        gc = gspread.authorize(creds)
+        sh = gc.open_by_key(spreadsheet_id)
+        try:
+            ws = sh.worksheet("FC & Actual cost")
+        except Exception:
+            ws = sh.get_worksheet(0)
 
-        hdr0 = rows[0]   # actual/forecast row
-        hdr1 = rows[1]   # month names row
-        month_map = {
-            'Jan':'2026-01','Feb':'2026-02','Mar':'2026-03','Apr':'2026-04',
-            'May':'2026-05','June':'2026-06','Jun':'2026-06','Jul':'2026-07',
-            'Aug':'2026-08','Sep':'2026-09','Oct':'2026-10','Nov':'2026-11','Dec':'2026-12'
-        }
-        col_info = {}
-        for i, h in enumerate(hdr1):
-            if h in month_map:
-                is_actual = i < len(hdr0) and 'actual' in str(hdr0[i]).lower()
-                col_info[i] = (month_map[h], is_actual)
+        rows = ws.get_all_values()
+        # Find header row with month names
+        month_abbr = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+        header_idx, col_map, act_col = 0, {}, 2
+        for idx, row in enumerate(rows):
+            hits = sum(1 for c in row if any(c.strip().startswith(m) for m in month_abbr))
+            if hits >= 3:
+                header_idx = idx
+                for ci, cell in enumerate(row):
+                    for mi, ma in enumerate(month_abbr):
+                        if cell.strip().startswith(ma) and mi not in col_map:
+                            col_map[mi] = ci
+                    if 'activit' in cell.lower():
+                        act_col = ci
+                break
 
-        def parse_num(s):
-            try: return int(str(s).replace(',', '').replace(' ', '').replace('\xa0', ''))
-            except: return 0
+        actual_cost, forecast_cost = {}, {}
+        for row in rows[header_idx+1:]:
+            if len(row) <= act_col: continue
+            if 'app growth' not in row[act_col].lower(): continue
+            for mi, ci in col_map.items():
+                if ci >= len(row): continue
+                val_str = row[ci].replace(',','').replace(' ','').strip()
+                if not val_str: continue
+                try:
+                    val = float(val_str)
+                    if mi < current_month_idx:
+                        actual_cost[mi] = actual_cost.get(mi, 0) + val
+                    else:
+                        forecast_cost[mi] = forecast_cost.get(mi, 0) + val
+                except ValueError:
+                    pass
 
-        result = {}
-        for r in rows[2:]:
-            row = r + [''] * (max(col_info.keys(), default=0) + 1 - len(r))
-            vert = str(row[0]).strip().upper()
-            if vert not in ['PTY','JOB','VEH','GDS']:
-                continue
-            for col, (mk, is_act) in col_info.items():
-                if col < len(row):
-                    v = parse_num(row[col])
-                    if v:
-                        result.setdefault(vert, {}).setdefault(mk, {'total': 0, 'is_actual': is_act})
-                        result[vert][mk]['total'] += v
+        def get_mi(lbl):
+            for i, ma in enumerate(month_abbr):
+                if lbl.startswith(ma): return i
+            return -1
 
-        print(f"  Sheets OK — {sum(len(v) for v in result.values())} month entries across {len(result)} verticals")
-        return result
+        cost_out, fc_out = [], []
+        for lbl in months_list:
+            mi = get_mi(lbl)
+            if mi < 0:
+                cost_out.append(None); fc_out.append(None)
+            elif mi < current_month_idx:
+                cost_out.append(int(actual_cost.get(mi,0)) or None); fc_out.append(None)
+            else:
+                cost_out.append(None); fc_out.append(int(forecast_cost.get(mi,0)) or None)
 
+        print(f"  Sheet: {sum(1 for c in cost_out if c)} actual months, {sum(1 for c in fc_out if c)} forecast months")
+        return cost_out, [v for v in fc_out if v]
     except Exception as e:
-        print(f"  WARNING: Sheets fetch failed — {e}")
-        return None
+        print(f"  WARNING Sheet fetch failed: {e}")
+        return None, None
 
-def js_growth_cost(cost_data):
-    """Build GROWTH_COST JS constant from Sheets data."""
-    lines = [
-        '// Cost data — auto-updated from Google Sheets "FC & Actual cost"',
-        '// actual = accrued spend | forecast = planned budget (VND)',
-        'const GROWTH_COST = {'
-    ]
-    for vert in ['PTY','JOB','VEH','GDS']:
-        lines.append(f'  {vert}:{{')
-        for mk, d in sorted(cost_data.get(vert, {}).items()):
-            lines.append(f'    "{mk}":{d["total"]},')
-        lines.append('  },')
-    lines.append('};')
-    return '\n'.join(lines)
 
-print("Fetching cost data from Google Sheets...")
-growth_cost_data = fetch_growth_cost()
 
-# ── 4. Build JS constants ───────────────────────────────────────────────────────
-def js_months():
-    arr = ', '.join(f'"{m}"' for m in months)
-    ml  = ', '.join(f'"{m}":"T{int(m[5:])}/26{"*" if m==latest_m else ""}"' for m in months)
-    return f'const MONTHS   = [{arr}];', f'const ML       = {{{ml}}};'
+# Days per month
+def days_in(d):
+    if d.month == 12: return 31
+    return (datetime.date(d.year, d.month+1, 1) - datetime.timedelta(days=1)).day
+days = [days_in(m) for m in all_months]
 
-def js_vert_act():
-    lines = ['// Per-vertical actuals — auto-updated by update_dashboard.py',
-             'const VERT_ACT = {']
-    for vert in ['PTY','JOB','VEH','GDS']:
-        lines.append(f'  {vert}:{{')
-        for m, d in sorted(vert_act.get(vert,{}).items()):
-            dau  = d.get('dau',0)
-            dwl  = d.get('dwl',0)
-            lead = d.get('lead',0)
-            mau  = d.get('mau',0)
-            mauL = d.get('mauLead',0)
-            lines.append(f'    "{m}":{{dau:{dau},dwl:{dwl},lead:{lead},mau:{mau},mauLead:{mauL}}},')
-        lines.append('  },')
-    lines.append('};')
-    return '\n'.join(lines)
+# Overview
+mau_app   = get_arr(mau_rows, 'mau_app', all_months)
+mau_login = get_arr(mau_rows, 'mau_login', all_months)
+ct_mau    = get_arr(ct_rows, 'total_ct_mau', all_months)
+avg_dau   = [round(v) if v else None for v in get_arr(dau_rows, 'avg_dau', all_months)]
 
-def js_act():
-    lines = ['// Total platform actuals — auto-updated by update_dashboard.py',
-             'const ACT = {']
-    for m in months:
-        d = act[m]
-        lines.append(f'  "{m}":{{dau:{d["dau"]},dwl:{d["dwl"]},lead:{d["lead"]},'
-                     f'mau:{d["mau"]},mauLead:{d["mauLead"]},dauMau:{d["dauMau"]}}},')
-    lines.append('};')
-    return '\n'.join(lines)
+# New users aggregated
+ch_map = {}
+for r in new_rows:
+    m = to_date(r['month'])
+    ch = r.get('channelGrouping','')
+    ch_map[(m,ch)] = r
 
-def js_act_mau():
-    lines = ['const ACT_MAU = {']
-    for m in months:
-        mau = act[m]['mau']
-        lines.append(f'  "{m}":{{mau:{mau},newMau:0,retMau:0}},')
-    lines.append('};')
-    return '\n'.join(lines)
+def by_ch(ch, key='new_mau'):
+    return [ch_map.get((m,ch),{}).get(key, 0) or 0 for m in all_months]
 
-# ── 5. Patch src/index.html ─────────────────────────────────────────────────────
-print("Patching src/index.html...")
-with open(SRC_HTML, 'r') as f:
-    html = f.read()
+direct_n  = by_ch('Direct'); organic_n = by_ch('Organic Search')
+paid_n    = by_ch('Paid Search'); display_n= by_ch('Display')
+growth_crm= by_ch('Growth'); other_n   = by_ch('(Other)')
+growth_n  = [paid_n[i]+display_n[i]+growth_crm[i] for i in range(n)]
+total_n   = [direct_n[i]+organic_n[i]+growth_n[i]+other_n[i] for i in range(n)]
+new_login_total = [
+    by_ch('Direct','new_login_mau')[i] + by_ch('Organic Search','new_login_mau')[i] +
+    by_ch('Paid Search','new_login_mau')[i] + by_ch('Display','new_login_mau')[i] +
+    by_ch('Growth','new_login_mau')[i] + by_ch('(Other)','new_login_mau')[i]
+    for i in range(n)]
 
-# Replace MONTHS
-months_js, ml_js = js_months()
-html = re.sub(r'const MONTHS\s*=\s*\[.*?\];', months_js, html)
-html = re.sub(r'const ML\s*=\s*\{.*?\};', ml_js, html)
-
-# Replace VERT_ACT block
-html = re.sub(
-    r'// Per-vertical actuals.*?const VERT_ACT = \{[\s\S]*?^};',
-    js_vert_act(),
-    html, flags=re.MULTILINE
-)
-
-# Replace ACT block
-html = re.sub(
-    r'// Total platform actuals.*?const ACT = \{[\s\S]*?^};',
-    js_act(),
-    html, flags=re.MULTILINE
-)
-
-# Replace ACT_MAU
-html = re.sub(
-    r'const ACT_MAU = \{[\s\S]*?^};',
-    js_act_mau(),
-    html, flags=re.MULTILINE
-)
-
-# Replace GROWTH_COST if Sheets data available
-if growth_cost_data:
-    html = re.sub(
-        r'// Cost data.*?const GROWTH_COST = \{[\s\S]*?^};',
-        js_growth_cost(growth_cost_data),
-        html, flags=re.MULTILINE
-    )
-    print(f"  GROWTH_COST patched from Sheets")
+# Activation / NURR
+if act_rows:
+    def a(ch, key): return get_arr(act_rows, key, all_months, channel=ch)
+    adview_total = a('Total','adview_total'); lead_total = a('Total','lead_total')
+    nurr_d1=a('Total','nurr_d1'); nurr_d7=a('Total','nurr_d7'); nurr_m1=a('Total','nurr_m1')
+    dir_adv=a('Direct','adview_total'); org_adv=a('Organic Search','adview_total')
+    paid_adv=a('Paid Search','adview_total'); disp_adv=a('Display','adview_total')
+    crm_adv=a('Growth','adview_total')
+    growth_adv=[( paid_adv[i] or 0)+(disp_adv[i] or 0)+(crm_adv[i] or 0) for i in range(n)]
+    dir_lead=a('Direct','lead_total'); org_lead=a('Organic Search','lead_total')
+    paid_lead=a('Paid Search','lead_total'); disp_lead=a('Display','lead_total')
+    crm_lead=a('Growth','lead_total')
+    growth_lead=[(paid_lead[i] or 0)+(disp_lead[i] or 0)+(crm_lead[i] or 0) for i in range(n)]
+    dir_d1=a('Direct','nurr_d1'); dir_d7=a('Direct','nurr_d7'); dir_m1=a('Direct','nurr_m1')
+    org_d1=a('Organic Search','nurr_d1'); org_d7=a('Organic Search','nurr_d7'); org_m1=a('Organic Search','nurr_m1')
+    paid_d1=a('Paid Search','nurr_d1'); paid_d7=a('Paid Search','nurr_d7'); paid_m1=a('all','nurr_m1')  # M1: use Total channel (M1 from Paid Search is unreliable)
 else:
-    print(f"  GROWTH_COST kept as-is (Sheets unavailable)")
+    print("  Using existing activation data")
+    ex=D['activation']; er=D['retention']; eg=D['growth_channel']
+    adview_total=ex['adview_total']; lead_total=ex['lead_total']
+    nurr_d1=er['nurr_d1']; nurr_d7=er['nurr_d7']; nurr_m1=er['nurr_m1']
+    dir_adv=ex['direct_adview']; org_adv=ex['organic_adview']; growth_adv=ex['growth_adview']
+    dir_lead=ex['direct_lead']; org_lead=ex['organic_lead']; growth_lead=ex['growth_lead']
+    dir_d1=er['direct_d1']; dir_d7=er['direct_d7']; dir_m1=er['direct_m1']
+    org_d1=er['organic_d1']; org_d7=er['organic_d7']; org_m1=er['organic_m1']
+    paid_d1=eg['nurr_d1']; paid_d7=eg['nurr_d7']; paid_m1=eg['nurr_m1']
 
-with open(SRC_HTML, 'w') as f:
-    f.write(html)
-print(f"  Patched: {len(months)} months, latest={latest_m}")
+if ret_rows:
+    app_d1=get_arr(ret_rows,'ret_d1',all_months); app_d7=get_arr(ret_rows,'ret_d7',all_months)
+    app_m1=get_arr(ret_rows,'ret_m1',all_months)
+else:
+    er=D['retention']
+    app_d1=er['app_d1']; app_d7=er['app_d7']; app_m1=er['app_m1']
 
-# ── 6. Build dist/ ──────────────────────────────────────────────────────────────
-print("Building dist/index.html...")
-result = subprocess.run(['node', 'build.js'],
-                        capture_output=True, text=True,
-                        cwd=os.path.dirname(SRC_HTML).replace('/src',''))
-if result.returncode != 0:
-    print("❌ Build failed:", result.stderr)
-    raise SystemExit(1)
-print(result.stdout.strip())
+def pad(arr, length, val=None):
+    return list(arr) + [val]*(length-len(arr))
 
-# Copy to root for GitHub Pages
-import shutil
-shutil.copy(DIST_HTML, ROOT_HTML)
-print(f"✅ Done — {latest_m} is latest, {len(months)} months total")
+tot_d1=pad(D['retention']['total_d1'],n); tot_d7=pad(D['retention']['total_d7'],n)
+tot_m1=pad(D['retention']['total_m1'],n)
+
+# Cost — sync from Google Sheets
+SHEET_ID = '1D-2eQcfDMzy42wHUF4bpwCY4cWtrJNvp-kdv9R_iFUI'
+current_month_idx = today.month - 1
+sheet_actual, sheet_forecast = fetch_sheet_cost(SHEET_ID, months_labels, current_month_idx)
+
+if sheet_actual:
+    cost = sheet_actual  # actual costs per month (None for future months)
+    # Merge: use sheet data where available, keep existing for gaps
+    existing_cost = D['growth_channel']['cost']
+    for i in range(n):
+        if cost[i] is None and i < len(existing_cost) and existing_cost[i]:
+            cost[i] = existing_cost[i]  # keep existing actual if sheet missing
+else:
+    cost = pad(D['growth_channel']['cost'], n)
+
+# Forecast cost (Jun-Dec planning)
+if sheet_forecast:
+    new_forecast = [v for v in sheet_forecast if v]
+else:
+    new_forecast = D['growth_channel'].get('cost_forecast', [])
+gc_new = growth_n
+ret_d1_gc=[round(gc_new[i]*(paid_d1[i] or 0)) if gc_new[i] else None for i in range(n)]
+ret_d7_gc=[round(gc_new[i]*(paid_d7[i] or 0)) if gc_new[i] else None for i in range(n)]
+ret_m1_gc=[round(gc_new[i]*(paid_m1[i] or 0)) if gc_new[i] and paid_m1[i] else None for i in range(n)]
+
+# Build output
+out = {
+    "updated_at": today.strftime("%Y-%m-%d"),
+    "months": months_labels,
+    "partial_months": partial,
+    "overview": {
+        "mau_app": mau_app, "mau_login": mau_login,
+        "mau_nonlogin": [a-b if a and b else None for a,b in zip(mau_app,mau_login)],
+        "avg_dau": avg_dau, "total_ct_mau": ct_mau,
+        "web_other_mau": [a-b if a and b else None for a,b in zip(ct_mau,mau_app)],
+        "new_mau": total_n, "new_login_mau": new_login_total,
+        "avg_new_dau": daily(total_n, days),
+        "returning_mau": [a-b if a and b else None for a,b in zip(mau_app,total_n)],
+        "pct_new": [safe_div(total_n[i],mau_app[i]) for i in range(n)],
+        "login_rate": [safe_div(mau_login[i],mau_app[i]) for i in range(n)],
+        "new_login_rate": [safe_div(new_login_total[i],total_n[i]) for i in range(n)],
+        "pct_app_ct": [safe_div(mau_app[i],ct_mau[i]) for i in range(n)],
+    },
+    "acquisition": {
+        "direct": direct_n, "organic": organic_n, "growth": gc_new, "other": other_n,
+        "direct_daily": daily(direct_n,days), "organic_daily": daily(organic_n,days),
+        "growth_daily": daily(gc_new,days), "other_daily": daily(other_n,days),
+        "growth_pct_total": [safe_div(gc_new[i],total_n[i]) for i in range(n)],
+    },
+    "activation": {
+        "adview_total": adview_total, "lead_total": lead_total,
+        "adview_rate": [safe_div(adview_total[i],total_n[i]) for i in range(n)],
+        "lead_rate": [safe_div(lead_total[i],total_n[i]) for i in range(n)],
+        "adview_daily": daily(adview_total,days), "lead_daily": daily(lead_total,days),
+        "direct_adview": dir_adv, "organic_adview": org_adv, "growth_adview": growth_adv,
+        "direct_lead": dir_lead, "organic_lead": org_lead, "growth_lead": growth_lead,
+        "direct_adview_daily": daily(dir_adv,days), "organic_adview_daily": daily(org_adv,days),
+        "growth_adview_daily": daily(growth_adv,days),
+        "direct_lead_daily": daily(dir_lead,days), "organic_lead_daily": daily(org_lead,days),
+        "growth_lead_daily": daily(growth_lead,days),
+    },
+    "retention": {
+        "total_d1": tot_d1, "total_d7": tot_d7, "total_m1": tot_m1,
+        "app_d1": app_d1, "app_d7": app_d7, "app_m1": app_m1,
+        "nurr_d1": nurr_d1, "nurr_d7": nurr_d7, "nurr_m1": nurr_m1,
+        "direct_d1": dir_d1, "direct_d7": dir_d7, "direct_m1": dir_m1,
+        "organic_d1": org_d1, "organic_d7": org_d7, "organic_m1": org_m1,
+        "growth_d1": paid_d1, "growth_d7": paid_d7, "growth_m1": paid_m1,
+    },
+    "growth_channel": {
+        "new_users": gc_new, "avg_new_dau": daily(gc_new,days),
+        "adview_activated": growth_adv, "lead_activated": growth_lead,
+        "adview_rate": [safe_div(growth_adv[i],gc_new[i]) for i in range(n)],
+        "lead_rate": [safe_div(growth_lead[i],gc_new[i]) for i in range(n)],
+        "adview_daily": daily(growth_adv,days), "lead_daily": daily(growth_lead,days),
+        "nurr_d1": paid_d1, "nurr_d7": paid_d7, "nurr_m1": paid_m1,
+        "cost": cost, "cost_forecast": new_forecast,
+        "pct_of_total_new": [safe_div(gc_new[i],total_n[i]) for i in range(n)],
+        "retained_d1": ret_d1_gc, "retained_d7": ret_d7_gc, "retained_m1": ret_m1_gc,
+        "cpa": [round(cost[i]/gc_new[i]) if cost[i] and gc_new[i] else None for i in range(n)],
+        "caa": [round(cost[i]/growth_adv[i]) if cost[i] and growth_adv[i] else None for i in range(n)],
+        "crr_d1": [round(cost[i]/ret_d1_gc[i]) if cost[i] and ret_d1_gc[i] else None for i in range(n)],
+        "crr_d7": [round(cost[i]/ret_d7_gc[i]) if cost[i] and ret_d7_gc[i] else None for i in range(n)],
+        "crr_m1": [round(cost[i]/ret_m1_gc[i]) if cost[i] and ret_m1_gc[i] else None for i in range(n)],
+    }
+}
+
+with open(DATA_JSON, 'w') as f:
+    json.dump(out, f, indent=2, default=str)
+
+print(f"✅ data.json updated — {months_labels}")
+print(f"   Latest: {months_labels[-1]} | App MAU: {mau_app[-1]:,} | New: {total_n[-1]:,}")

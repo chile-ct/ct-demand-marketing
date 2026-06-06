@@ -25,7 +25,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install google-cloud-bigquery google-auth
+          pip install google-cloud-bigquery google-auth gspread
           npm install
 
       - name: Setup GCP credentials
