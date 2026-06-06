@@ -130,13 +130,6 @@ canvas { max-height: 320px; }
       <span class="target-badge">App MAU target: <strong>1,680,927</strong></span>
       <span class="target-badge">Total CT MAU: <strong>6,874,579</strong></span>
     </div>
-    <div class="months-badge">
-      <span>Jan 2026</span>
-      <span>Feb 2026</span>
-      <span>Mar 2026</span>
-      <span>Apr 2026</span>
-      <span class="active">May 2026*</span>
-    </div>
   </div><!-- header-row -->
 </div>
 
@@ -200,10 +193,13 @@ canvas { max-height: 320px; }
   <div class="note" style="margin-bottom:12px;font-size:12px;color:#6b7280;padding:8px 14px;background:#f5f3ff;border-left:3px solid #8b5cf6;border-radius:6px;">
     * May 2026: data updated with real values. NURR M1 &amp; App Ret M1 marked — (N/A, partial month cohort not yet measurable). Forecast rows (Jun–Dec 2026) show planned cost only.
   </div>
+  <div class="note" style="margin-bottom:12px;border-left:3px solid #4361ee;background:#eef2ff">
+    <strong>App MAU</strong>: Unique users opening the app at least once in a calendar month (Android + iOS)
+  </div>
 
   <div class="commentary-wrapper" id="cw-s1"><!-- JS will render --></div>
 
-  <div class="kpi-grid">
+  <div class="kpi-grid" id="s1-kpi-grid">
     <div class="kpi-card"><div class="kpi-label">Total App MAU</div><div class="kpi-value">1.49M</div><div class="kpi-sub">May 2026*</div><div class="kpi-delta up">▲ vs Apr: +17K (+1.1%)</div></div>
     <div class="kpi-card"><div class="kpi-label">Avg Daily DAU</div><div class="kpi-value">235K</div><div class="kpi-sub">May 2026*</div><div class="kpi-delta down">▼ vs Apr: −5.4K (−2.3%)</div></div>
     <div class="kpi-card"><div class="kpi-label">App MAU (login)</div><div class="kpi-value">1.21M</div><div class="kpi-sub">May 2026* | 81.3% login rate</div><div class="kpi-delta up">▲ vs Apr: +7K (+0.6%)</div></div>
@@ -217,8 +213,8 @@ canvas { max-height: 320px; }
     <div style="position:relative;height:280px"><canvas id="chartOverviewMAU"></canvas></div>
   </div>
   <div class="charts-grid">
-    <div class="chart-card"><div class="chart-title">App MAU = Login + Non-login | Login Rate % line</div><div style="position:relative;height:280px"><canvas id="chartLoginRate"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">Total Chotot MAU = Web/Other + App MAU</div><div style="position:relative;height:280px"><canvas id="chartCTMAU"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">App MAU = Login + Non-login | Login Rate % line</div><div style="position:relative;height:280px"><canvas id="chartLoginRate"></canvas></div></div>
   </div>
   <div class="card">
     <div class="card-title">Monthly Metrics</div>
@@ -246,7 +242,9 @@ canvas { max-height: 320px; }
 <!-- ===== SECTION 2: ACQUISITION ===== -->
 <div class="section">
   <div class="section-title">2. New App User Acquisition</div>
-  <div class="section-subtitle">Channel: Direct | Organic Search | Growth (Paid Search + Display + CRM) | (Other)</div>
+  <div class="section-subtitle">
+    <strong>New App User</strong>: User lần đầu tải app và mở app vào D0 — counted once per device lifetime | Channel: Direct · Organic Search · Growth (Paid+Display+CRM) · (Other)
+  </div>
 
   <div class="commentary-wrapper" id="cw-s2"><!-- JS will render --></div>
 
@@ -324,8 +322,10 @@ canvas { max-height: 320px; }
 
 <!-- ===== SECTION 3: ACTIVATION ===== -->
 <div class="section">
-  <div class="section-title">3. App User Activation (New Users)</div>
-  <div class="section-subtitle">Điều kiện: ≥20 adview trong D7 HOẶC ≥1 lead trong D7 (tính riêng từng điều kiện)</div>
+  <div class="section-title">3. New App User Activation</div>
+  <div class="section-subtitle">
+    <strong>Activation</strong>: New app user cần được activate trong D7 — 7 ngày đầu tiên kể từ D0 (ngày đầu mở app). Điều kiện: ≥20 adview D7 hoặc ≥1 lead D7 (tính riêng)
+  </div>
 
   <div class="commentary-wrapper" id="cw-s3"><!-- JS will render --></div>
 
@@ -438,19 +438,27 @@ canvas { max-height: 320px; }
 
 <!-- ===== SECTION 4: RETENTION ===== -->
 <div class="section">
-  <div class="section-title">4. App User Retention</div>
+  <div class="section-title">4. App User Retention (New + Returning)</div>
+  <div class="section-subtitle">
+    <strong>Retention</strong>: % users quay lại app sau D1 (ngày 2), D7 (tuần đầu), M1 (tháng đầu). Bao gồm cả new users (NURR) và returning/current users (CURR/App Ret)
+  </div>
 
   <div class="commentary-wrapper" id="cw-s4"><!-- JS will render --></div>
 
   <div class="tabs" id="tabs-ret">
     <button class="tab active" onclick="switchTab('ret',0)">Overview</button>
     <button class="tab" onclick="switchTab('ret',1)">By Channel — NURR</button>
+    <button class="tab" onclick="switchTab('ret',2)">By Channel — CURR</button>
   </div>
 
   <div class="tab-content active" id="ret-0">
     <div class="chart-card" style="margin-bottom:16px">
-      <div class="chart-title">App User &amp; Total User Retention Trend (D1 / D7 / M1)</div>
-      <div style="position:relative;height:280px"><canvas id="chartRetComparison"></canvas></div>
+      <div class="chart-title">Retention D7 — Total CT User vs App User vs NURR (New)</div>
+      <div style="position:relative;height:260px"><canvas id="chartRetD7Compare"></canvas></div>
+    </div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-title">Retention M1 — Total CT User vs App User vs NURR M1 (New)</div>
+      <div style="position:relative;height:260px"><canvas id="chartRetM1Compare"></canvas></div>
     </div>
     <div class="card">
       <div class="card-title">Total User & App User Retention — D1 / D7 / M1</div>
@@ -470,6 +478,13 @@ canvas { max-height: 320px; }
         </tbody>
       </table>
       </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">Absolute User Counts (Rate × MAU — estimated)</div>
+      <div style="overflow-x:auto"><table id="retAbsTable">
+        <thead id="retAbsThead"></thead>
+        <tbody id="retAbsTbody"></tbody>
+      </table></div>
     </div>
   </div>
 
@@ -501,7 +516,25 @@ canvas { max-height: 320px; }
       </table>
       </div>
     </div>
+    <div class="tab-content" id="ret-2">
+    <div class="note" style="margin-bottom:12px">
+      <strong>CURR (Current User Return Rate)</strong>: % returning/existing users quay lại app sau D1/D7/M1. Nguồn: dashboard__retention_90d (tất cả platform iOS+Android, không có channel breakdown).
+    </div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-title">App User Retention (CURR) — D1 / D7 / M1 Trend</div>
+      <div style="position:relative;height:280px"><canvas id="chartCURRTrend"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">App User Retention (CURR) — D1 / D7 / M1 vs NURR</div>
+      <div style="overflow-x:auto"><table id="currTable">
+        <thead><tr><th>Metric</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <div class="note">CURR = Current/Returning users. NURR = New users. Channel breakdown không available cho CURR từ nguồn hiện tại.</div>
+    </div>
   </div>
+
+</div>
 
 </div>
 
@@ -510,7 +543,9 @@ canvas { max-height: 320px; }
 <!-- ===== SECTION 5: GROWTH PERFORMANCE ===== -->
 <div class="section">
   <div class="section-title">5. Growth Performance — Growth Channel (Paid+Display+CRM)</div>
-  <div class="section-subtitle">Hiệu quả đầu tư của Growth channel: Acquisition · Activation · Retention · Cost efficiency</div>
+  <div class="section-subtitle">
+    <strong>Growth Channel</strong>: Toàn bộ performance về volume &amp; quality của new app user được drive bởi Growth Marketing (Paid Search + Display + CRM campaigns) · Acquisition → Activation → Retention → Cost efficiency
+  </div>
 
   <div class="commentary-wrapper" id="cw-s5"><!-- JS will render --></div>
 
@@ -590,6 +625,12 @@ canvas { max-height: 320px; }
         </tbody>
       </table></div>
     </div>
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">🎯 Active Campaigns — Growth Channel</div>
+      <div style="padding:16px;color:#6b7280;font-size:12px">
+        ⏳ Campaign-level breakdown cần query thêm từ <code>ct_digital.dashboard__retention_mapping_activation_by_source_campaign</code> với filter <code>campaign != 'all'</code>. Sẽ được thêm vào data.json trong lần update tiếp theo.
+      </div>
+    </div>
   </div>
 
   <!-- Tab 2: Activation -->
@@ -608,6 +649,12 @@ canvas { max-height: 320px; }
           <tr><td>Daily Activated (lead D7)</td><td>433</td><td>392</td><td>659</td><td>630</td><td class="apr">631</td></tr>
         </tbody>
       </table></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">🎯 Active Campaigns — Activation</div>
+      <div style="padding:16px;color:#6b7280;font-size:12px">
+        ⏳ Campaign-level breakdown cần query thêm từ <code>ct_digital.dashboard__retention_mapping_activation_by_source_campaign</code> với filter <code>campaign != 'all'</code>. Sẽ được thêm vào data.json trong lần update tiếp theo.
+      </div>
     </div>
   </div>
 
@@ -630,6 +677,12 @@ canvas { max-height: 320px; }
             <tr><td>Δ vs Total (M1)</td><td style="color:#10b981">+0.2pp</td><td style="color:#ef4444">−0.1pp</td><td style="color:#10b981">+0.3pp</td><td style="color:#10b981">+0.4pp</td><td class="apr" style="color:#9ca3af">—</td></tr>
           </tbody>
         </table></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">🎯 Active Campaigns — Retention</div>
+      <div style="padding:16px;color:#6b7280;font-size:12px">
+        ⏳ Campaign-level breakdown cần query thêm từ <code>ct_digital.dashboard__retention_mapping_activation_by_source_campaign</code> với filter <code>campaign != 'all'</code>. Sẽ được thêm vào data.json trong lần update tiếp theo.
+      </div>
     </div>
   </div>
 
@@ -1058,23 +1111,51 @@ function renderAllCharts() {
   makeChart('chartActDailyCh1','bar',MONTHS,[B('Direct',act.direct_adview_daily,C.blue),B('Organic Search',act.organic_adview_daily,C.green),B('Growth (P+D+CRM)',act.growth_adview_daily,C.orange)],{noAR:true});
   makeChart('chartActDailyCh2','bar',MONTHS,[B('Direct',act.direct_lead_daily,C.blue),B('Organic Search',act.organic_lead_daily,C.green),B('Growth (P+D+CRM)',act.growth_lead_daily,C.orange)],{noAR:true});
 
-  // S4 Ret Overview: line chart across all months
+  // S4 Ret Overview: comparison charts D7 and M1
   (function(){
-    const existing=Object.values(Chart.instances).find(c=>c.canvas?.id==='chartRetComparison');
-    if(existing)existing.destroy();
-    const ctx=document.getElementById('chartRetComparison'); if(!ctx)return;
+    function makeRetChart(id, label1, d1, label2, d2, label3, d3) {
+      const ctx = document.getElementById(id); if(!ctx) return;
+      const ex = Object.values(Chart.instances||{}).find(c=>c.canvas?.id===id);
+      if(ex) ex.destroy();
+      new Chart(ctx, {type:'line', data:{labels:MONTHS, datasets:[
+        {label:label1, data:d1, borderColor:'#9ca3af', backgroundColor:'#9ca3af22', fill:false, tension:0.4, pointRadius:4, borderWidth:2},
+        {label:label2, data:d2, borderColor:'#4361ee', backgroundColor:'#4361ee22', fill:false, tension:0.4, pointRadius:4, borderWidth:2},
+        {label:label3, data:d3, borderColor:'#f59e0b', backgroundColor:'transparent', fill:false, tension:0.4, pointRadius:4, borderWidth:2, borderDash:[4,4]}
+      ]}, options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
+          tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y!=null?(c.parsed.y*100).toFixed(1)+'%':'—'}`}}},
+        scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
+          y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'}}}}
+      });
+    }
+    makeRetChart('chartRetD7Compare',
+      'Total CT User D7', ret.total_d7,
+      'App User D7', ret.app_d7,
+      'NURR D7 (New)', ret.nurr_d7
+    );
+    makeRetChart('chartRetM1Compare',
+      'Total CT User M1', ret.total_m1,
+      'App User M1', ret.app_m1,
+      'NURR M1 (New)', ret.nurr_m1
+    );
+  })();
+  // chartCURRTrend
+  (function(){
+    const ctx = document.getElementById('chartCURRTrend'); if(!ctx) return;
+    const ex = Object.values(Chart.instances||{}).find(c=>c.canvas?.id==='chartCURRTrend');
+    if(ex) ex.destroy();
     new Chart(ctx,{type:'line',data:{labels:MONTHS,datasets:[
-      {label:'App User D1',data:ret.app_d1,borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2},
-      {label:'App User D7',data:ret.app_d7,borderColor:C.teal,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2},
-      {label:'App User M1',data:ret.app_m1,borderColor:C.purple,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2},
-      {label:'Total User D1',data:ret.total_d1,borderColor:C.blue,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4]},
-      {label:'Total User M1',data:ret.total_m1,borderColor:C.purple,backgroundColor:'transparent',tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4]}
+      {label:'App Ret D1 (CURR)',data:ret.app_d1,borderColor:'#4361ee',backgroundColor:'#4361ee22',fill:true,tension:0.4,pointRadius:4,borderWidth:2},
+      {label:'App Ret D7 (CURR)',data:ret.app_d7,borderColor:'#f59e0b',backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
+      {label:'App Ret M1 (CURR)',data:ret.app_m1,borderColor:'#10b981',backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
+      {label:'NURR D1 (New)',data:ret.nurr_d1,borderColor:'#9ca3af',backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:4,borderWidth:1,borderDash:[3,3]},
+      {label:'NURR M1 (New)',data:ret.nurr_m1,borderColor:'#ef4444',backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:4,borderWidth:1,borderDash:[3,3]}
     ]},options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
-        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${(c.parsed.y*100).toFixed(1)}%`}}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y!=null?(c.parsed.y*100).toFixed(1)+'%':'—'}`}}},
       scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
-        y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'},min:0.2,max:0.75}
-      }}});
+        y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'}}}}
+    });
   })();
   makeChart('chartNURRD1Ch','line',MONTHS,[L('Total',ret.nurr_d1,C.blue),L('Direct',ret.direct_d1,C.green),L('Organic Search',ret.organic_d1,C.orange),L('Growth (P+D+CRM)',ret.growth_d1,C.purple)],{pct:true,noAR:true});
   makeChart('chartNURRD7Ch','line',MONTHS,[L('Total',ret.nurr_d7,C.blue),L('Direct',ret.direct_d7,C.green),L('Organic Search',ret.organic_d7,C.orange),L('Growth (P+D+CRM)',ret.growth_d7,C.purple)],{pct:true,noAR:true});
@@ -1187,6 +1268,86 @@ function switchTab(g,idx){
   document.querySelectorAll(`[id^="${g}-"]`).forEach((c,i)=>c.classList.toggle('active',i===idx));
 }
 
+function updateKPICards(monthIndex) {
+  if (!D) return;
+  const i = monthIndex;
+  const ov = D.overview;
+  const mn = D.months[i];
+  const prev = i > 0 ? i - 1 : null;
+
+  function fmt(v) {
+    if (v == null) return '—';
+    if (v >= 1e6) return (v/1e6).toFixed(2) + 'M';
+    if (v >= 1000) return Math.round(v/1000) + 'K';
+    return v.toLocaleString('en');
+  }
+  function delta(cur, prv, isRate) {
+    if (cur == null || prv == null) return '';
+    const d = isRate ? ((cur-prv)*100).toFixed(1)+'pp' : fmt(cur-prv);
+    const sign = cur >= prv ? '▲' : '▼';
+    const cls = cur >= prv ? 'up' : 'down';
+    const prevMn = D.months[prv] || '';
+    return `<span class="${cls}">${sign} vs ${prevMn}: ${cur >= prv ? '+' : ''}${d}</span>`;
+  }
+
+  const cards = document.querySelectorAll('#s1-kpi-grid .kpi-card');
+  if (!cards.length) return;
+
+  const data = [
+    { label: 'Total App MAU', val: ov.mau_app[i], prevVal: prev!=null?ov.mau_app[prev]:null, isRate: false },
+    { label: 'Avg Daily DAU', val: ov.avg_dau[i], prevVal: prev!=null?ov.avg_dau[prev]:null, isRate: false },
+    { label: 'App MAU (login)', val: ov.mau_login[i], sub: ov.login_rate[i] ? (ov.login_rate[i]*100).toFixed(1)+'% login rate' : '', prevVal: prev!=null?ov.mau_login[prev]:null, isRate: false },
+    { label: '% App / Total Chotot', val: ov.pct_app_ct[i] ? (ov.pct_app_ct[i]*100).toFixed(1)+'%' : '—', rawVal: ov.pct_app_ct[i], prevVal: prev!=null?ov.pct_app_ct[prev]:null, isRate: true, noFmt: true },
+    { label: 'New App MAU', val: ov.new_mau[i], prevVal: prev!=null?ov.new_mau[prev]:null, isRate: false },
+    { label: 'New App MAU (login)', val: ov.new_login_mau[i], sub: ov.new_login_rate[i] ? (ov.new_login_rate[i]*100).toFixed(1)+'% login rate' : '', prevVal: prev!=null?ov.new_login_mau[prev]:null, isRate: false }
+  ];
+
+  data.forEach((d, idx) => {
+    const card = cards[idx];
+    if (!card) return;
+    const valEl = card.querySelector('.kpi-value');
+    const subEl = card.querySelector('.kpi-sub');
+    const deltaEl = card.querySelector('.kpi-delta');
+    if (valEl) valEl.textContent = d.noFmt ? d.val : fmt(d.val);
+    if (subEl) subEl.innerHTML = (d.sub || mn) + '';
+    if (deltaEl) deltaEl.innerHTML = delta(d.noFmt ? d.rawVal : d.val, d.noFmt ? d.prevVal : d.prevVal, d.isRate) || '—';
+  });
+}
+
+function renderRetAbsolutes() {
+  if (!D) return;
+  const ret = D.retention;
+  const ov = D.overview;
+  const MONTHS = D.months;
+
+  const thead = document.getElementById('retAbsThead');
+  const tbody = document.getElementById('retAbsTbody');
+  if (!thead || !tbody) return;
+
+  // Header
+  thead.innerHTML = '<tr><th>Metric</th>' + MONTHS.map(m => `<th${m.includes('*')?' class="apr"':''}>${m}</th>`).join('') + '</tr>';
+
+  function absRow(label, rateArr, baseArr) {
+    const cells = MONTHS.map((m,i) => {
+      const r = rateArr ? rateArr[i] : null;
+      const b = baseArr ? baseArr[i] : null;
+      const v = r!=null && b!=null ? Math.round(r*b) : null;
+      const cls = m.includes('*') ? ' class="apr"' : '';
+      return `<td${cls}>${v!=null ? v.toLocaleString('en') : '—'}</td>`;
+    }).join('');
+    return `<tr><td>${label}</td>${cells}</tr>`;
+  }
+
+  tbody.innerHTML = [
+    absRow('App Ret D1 × App MAU', ret.app_d1, ov.mau_app),
+    absRow('App Ret D7 × App MAU', ret.app_d7, ov.mau_app),
+    absRow('App Ret M1 × App MAU', ret.app_m1, ov.mau_app),
+    absRow('NURR D1 × New MAU', ret.nurr_d1, ov.new_mau),
+    absRow('NURR D7 × New MAU', ret.nurr_d7, ov.new_mau),
+    absRow('NURR M1 × New MAU', ret.nurr_m1, ov.new_mau)
+  ].join('');
+}
+
 function selectExecMonth(m) {
   const months = ['jan','feb','mar','apr','may'];
   const colors = {jan:'#4361ee',feb:'#ef4444',mar:'#10b981',apr:'#f59e0b',may:'#f59e0b'};
@@ -1213,6 +1374,11 @@ function selectExecMonth(m) {
       btn.style.fontWeight = '500';
     }
   });
+  // Update KPI cards
+  const months = D ? D.months : [];
+  const monthMap = {overall: months.length-1, jan:0, feb:1, mar:2, apr:3, may:4, jun:5};
+  const idx = monthMap[m] !== undefined ? monthMap[m] : months.length-1;
+  updateKPICards(idx);
 }
 
 // ============================================================
@@ -1229,6 +1395,8 @@ async function initDashboard() {
   renderCommentary('s5');
 
   renderAllCharts();
+  renderRetAbsolutes();
+  updateKPICards(D.months.length-1);
   selectExecMonth('may');
 }
 
