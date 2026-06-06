@@ -190,12 +190,7 @@ canvas { max-height: 320px; }
 <!-- ===== SECTION 1: OVERVIEW ===== -->
 <div class="section">
   <div class="section-title">1. Overview App</div>
-  <div class="note" style="margin-bottom:12px;font-size:12px;color:#6b7280;padding:8px 14px;background:#f5f3ff;border-left:3px solid #8b5cf6;border-radius:6px;">
-    * May 2026: data updated with real values. NURR M1 &amp; App Ret M1 marked — (N/A, partial month cohort not yet measurable). Forecast rows (Jun–Dec 2026) show planned cost only.
-  </div>
-  <div class="note" style="margin-bottom:12px;border-left:3px solid #4361ee;background:#eef2ff">
-    <strong>App MAU</strong>: Unique users opening the app at least once in a calendar month (Android + iOS)
-  </div>
+  <div class="section-subtitle"><strong>App MAU</strong>: Unique users mở app ít nhất 1 lần trong tháng (Android + iOS) | <strong>DAU</strong>: Unique users mở app trong ngày | <strong>New App MAU</strong>: User lần đầu tải &amp; mở app trong tháng</div>
 
   <div class="commentary-wrapper" id="cw-s1"><!-- JS will render --></div>
 
@@ -213,13 +208,13 @@ canvas { max-height: 320px; }
     <div style="position:relative;height:280px"><canvas id="chartOverviewMAU"></canvas></div>
   </div>
   <div class="charts-grid">
-    <div class="chart-card"><div class="chart-title">Total Chotot MAU = Web/Other + App MAU</div><div style="position:relative;height:280px"><canvas id="chartCTMAU"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">App MAU = Login + Non-login | Login Rate % line</div><div style="position:relative;height:280px"><canvas id="chartLoginRate"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Total Chotot MAU = Web/Other + App MAU</div><div style="position:relative;height:280px"><canvas id="chartCTMAU"></canvas></div></div>
   </div>
   <div class="card">
     <div class="card-title">Monthly Metrics</div>
     <div style="overflow-x:auto">
-    <table>
+    <table id="s1MetricsTable">
       <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
       <tbody>
         <tr class="total-row"><td>Total App MAU (Android+iOS)</td><td>1,394,597</td><td>1,296,533</td><td>1,551,037</td><td>1,472,750</td><td class="apr">1,489,715</td></tr>
@@ -262,7 +257,7 @@ canvas { max-height: 320px; }
     <div class="card">
       <div class="card-title">New App MAU & Daily New DAU — Total</div>
       <div style="overflow-x:auto">
-      <table>
+      <table id="s2OverviewTable">
         <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
         <tbody>
           <tr class="total-row"><td>New App MAU</td><td>261,241</td><td>234,333</td><td>344,562</td><td>293,506</td><td class="apr">295,688</td></tr>
@@ -281,7 +276,7 @@ canvas { max-height: 320px; }
     <div class="card">
       <div class="card-title">New App MAU by Channel</div>
       <div style="overflow-x:auto">
-      <table>
+      <table id="s2ChannelTable">
         <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
         <tbody>
           <tr class="total-row"><td>Total</td><td>261,241</td><td>234,333</td><td>344,562</td><td>293,506</td><td class="apr">295,688</td></tr>
@@ -303,7 +298,7 @@ canvas { max-height: 320px; }
     <div class="card">
       <div class="card-title">Avg Daily New DAU by Channel</div>
       <div style="overflow-x:auto">
-      <table>
+      <table id="s2DailyTable">
         <thead><tr><th>Channel</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
         <tbody>
           <tr class="total-row"><td>Total</td><td>8,429</td><td>8,370</td><td>11,116</td><td>9,785</td><td class="apr">9,538</td></tr>
@@ -448,17 +443,18 @@ canvas { max-height: 320px; }
   <div class="tabs" id="tabs-ret">
     <button class="tab active" onclick="switchTab('ret',0)">Overview</button>
     <button class="tab" onclick="switchTab('ret',1)">By Channel — NURR</button>
-    <button class="tab" onclick="switchTab('ret',2)">By Channel — CURR</button>
   </div>
 
   <div class="tab-content active" id="ret-0">
-    <div class="chart-card" style="margin-bottom:16px">
-      <div class="chart-title">Retention D7 — Total CT User vs App User vs NURR (New)</div>
-      <div style="position:relative;height:260px"><canvas id="chartRetD7Compare"></canvas></div>
-    </div>
-    <div class="chart-card" style="margin-bottom:16px">
-      <div class="chart-title">Retention M1 — Total CT User vs App User vs NURR M1 (New)</div>
-      <div style="position:relative;height:260px"><canvas id="chartRetM1Compare"></canvas></div>
+    <div class="charts-grid" style="margin-bottom:16px">
+      <div class="chart-card">
+        <div class="chart-title">Retention D7 — Total CT vs App vs Web vs NURR</div>
+        <div style="position:relative;height:260px"><canvas id="chartRetD7Compare"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Retention M1 — Total CT vs App vs Web vs NURR</div>
+        <div style="position:relative;height:260px"><canvas id="chartRetM1Compare"></canvas></div>
+      </div>
     </div>
     <div class="card">
       <div class="card-title">Total User & App User Retention — D1 / D7 / M1</div>
@@ -469,22 +465,15 @@ canvas { max-height: 320px; }
           <tr><td>Total User Retention D1</td><td>52.4%</td><td>52.6%</td><td>52.0%</td><td>51.7%</td><td class="apr">—</td></tr>
           <tr><td>Total User Retention D7</td><td>43.9%</td><td>44.1%</td><td>43.6%</td><td>43.4%</td><td class="apr">—</td></tr>
           <tr><td>Total User Retention M1</td><td>65.4%</td><td>65.2%</td><td>65.2%</td><td>64.9%</td><td class="apr">—</td></tr>
-          <tr class="sep"><td>App User Retention D1</td><td>55.0%</td><td>55.2%</td><td>54.5%</td><td class="ret-drop">51.0% ▼</td><td class="apr">49.3%</td></tr>
-          <tr><td>App User Retention D7</td><td>46.0%</td><td>46.4%</td><td>45.8%</td><td class="ret-drop">42.2% ▼</td><td class="apr">32.7%</td></tr>
-          <tr class="total-row"><td>App User Retention M1</td><td>68.2%</td><td>67.9%</td><td>68.1%</td><td class="ret-drop">63.8% ▼▼</td><td class="apr">—</td></tr>
+          <tr class="sep"><td>App User Retention D1</td><td>55.0%</td><td>55.2%</td><td>54.5%</td><td class="apr">51.0%</td><td class="apr">49.3%</td></tr>
+          <tr><td>App User Retention D7</td><td>46.0%</td><td>46.4%</td><td>45.8%</td><td class="apr">42.2%</td><td class="apr">32.7%</td></tr>
+          <tr class="total-row"><td>App User Retention M1</td><td>68.2%</td><td>67.9%</td><td>68.1%</td><td class="apr">63.8%</td><td class="apr">—</td></tr>
           <tr class="sep"><td>NURR D1 (New User)</td><td>36.1%</td><td>36.1%</td><td>37.9%</td><td>37.1%</td><td class="apr">36.1%</td></tr>
           <tr><td>NURR D7 (New User)</td><td>14.5%</td><td>14.8%</td><td>15.7%</td><td>14.9%</td><td class="apr">11.7%</td></tr>
           <tr><td>NURR M1 (New User)</td><td>6.8%</td><td>7.0%</td><td>7.3%</td><td>7.0%</td><td class="apr">—</td></tr>
         </tbody>
       </table>
       </div>
-    </div>
-    <div class="card" style="margin-top:16px">
-      <div class="card-title">Absolute User Counts (Rate × MAU — estimated)</div>
-      <div style="overflow-x:auto"><table id="retAbsTable">
-        <thead id="retAbsThead"></thead>
-        <tbody id="retAbsTbody"></tbody>
-      </table></div>
     </div>
   </div>
 
@@ -516,23 +505,6 @@ canvas { max-height: 320px; }
       </table>
       </div>
     </div>
-    <div class="tab-content" id="ret-2">
-    <div class="note" style="margin-bottom:12px">
-      <strong>CURR (Current User Return Rate)</strong>: % returning/existing users quay lại app sau D1/D7/M1. Nguồn: dashboard__retention_90d (tất cả platform iOS+Android, không có channel breakdown).
-    </div>
-    <div class="chart-card" style="margin-bottom:16px">
-      <div class="chart-title">App User Retention (CURR) — D1 / D7 / M1 Trend</div>
-      <div style="position:relative;height:280px"><canvas id="chartCURRTrend"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="card-title">App User Retention (CURR) — D1 / D7 / M1 vs NURR</div>
-      <div style="overflow-x:auto"><table id="currTable">
-        <thead><tr><th>Metric</th></tr></thead>
-        <tbody></tbody>
-      </table></div>
-      <div class="note">CURR = Current/Returning users. NURR = New users. Channel breakdown không available cho CURR từ nguồn hiện tại.</div>
-    </div>
-  </div>
 
 </div>
 
@@ -577,7 +549,7 @@ canvas { max-height: 320px; }
       <div style="position:relative;height:300px"><canvas id="chartG5CostVsUsers"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">Growth Channel — All Metrics Summary <span style="font-size:10px;color:#10b981;font-weight:400">| Δ = vs tháng trước</span></div>
+      <div class="card-title">Growth Channel — All Metrics Summary</div>
       <div style="overflow-x:auto"><table id="g5SummaryTable"></table></div>
       <div class="note">Cost = tổng 5 dòng "app growth" từ sheet Data for Claude | ↓ = best trong kỳ | Activated combine = MAX(adview, lead)</div>
     </div>
@@ -587,7 +559,7 @@ canvas { max-height: 320px; }
   <div class="tab-content" id="g5-1">
     <div class="chart-card" style="margin-bottom:16px"><div class="chart-title">New App Users (Growth) vs Total — % Share</div><canvas id="chartG5Acq"></canvas></div>
     <div class="card">
-      <div class="card-title">Acquisition — Growth Channel <span style="font-size:10px;color:#10b981;font-weight:400">| Δ = vs tháng trước</span></div>
+      <div class="card-title">Acquisition — Growth Channel</div>
       <div style="overflow-x:auto"><table id="g5AcqTable"></table></div>
     </div>
     <div class="card" style="margin-top:16px">
@@ -602,7 +574,7 @@ canvas { max-height: 320px; }
   <div class="tab-content" id="g5-2">
     <div class="chart-card" style="margin-bottom:16px"><div class="chart-title">Activation Trend — Growth Channel</div><canvas id="chartG5Act"></canvas></div>
     <div class="card">
-      <div class="card-title">Activation — Growth Channel <span style="font-size:10px;color:#10b981;font-weight:400">| Δ = vs tháng trước</span></div>
+      <div class="card-title">Activation — Growth Channel</div>
       <div style="overflow-x:auto"><table id="g5ActTable"></table></div>
     </div>
     <div class="card" style="margin-top:16px">
@@ -615,9 +587,9 @@ canvas { max-height: 320px; }
 
   <!-- Tab 3: Retention -->
   <div class="tab-content" id="g5-3">
-    <div class="chart-card" style="margin-bottom:16px"><div class="chart-title">Growth NURR vs Total NURR Trend</div><canvas id="chartG5Ret"></canvas></div>
+    <div class="chart-card" style="margin-bottom:16px"><div class="chart-title">Growth Channel Retention D1/D7/M1 vs Total NURR</div><canvas id="chartG5Ret"></canvas></div>
     <div class="card">
-      <div class="card-title">NURR — Growth Channel vs Total <span style="font-size:10px;color:#10b981;font-weight:400">| Δ = vs tháng trước</span></div>
+      <div class="card-title">Retention — Growth Channel vs Total</div>
       <div style="overflow-x:auto"><table id="g5NurrTable"></table></div>
     </div>
     <div class="card" style="margin-top:16px">
@@ -1055,14 +1027,29 @@ function renderAllCharts() {
 
   // S4 Ret Overview: comparison charts D7 and M1
   (function(){
-    function makeRetChart(id, label1, d1, label2, d2, label3, d3) {
+    const n = MONTHS.length;
+    const web_other_mau = ov.web_other_mau;
+    const web_d7 = MONTHS.map((m,i) => {
+      const wm = web_other_mau[i], tm = ov.total_ct_mau ? ov.total_ct_mau[i] : null, am = ov.mau_app[i];
+      const td = ret.total_d7[i], ad = ret.app_d7[i];
+      if (wm==null || wm===0 || td==null || ad==null || am==null) return null;
+      return ((tm||am+wm)*td - am*ad) / wm;
+    });
+    const web_m1 = MONTHS.map((m,i) => {
+      const wm = web_other_mau[i], tm = ov.total_ct_mau ? ov.total_ct_mau[i] : null, am = ov.mau_app[i];
+      const td = ret.total_m1[i], ad = ret.app_m1[i];
+      if (wm==null || wm===0 || td==null || ad==null || am==null) return null;
+      return ((tm||am+wm)*td - am*ad) / wm;
+    });
+    function makeRetChart(id, label1, d1, label2, d2, label3, d3, label4, d4) {
       const ctx = document.getElementById(id); if(!ctx) return;
       const ex = Object.values(Chart.instances||{}).find(c=>c.canvas?.id===id);
       if(ex) ex.destroy();
       new Chart(ctx, {type:'line', data:{labels:MONTHS, datasets:[
         {label:label1, data:d1, borderColor:'#9ca3af', backgroundColor:'#9ca3af22', fill:false, tension:0.4, pointRadius:4, borderWidth:2},
-        {label:label2, data:d2, borderColor:'#4361ee', backgroundColor:'#4361ee22', fill:false, tension:0.4, pointRadius:4, borderWidth:2},
-        {label:label3, data:d3, borderColor:'#f59e0b', backgroundColor:'transparent', fill:false, tension:0.4, pointRadius:4, borderWidth:2, borderDash:[4,4]}
+        {label:label2, data:d2, borderColor:'#0891b2', backgroundColor:'transparent', fill:false, tension:0.4, pointRadius:4, borderWidth:2},
+        {label:label3, data:d3, borderColor:'#4361ee', backgroundColor:'#4361ee22', fill:false, tension:0.4, pointRadius:4, borderWidth:2},
+        {label:label4, data:d4, borderColor:'#f59e0b', backgroundColor:'transparent', fill:false, tension:0.4, pointRadius:4, borderWidth:2, borderDash:[4,4]}
       ]}, options:{responsive:true, maintainAspectRatio:false,
         plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
           tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y!=null?(c.parsed.y*100).toFixed(1)+'%':'—'}`}}},
@@ -1072,32 +1059,16 @@ function renderAllCharts() {
     }
     makeRetChart('chartRetD7Compare',
       'Total CT User D7', ret.total_d7,
+      'Web User D7', web_d7,
       'App User D7', ret.app_d7,
       'NURR D7 (New)', ret.nurr_d7
     );
     makeRetChart('chartRetM1Compare',
       'Total CT User M1', ret.total_m1,
+      'Web User M1', web_m1,
       'App User M1', ret.app_m1,
       'NURR M1 (New)', ret.nurr_m1
     );
-  })();
-  // chartCURRTrend
-  (function(){
-    const ctx = document.getElementById('chartCURRTrend'); if(!ctx) return;
-    const ex = Object.values(Chart.instances||{}).find(c=>c.canvas?.id==='chartCURRTrend');
-    if(ex) ex.destroy();
-    new Chart(ctx,{type:'line',data:{labels:MONTHS,datasets:[
-      {label:'App Ret D1 (CURR)',data:ret.app_d1,borderColor:'#4361ee',backgroundColor:'#4361ee22',fill:true,tension:0.4,pointRadius:4,borderWidth:2},
-      {label:'App Ret D7 (CURR)',data:ret.app_d7,borderColor:'#f59e0b',backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
-      {label:'App Ret M1 (CURR)',data:ret.app_m1,borderColor:'#10b981',backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
-      {label:'NURR D1 (New)',data:ret.nurr_d1,borderColor:'#9ca3af',backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:4,borderWidth:1,borderDash:[3,3]},
-      {label:'NURR M1 (New)',data:ret.nurr_m1,borderColor:'#ef4444',backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:4,borderWidth:1,borderDash:[3,3]}
-    ]},options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
-        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y!=null?(c.parsed.y*100).toFixed(1)+'%':'—'}`}}},
-      scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
-        y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'}}}}
-    });
   })();
   makeChart('chartNURRD1Ch','line',MONTHS,[L('Total',ret.nurr_d1,C.blue),L('Direct',ret.direct_d1,C.green),L('Organic Search',ret.organic_d1,C.orange),L('Growth (P+D+CRM)',ret.growth_d1,C.purple)],{pct:true,noAR:true});
   makeChart('chartNURRD7Ch','line',MONTHS,[L('Total',ret.nurr_d7,C.blue),L('Direct',ret.direct_d7,C.green),L('Organic Search',ret.organic_d7,C.orange),L('Growth (P+D+CRM)',ret.growth_d7,C.purple)],{pct:true,noAR:true});
@@ -1158,9 +1129,9 @@ function renderAllCharts() {
       }}});
   })();
   makeChart('chartG5Ret','line',MONTHS,[
-    {label:'Growth NURR D1',data:gc.nurr_d1,borderColor:C.blue,backgroundColor:C.blue+'22',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
+    {label:'Growth Retention D1',data:gc.nurr_d1,borderColor:C.blue,backgroundColor:C.blue+'22',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
     L('Total NURR D1',ret.nurr_d1,C.blue,true),
-    {label:'Growth NURR M1',data:gc.nurr_m1,borderColor:C.green,backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
+    {label:'Growth Retention M1',data:gc.nurr_m1,borderColor:C.green,backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
     L('Total NURR M1',ret.nurr_m1,C.green,true)
   ],{pct:true});
 
@@ -1256,39 +1227,6 @@ function updateKPICards(monthIndex) {
   });
 }
 
-function renderRetAbsolutes() {
-  if (!D) return;
-  const ret = D.retention;
-  const ov = D.overview;
-  const MONTHS = D.months;
-
-  const thead = document.getElementById('retAbsThead');
-  const tbody = document.getElementById('retAbsTbody');
-  if (!thead || !tbody) return;
-
-  // Header
-  thead.innerHTML = '<tr><th>Metric</th>' + MONTHS.map(m => `<th${m.includes('*')?' class="apr"':''}>${m}</th>`).join('') + '</tr>';
-
-  function absRow(label, rateArr, baseArr) {
-    const cells = MONTHS.map((m,i) => {
-      const r = rateArr ? rateArr[i] : null;
-      const b = baseArr ? baseArr[i] : null;
-      const v = r!=null && b!=null ? Math.round(r*b) : null;
-      const cls = m.includes('*') ? ' class="apr"' : '';
-      return `<td${cls}>${v!=null ? v.toLocaleString('en') : '—'}</td>`;
-    }).join('');
-    return `<tr><td>${label}</td>${cells}</tr>`;
-  }
-
-  tbody.innerHTML = [
-    absRow('App Ret D1 × App MAU', ret.app_d1, ov.mau_app),
-    absRow('App Ret D7 × App MAU', ret.app_d7, ov.mau_app),
-    absRow('App Ret M1 × App MAU', ret.app_m1, ov.mau_app),
-    absRow('NURR D1 × New MAU', ret.nurr_d1, ov.new_mau),
-    absRow('NURR D7 × New MAU', ret.nurr_d7, ov.new_mau),
-    absRow('NURR M1 × New MAU', ret.nurr_m1, ov.new_mau)
-  ].join('');
-}
 
 function selectExecMonth(m) {
   const months = ['jan','feb','mar','apr','may'];
@@ -1345,13 +1283,12 @@ function renderGrowthTables() {
 
   function buildTable(id, rows) {
     const el=document.getElementById(id); if(!el) return;
-    const isPartial=MONTHS[n-1]?.includes('*');
     const ths=MONTHS.map((m,i)=>`<th${i===n-1?' class="apr"':''}>${m}</th>`).join('');
-    const thead=`<tr><th>Metric</th>${ths}<th style="background:#fffbeb;font-size:10px;color:#92400e;white-space:nowrap">Δ prev</th></tr>`;
+    const thead=`<tr><th>Metric</th>${ths}</tr>`;
     const tbody=rows.map(r=>{
-      if(r.sec) return `<tr class="total-row"><td colspan="${n+2}" style="font-size:11px;color:#4361ee;text-transform:uppercase;letter-spacing:.5px">${r.sec}</td></tr>`;
+      if(r.sec) return `<tr class="total-row"><td colspan="${n+1}" style="font-size:11px;color:#4361ee;text-transform:uppercase;letter-spacing:.5px">${r.sec}</td></tr>`;
       const cells=MONTHS.map((m,i)=>`<td${i===n-1?' class="apr"':''}>${r.fmt(r.arr[i])}</td>`).join('');
-      return `<tr class="${r.cls||''}"><td>${r.lbl}</td>${cells}${dCell(r.arr,n-1,r.rate)}</tr>`;
+      return `<tr class="${r.cls||''}"><td>${r.lbl}</td>${cells}</tr>`;
     }).join('');
     el.innerHTML=`<thead>${thead}</thead><tbody>${tbody}</tbody>`;
   }
@@ -1374,14 +1311,14 @@ function renderGrowthTables() {
   ]);
 
   buildTable('g5NurrTable',[
-    {sec:'NURR D1'},
-    {lbl:'Growth NURR D1',arr:gc.nurr_d1,fmt:fmtP,cls:'total-row',rate:true},
+    {sec:'Retention D1 — Growth Channel'},
+    {lbl:'Growth Retention D1',arr:gc.nurr_d1,fmt:fmtP,cls:'total-row',rate:true},
     {lbl:'Total NURR D1',arr:ret.nurr_d1,fmt:fmtP,rate:true},
-    {sec:'NURR D7'},
-    {lbl:'Growth NURR D7',arr:gc.nurr_d7,fmt:fmtP,cls:'total-row',rate:true},
+    {sec:'Retention D7 — Growth Channel'},
+    {lbl:'Growth Retention D7',arr:gc.nurr_d7,fmt:fmtP,cls:'total-row',rate:true},
     {lbl:'Total NURR D7',arr:ret.nurr_d7,fmt:fmtP,rate:true},
-    {sec:'NURR M1'},
-    {lbl:'Growth NURR M1',arr:gc.nurr_m1,fmt:fmtP,cls:'total-row',rate:true},
+    {sec:'Retention M1 — Growth Channel'},
+    {lbl:'Growth Retention M1',arr:gc.nurr_m1,fmt:fmtP,cls:'total-row',rate:true},
     {lbl:'Total NURR M1',arr:ret.nurr_m1,fmt:fmtP,rate:true}
   ]);
 
@@ -1395,10 +1332,10 @@ function renderGrowthTables() {
     {sec:'Activation (≥1 lead D7)'},
     {lbl:'Monthly Activated',arr:gc.lead_activated,fmt:fmtN,cls:'total-row'},
     {lbl:'Activation rate',arr:gc.lead_rate,fmt:fmtP,rate:true},
-    {sec:'Retention (NURR)'},
-    {lbl:'NURR D1',arr:gc.nurr_d1,fmt:fmtP,rate:true},
-    {lbl:'NURR D7',arr:gc.nurr_d7,fmt:fmtP,rate:true},
-    {lbl:'NURR M1',arr:gc.nurr_m1,fmt:fmtP,rate:true},
+    {sec:'Retention (Growth Channel Users)'},
+    {lbl:'Growth Retention D1',arr:gc.nurr_d1,fmt:fmtP,rate:true},
+    {lbl:'Growth Retention D7',arr:gc.nurr_d7,fmt:fmtP,rate:true},
+    {lbl:'Growth Retention M1',arr:gc.nurr_m1,fmt:fmtP,rate:true},
     {sec:'Cost & Unit Economics'},
     {lbl:'Monthly Cost (VND)',arr:gc.cost,fmt:fmtN,cls:'total-row'},
     {lbl:'CPA — Cost/New User',arr:gc.cpa,fmt:fmtC},
@@ -1406,6 +1343,59 @@ function renderGrowthTables() {
     {lbl:'CRR D1',arr:gc.crr_d1,fmt:fmtC},
     {lbl:'CRR D7',arr:gc.crr_d7,fmt:fmtC},
     {lbl:'CRR M1',arr:gc.crr_m1,fmt:fmtC}
+  ]);
+}
+
+function renderStaticTables() {
+  if (!D) return;
+  const ov = D.overview, ac = D.acquisition;
+  const MONTHS = D.months, n = MONTHS.length;
+  const fmtN = v => v==null?'—':Math.round(v).toLocaleString('en');
+  const fmtP = v => v==null?'—':(v*100).toFixed(1)+'%';
+
+  function genTable(id, rows) {
+    const el = document.getElementById(id); if(!el) return;
+    const ths = MONTHS.map((m,i)=>`<th${i===n-1?' class="apr"':''}>${m}</th>`).join('');
+    const thead = `<tr><th>Metric</th>${ths}</tr>`;
+    const tbody = rows.map(r => {
+      if (r.sec) return `<tr class="total-row"><td colspan="${n+1}" style="font-size:11px;color:#4361ee;text-transform:uppercase;letter-spacing:.5px">${r.sec}</td></tr>`;
+      const cells = MONTHS.map((m,i)=>`<td${i===n-1?' class="apr"':''}>${r.fmt(r.arr[i])}</td>`).join('');
+      return `<tr class="${r.cls||''}"><td>${r.lbl}</td>${cells}</tr>`;
+    }).join('');
+    el.innerHTML = `<thead>${thead}</thead><tbody>${tbody}</tbody>`;
+  }
+
+  genTable('s1MetricsTable', [
+    {lbl:'Total App MAU (Android+iOS)', arr:ov.mau_app, fmt:fmtN, cls:'total-row'},
+    {lbl:'↳ Avg Daily DAU', arr:ov.avg_dau, fmt:fmtN},
+    {lbl:'↳ App MAU (login)', arr:ov.mau_login, fmt:fmtN},
+    {lbl:'↳ % login / Total App MAU', arr:ov.login_rate, fmt:fmtP},
+    {lbl:'% App MAU / Total Chotot', arr:ov.pct_app_ct, fmt:fmtP},
+    {lbl:'New App MAU', arr:ov.new_mau, fmt:fmtN},
+    {lbl:'↳ Avg Daily New DAU', arr:ov.avg_new_dau, fmt:fmtN},
+    {lbl:'↳ New App MAU (login)', arr:ov.new_login_mau, fmt:fmtN},
+    {lbl:'↳ % login / New App MAU', arr:ov.new_login_rate, fmt:fmtP},
+  ]);
+
+  genTable('s2OverviewTable', [
+    {lbl:'New App MAU', arr:ov.new_mau, fmt:fmtN, cls:'total-row'},
+    {lbl:'Avg Daily New DAU', arr:ov.avg_new_dau, fmt:fmtN},
+  ]);
+
+  genTable('s2ChannelTable', [
+    {lbl:'Total', arr:ov.new_mau, fmt:fmtN, cls:'total-row'},
+    {lbl:'Direct', arr:ac.direct, fmt:fmtN},
+    {lbl:'Organic Search', arr:ac.organic, fmt:fmtN},
+    {lbl:'Growth (Paid+Display+CRM)', arr:ac.growth, fmt:fmtN},
+    {lbl:'(Other)', arr:ac.other, fmt:fmtN},
+  ]);
+
+  genTable('s2DailyTable', [
+    {lbl:'Total', arr:ov.avg_new_dau, fmt:fmtN, cls:'total-row'},
+    {lbl:'Direct', arr:ac.direct_daily, fmt:fmtN},
+    {lbl:'Organic Search', arr:ac.organic_daily, fmt:fmtN},
+    {lbl:'Growth (Paid+Display+CRM)', arr:ac.growth_daily, fmt:fmtN},
+    {lbl:'(Other)', arr:ac.other_daily, fmt:fmtN},
   ]);
 }
 
@@ -1420,7 +1410,7 @@ async function initDashboard() {
   renderCommentary('s5');
 
   renderAllCharts();
-  renderRetAbsolutes();
+  renderStaticTables();
   renderGrowthTables();
   updateKPICards(D.months.length-1);
   // Default to latest month

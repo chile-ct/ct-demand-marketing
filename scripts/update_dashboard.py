@@ -170,7 +170,7 @@ if act_rows:
     growth_lead=[(paid_lead[i] or 0)+(disp_lead[i] or 0)+(crm_lead[i] or 0) for i in range(n)]
     dir_d1=a('Direct','nurr_d1'); dir_d7=a('Direct','nurr_d7'); dir_m1=a('Direct','nurr_m1')
     org_d1=a('Organic Search','nurr_d1'); org_d7=a('Organic Search','nurr_d7'); org_m1=a('Organic Search','nurr_m1')
-    paid_d1=a('Paid Search','nurr_d1'); paid_d7=a('Paid Search','nurr_d7'); paid_m1=a('Paid Search','nurr_m1')
+    paid_d1=a('Paid Search','nurr_d1'); paid_d7=a('Paid Search','nurr_d7'); paid_m1=a('all','nurr_m1')  # M1: use Total channel (M1 from Paid Search is unreliable)
 else:
     print("  Using existing activation data")
     ex=D['activation']; er=D['retention']; eg=D['growth_channel']
