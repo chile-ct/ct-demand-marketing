@@ -4,10 +4,10 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Traffic Dashboard — Chotot</title>
-<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<!-- babel removed: pre-compiled -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="lib/react.min.js"></script>
+<script src="lib/react-dom.min.js"></script>
+
+<script src="lib/chart.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -934,16 +934,14 @@ const RAW = [{
   dwl: 1114,
   lead: 81604
 }];
-const MONTHS = ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06"];
+const MONTHS = ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05"];
 const ML = {
   "2026-01": "T1/26",
   "2026-02": "T2/26",
   "2026-03": "T3/26",
   "2026-04": "T4/26",
-  "2026-05": "T5/26",
-  "2026-06": "T6/26*"
+  "2026-05": "T5/26"
 };
-// T6/26* = partial (data 1-5/6/2026)
 const ML_FULL = {
   "2026-01": "Jan 2026",
   "2026-02": "Feb 2026",
@@ -1561,34 +1559,7 @@ const VERT_ACT = {
 };
 
 // T5 per-vertical — DwL from dashboard__dauwlead__vertical_monthly, Lead from same
-Object.assign(VERT_ACT.PTY, {
-  "2026-05": {
-    dau: 84068,
-    dwl: 10801,
-    lead: 1372581,
-    mau: 1443394,
-    mauLead: 187445
-  }
-});
-Object.assign(VERT_ACT.JOB, {
-  "2026-05": {
-    dau: 45562,
-    dwl: 8723,
-    lead: 917396,
-    mau: 691746,
-    mauLead: 136416
-  }
-});
-Object.assign(VERT_ACT.VEH, {
-  "2026-05": {
-    dau: 98122,
-    dwl: 8033,
-    lead: 1232264,
-    mau: 1435684,
-    mauLead: 129071
-  }
-});
-// T6 partial (1-5/6/2026) — avg DAU 4 days, MAU rolling 28d, Lead 4-day total
+// T6 partial (1-5/6/2026)
 Object.assign(VERT_ACT.PTY, {
   "2026-06": {
     dau: 88392,
@@ -1623,6 +1594,33 @@ Object.assign(VERT_ACT.GDS, {
     lead: 320965,
     mau: 801806,
     mauLead: 79641
+  }
+});
+Object.assign(VERT_ACT.PTY, {
+  "2026-05": {
+    dau: 84068,
+    dwl: 10801,
+    lead: 1372581,
+    mau: 1443394,
+    mauLead: 187445
+  }
+});
+Object.assign(VERT_ACT.JOB, {
+  "2026-05": {
+    dau: 45562,
+    dwl: 8723,
+    lead: 917396,
+    mau: 691746,
+    mauLead: 136416
+  }
+});
+Object.assign(VERT_ACT.VEH, {
+  "2026-05": {
+    dau: 98122,
+    dwl: 8033,
+    lead: 1232264,
+    mau: 1435684,
+    mauLead: 129071
   }
 });
 
@@ -2191,8 +2189,6 @@ function BarChart({
     ref: ref
   }));
 }
-
-// Stacked bar with total sum label on top of each column
 function BarChartWithTotals({
   labels,
   datasets,
@@ -2216,14 +2212,12 @@ function BarChartWithTotals({
         } = chart;
         totals.forEach((total, i) => {
           if (!total) return;
-          const xPos = x.getPixelForValue(i);
-          const yPos = y.getPixelForValue(total);
           ctx.save();
           ctx.fillStyle = '#374151';
           ctx.font = 'bold 10px Inter,sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'bottom';
-          ctx.fillText(fmtK(total), xPos, yPos - 3);
+          ctx.fillText(fmtK(total), x.getPixelForValue(i), y.getPixelForValue(total) - 3);
           ctx.restore();
         });
       }
@@ -3441,7 +3435,7 @@ const GROWTH_COST = {
   }
 };
 // All months including forecast T6-T12
-const ALL_MONTHS = [...MONTHS, "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12"];
+const ALL_MONTHS = [...MONTHS, "2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12"];
 const ALL_ML = {
   ...ML,
   "2026-06": "T6/26",
