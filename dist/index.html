@@ -26,6 +26,22 @@ section{padding:28px 24px 0;scroll-margin-top:46px}
 </style>
 </head>
 <body>
+<script>
+// Simple access guard — hash-based, no server needed
+(function(){
+  const HASH = "28b7d96028b7d96028b7d96028b7d96028b7d96028b7d96028b7d96028b7d960"; // hash of chotot2026
+  const key = "ct_dash_auth";
+  function sha256(s){ // simple FNV-like fingerprint (not crypto, but sufficient for light protection)
+    let h=0x811c9dc5;
+    for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=(h*0x01000193)>>>0;}
+    return h.toString(16).padStart(8,'0').repeat(8);
+  }
+  if(sessionStorage.getItem(key)==='1') return;
+  const pw = prompt('🔐 Chotot Marketplace Dashboard\nEnter password:');
+  if(!pw || sha256(pw) !== HASH){ document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#666">Access denied</div>'; return; }
+  sessionStorage.setItem(key,'1');
+})();
+</script>
 <div id="root"></div>
 <script>
 const {
