@@ -1065,11 +1065,8 @@ function renderAllCharts() {
       const ctx = document.getElementById('chartRetD1Compare'); if(!ctx) return;
       const ex = Object.values(Chart.instances||{}).find(c=>c.canvas?.id==='chartRetD1Compare');
       if(ex) ex.destroy();
-      const webD1 = MONTHS.map((_,i) => {
-        const t=ret.total_d1[i], a=ret.app_d1[i], wm=ov.web_other_mau[i], tm=ov.total_ct_mau[i], am=ov.mau_app[i];
-        if(t==null||a==null||!wm||!tm||!am) return null;
-        const webVal=(tm*t - am*a)/wm; return (webVal>t||webVal<0)?null:webVal;
-      });
+      // Use real BQ data directly — no formula
+      const webD1 = ret.web_d1 || [];
       new Chart(ctx,{type:'line',data:{labels:MONTHS,datasets:[
         {label:'Total CT User D1',data:ret.total_d1,borderColor:'#9ca3af',backgroundColor:'#9ca3af22',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
         {label:'App User D1 (iOS+Android)',data:ret.app_d1,borderColor:'#4361ee',backgroundColor:'#4361ee22',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
@@ -1082,18 +1079,9 @@ function renderAllCharts() {
           y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'}}}}
       });
     })();
-    const web_d7 = MONTHS.map((m,i) => {
-      const wm = web_other_mau[i], tm = ov.total_ct_mau ? ov.total_ct_mau[i] : null, am = ov.mau_app[i];
-      const td = ret.total_d7[i], ad = ret.app_d7[i];
-      if (wm==null || wm===0 || td==null || ad==null || am==null) return null;
-      const v=((tm||am+wm)*td - am*ad)/wm; return (v>td||v<0)?null:v;
-    });
-    const web_m1 = MONTHS.map((m,i) => {
-      const wm = web_other_mau[i], tm = ov.total_ct_mau ? ov.total_ct_mau[i] : null, am = ov.mau_app[i];
-      const td = ret.total_m1[i], ad = ret.app_m1[i];
-      if (wm==null || wm===0 || td==null || ad==null || am==null) return null;
-      const v=((tm||am+wm)*td - am*ad)/wm; return (v>td||v<0)?null:v;
-    });
+    // Use real BQ data directly — no formula
+    const web_d7 = ret.web_d7 || [];
+    const web_m1 = ret.web_m1 || [];
     function makeRetChart(id, label1, d1, label2, d2, label3, d3, label4, d4) {
       const ctx = document.getElementById(id); if(!ctx) return;
       const ex = Object.values(Chart.instances||{}).find(c=>c.canvas?.id===id);
