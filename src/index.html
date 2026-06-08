@@ -14,13 +14,13 @@
 body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#111827;font-size:14px}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
-.sticky-nav{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid #e5e7eb;
+.sticky-nav{position:sticky;top:68px;z-index:100;background:#fff;border-bottom:1px solid #e5e7eb;
   display:flex;gap:0;overflow-x:auto;padding:0 24px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 .sticky-nav a{padding:12px 18px;font-size:13px;font-weight:500;color:#6b7280;text-decoration:none;
   border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
 .sticky-nav a:hover{color:#6366f1}
 .sticky-nav a.active{color:#6366f1;border-bottom-color:#6366f1}
-section{padding:28px 24px 0;scroll-margin-top:46px}
+section{padding:28px 24px 0;scroll-margin-top:114px}
 .section-title{font-size:15px;font-weight:700;color:#1f2937;margin-bottom:16px;
   display:flex;align-items:center;gap:8px}
 .section-title::before{content:'';display:block;width:4px;height:18px;background:#6366f1;border-radius:2px}
@@ -181,84 +181,175 @@ const CHANNELS = ["Direct","Organic Search","Growth (Paid)","Growth (CRM)","Soci
 const VC = {PTY:"#6366f1",JOB:"#f59e0b",VEH:"#10b981",GDS:"#ef4444"};
 const CC = ["#6366f1","#f59e0b","#10b981","#ef4444","#8b5cf6","#ec4899","#14b8a6"];
 
-// ─── KPI TARGETS (from screenshot: T1-T3 = plan, T4 = FC1 2026) ───────────────
-const KPI = {
-  "2026-01":{dau:469506, dwl:54013, lead:5171365},
-  "2026-02":{dau:424595, dwl:49044, lead:4490033},
-  "2026-03":{dau:631959, dwl:76597, lead:7585109},
-  "2026-04":{dau:486111, dwl:63141, lead:5912040},
-  "2026-05":{dau:498737, dwl:65524, lead:6566963},
-  "2026-06":{dau:539342, dwl:68735, lead:6721820},
-};
-const KPI_MAU = {
-  "2026-01":{mau:5859374, mauLead:751867, dauMau:8.0},
-  "2026-02":{mau:5017423, mauLead:635843, dauMau:8.5},
-  "2026-03":{mau:7613833, mauLead:967003, dauMau:8.3},
-  "2026-04":{mau:6740920, mauLead:808602, dauMau:7.2},
-  "2026-05":{mau:7030539, mauLead:858833, dauMau:7.1},
-  "2026-06":{mau:7456811, mauLead:885527, dauMau:7.2},
+// KPI FC0 — platform total (from MTM metric sheet)
+const KPI_FC0 = {
+  "2026-01":{dau:469506,dwl:54013,lead:5171365},
+  "2026-02":{dau:424595,dwl:49044,lead:4490033},
+  "2026-03":{dau:631959,dwl:76597,lead:7585109},
+  "2026-04":{dau:565152,dwl:66203,lead:6376930},
+  "2026-05":{dau:588667,dwl:69573,lead:7033343},
+  "2026-06":{dau:620600,dwl:71612,lead:7057700},
+  "2026-07":{dau:630175,dwl:72780,lead:7326508},
+  "2026-08":{dau:617127,dwl:72589,lead:7010306},
+  "2026-09":{dau:624199,dwl:71804,lead:6890138},
+  "2026-10":{dau:609833,dwl:71116,lead:7072002},
+  "2026-11":{dau:597722,dwl:69032,lead:6627826},
+  "2026-12":{dau:583867,dwl:67052,lead:6505184},
 };
 
-// ─── KPI PER VERTICAL (from screenshots — T1-T3 = 2026 Target, T4+ = FC1 2026) ─
-// KPI per vertical — T1-T3 = 2026 Target, T4-T12 = FC1 2026 (full year from screenshots)
-const KPI_VERT = {
+// KPI FC1 — platform total (from MTM metric sheet)
+const KPI_FC1 = {
+  "2026-04":{dau:486111,dwl:63141,lead:5912040},
+  "2026-05":{dau:498737,dwl:65524,lead:6566963},
+  "2026-06":{dau:539342,dwl:68735,lead:6721820},
+  "2026-07":{dau:554034,dwl:69246,lead:6886439},
+  "2026-08":{dau:535607,dwl:68739,lead:6601814},
+  "2026-09":{dau:533623,dwl:66787,lead:6277114},
+  "2026-10":{dau:518998,dwl:65186,lead:6384282},
+  "2026-11":{dau:507499,dwl:63788,lead:6111791},
+  "2026-12":{dau:486105,dwl:61068,lead:5789481},
+};
+
+const KPI_MAU_FC0 = {
+  "2026-01":{mau:5859374,mauLead:751867,dauMau:8.0},
+  "2026-02":{mau:5017423,mauLead:635843,dauMau:8.5},
+  "2026-03":{mau:7613833,mauLead:967003,dauMau:8.3},
+  "2026-04":{mau:6647523,mauLead:806821,dauMau:8.5},
+  "2026-05":{mau:7135832,mauLead:869614,dauMau:8.2},
+  "2026-06":{mau:7339727,mauLead:860439,dauMau:8.5},
+  "2026-07":{mau:7397438,mauLead:879364,dauMau:8.5},
+  "2026-08":{mau:7278095,mauLead:910848,dauMau:8.5},
+  "2026-09":{mau:7261976,mauLead:870980,dauMau:8.6},
+  "2026-10":{mau:7179664,mauLead:855350,dauMau:8.5},
+  "2026-11":{mau:6862779,mauLead:830042,dauMau:8.7},
+  "2026-12":{mau:6901280,mauLead:821273,dauMau:8.5},
+};
+
+const KPI_MAU_FC1 = {
+  "2026-04":{mau:6740920,mauLead:808602,dauMau:7.2},
+  "2026-05":{mau:7030539,mauLead:858833,dauMau:7.1},
+  "2026-06":{mau:7456811,mauLead:885527,dauMau:7.2},
+  "2026-07":{mau:7693170,mauLead:894372,dauMau:7.2},
+  "2026-08":{mau:7375846,mauLead:906680,dauMau:7.3},
+  "2026-09":{mau:7385254,mauLead:875441,dauMau:7.2},
+  "2026-10":{mau:7243834,mauLead:855360,dauMau:7.2},
+  "2026-11":{mau:7225039,mauLead:833924,dauMau:7.0},
+  "2026-12":{mau:6866685,mauLead:794638,dauMau:7.1},
+};
+
+// KPI per vertical — FC0
+const KPI_VERT_FC0 = {
   PTY:{
-    "2026-01":{dau:87113,  dwl:11459, lead:1249043,  mau:1377058, mauLead:212160, dauMau:5.9},
-    "2026-02":{dau:62849,  dwl:8929,  lead:946430,   mau:850408,  mauLead:157378, dauMau:6.7},
-    "2026-03":{dau:129257, dwl:21174, lead:2413850,  mau:1854803, mauLead:317810, dauMau:6.4},
-    "2026-04":{dau:93097,  dwl:13512, lead:1579874,  mau:1566297, mauLead:225199, dauMau:5.94},
-    "2026-05":{dau:95528,  dwl:13510, lead:1655890,  mau:1566114, mauLead:225173, dauMau:6.10},
-    "2026-06":{dau:103848, dwl:14609, lead:1770424,  mau:1693458, mauLead:243482, dauMau:6.13},
-    "2026-07":{dau:109548, dwl:15472, lead:1891900,  mau:1793454, mauLead:257860, dauMau:6.11},
-    "2026-08":{dau:110382, dwl:15735, lead:1907409,  mau:1823976, mauLead:262248, dauMau:6.05},
-    "2026-09":{dau:102221, dwl:14541, lead:1754945,  mau:1685561, mauLead:242347, dauMau:6.06},
-    "2026-10":{dau:102522, dwl:14684, lead:1783997,  mau:1702103, mauLead:244725, dauMau:6.02},
-    "2026-11":{dau:100844, dwl:14589, lead:1726055,  mau:1691118, mauLead:243146, dauMau:5.96},
-    "2026-12":{dau:93324,  dwl:13792, lead:1629875,  mau:1598729, mauLead:229862, dauMau:5.84},
+    "2026-01":{dau:87113,dwl:11459,lead:1249043,mau:1377058,mauLead:212160,dauMau:5.9},
+    "2026-02":{dau:62849,dwl:8929,lead:946430,mau:850408,mauLead:157378,dauMau:6.7},
+    "2026-03":{dau:129257,dwl:21174,lead:2413850,mau:1854803,mauLead:317810,dauMau:6.4},
+    "2026-04":{dau:103217,dwl:15271,lead:1740869,mau:1474172,mauLead:212275,dauMau:6.5},
+    "2026-05":{dau:114072,dwl:16314,lead:1876135,mau:1755421,mauLead:233985,dauMau:6.1},
+    "2026-06":{dau:112582,dwl:16167,lead:1843059,mau:1698203,mauLead:220264,dauMau:6.3},
+    "2026-07":{dau:111837,dwl:17260,lead:1984879,mau:1662609,mauLead:241263,dauMau:6.5},
+    "2026-08":{dau:124393,dwl:18945,lead:2178655,mau:1950802,mauLead:278077,dauMau:6.2},
+    "2026-09":{dau:118611,dwl:18029,lead:2090586,mau:1770651,mauLead:243562,dauMau:6.6},
+    "2026-10":{dau:116968,dwl:18390,lead:2126623,mau:1780340,mauLead:243871,dauMau:6.5},
+    "2026-11":{dau:116706,dwl:18329,lead:2036720,mau:1473371,mauLead:242152,dauMau:7.9},
+    "2026-12":{dau:119189,dwl:19400,lead:2172842,mau:1744978,mauLead:271142,dauMau:6.9},
   },
   JOB:{
-    "2026-01":{dau:54805,  dwl:11021, lead:1264816,  mau:815854,  mauLead:167894, dauMau:6.72},
-    "2026-02":{dau:51625,  dwl:10423, lead:1081121,  mau:746130,  mauLead:152761, dauMau:6.92},
-    "2026-03":{dau:72982,  dwl:15287, lead:1752114,  mau:995098,  mauLead:199269, dauMau:7.33},
-    "2026-04":{dau:53082,  dwl:10088, lead:1102592,  mau:756015,  mauLead:155197, dauMau:7.02},
-    "2026-05":{dau:58100,  dwl:11748, lead:1349042,  mau:880404,  mauLead:180732, dauMau:6.60},
-    "2026-06":{dau:60086,  dwl:11805, lead:1297027,  mau:884674,  mauLead:181609, dauMau:6.79},
-    "2026-07":{dau:59952,  dwl:12083, lead:1347807,  mau:905541,  mauLead:185893, dauMau:6.62},
-    "2026-08":{dau:60034,  dwl:12111, lead:1384078,  mau:907650,  mauLead:186325, dauMau:6.61},
-    "2026-09":{dau:58557,  dwl:12319, lead:1374336,  mau:923203,  mauLead:189518, dauMau:6.34},
-    "2026-10":{dau:52848,  dwl:11180, lead:1299699,  mau:837846,  mauLead:171996, dauMau:6.31},
-    "2026-11":{dau:51648,  dwl:10922, lead:1274142,  mau:818506,  mauLead:168026, dauMau:6.31},
-    "2026-12":{dau:48594,  dwl:10254, lead:1146710,  mau:768457,  mauLead:157751, dauMau:6.32},
-  },
-  GDS:{
-    "2026-01":{dau:166707, dwl:23030, lead:1846540,  mau:1913751, mauLead:281539, dauMau:8.30},
-    "2026-02":{dau:158038, dwl:21652, lead:1736103,  mau:1732972, mauLead:247381, dauMau:8.70},
-    "2026-03":{dau:215495, dwl:29192, lead:2301814,  mau:2517624, mauLead:343076, dauMau:8.20},
-    "2026-04":{dau:204732, dwl:27807, lead:2144371,  mau:2277314, mauLead:317812, dauMau:8.99},
-    "2026-05":{dau:208305, dwl:28474, lead:2427716,  mau:2350439, mauLead:341242, dauMau:8.86},
-    "2026-06":{dau:219569, dwl:29802, lead:2491511,  mau:2408262, mauLead:343216, dauMau:9.12},
-    "2026-07":{dau:223491, dwl:29241, lead:2470579,  mau:2372688, mauLead:328549, dauMau:9.42},
-    "2026-08":{dau:223548, dwl:29263, lead:2316005,  mau:2308110, mauLead:338599, dauMau:9.69},
-    "2026-09":{dau:217712, dwl:28033, lead:2156918,  mau:2273922, mauLead:320678, dauMau:9.57},
-    "2026-10":{dau:210534, dwl:27510, lead:2251917,  mau:2220960, mauLead:311581, dauMau:9.48},
-    "2026-11":{dau:204185, dwl:26713, lead:2118725,  mau:2267342, mauLead:299556, dauMau:9.01},
-    "2026-12":{dau:198716, dwl:25768, lead:2045190,  mau:2146433, mauLead:286091, dauMau:9.26},
+    "2026-01":{dau:54805,dwl:11021,lead:1264816,mau:815854,mauLead:167894,dauMau:6.72},
+    "2026-02":{dau:51625,dwl:10423,lead:1081121,mau:746130,mauLead:152761,dauMau:6.92},
+    "2026-03":{dau:72982,dwl:15287,lead:1752114,mau:995098,mauLead:199269,dauMau:7.33},
+    "2026-04":{dau:55661,dwl:12263,lead:1406487,mau:758936,mauLead:166200,dauMau:7.33},
+    "2026-05":{dau:60384,dwl:13909,lead:1595177,mau:791663,mauLead:183550,dauMau:7.63},
+    "2026-06":{dau:59759,dwl:14067,lead:1560272,mau:768100,mauLead:177763,dauMau:7.78},
+    "2026-07":{dau:59829,dwl:14788,lead:1694897,mau:753930,mauLead:186300,dauMau:7.94},
+    "2026-08":{dau:55100,dwl:13707,lead:1521324,mau:687461,mauLead:174992,dauMau:8.02},
+    "2026-09":{dau:59470,dwl:14794,lead:1651719,mau:720369,mauLead:183490,dauMau:8.26},
+    "2026-10":{dau:57650,dwl:14341,lead:1644773,mau:698320,mauLead:172840,dauMau:8.26},
+    "2026-11":{dau:55844,dwl:13335,lead:1479512,mau:690255,mauLead:164833,dauMau:8.09},
+    "2026-12":{dau:51952,dwl:11513,lead:1319446,mau:655250,mauLead:145203,dauMau:7.93},
   },
   VEH:{
-    "2026-01":{dau:105767, dwl:9214,  lead:810966,   mau:1489683, mauLead:149483, dauMau:7.10},
-    "2026-02":{dau:102241, dwl:8686,  lead:726379,   mau:1462680, mauLead:128395, dauMau:6.99},
-    "2026-03":{dau:140041, dwl:11953, lead:1117331,  mau:1904522, mauLead:182998, dauMau:7.35},
-    "2026-04":{dau:135200, dwl:11734, lead:1085203,  mau:1838693, mauLead:174070, dauMau:7.35},
-    "2026-05":{dau:136804, dwl:11792, lead:1134315,  mau:1917980, mauLead:179318, dauMau:7.13},
-    "2026-06":{dau:155839, dwl:12519, lead:1162858,  mau:2135680, mauLead:186954, dauMau:7.30},
-    "2026-07":{dau:161043, dwl:12450, lead:1176153,  mau:2276139, mauLead:192501, dauMau:7.08},
-    "2026-08":{dau:141643, dwl:11630, lead:994322,   mau:2005007, mauLead:190908, dauMau:7.06},
-    "2026-09":{dau:155133, dwl:11894, lead:990915,   mau:2171043, mauLead:191838, dauMau:7.15},
-    "2026-10":{dau:153094, dwl:11812, lead:1048689,  mau:2157748, mauLead:194416, dauMau:7.10},
-    "2026-11":{dau:150822, dwl:11564, lead:992869,   mau:2123740, mauLead:188866, dauMau:7.10},
-    "2026-12":{dau:145471, dwl:11254, lead:967706,   mau:2044819, mauLead:183511, dauMau:7.11},
+    "2026-01":{dau:105767,dwl:9214,lead:810966,mau:1489683,mauLead:149483,dauMau:7.1},
+    "2026-02":{dau:102241,dwl:8686,lead:726379,mau:1462680,mauLead:128395,dauMau:6.99},
+    "2026-03":{dau:140041,dwl:11953,lead:1117331,mau:1904522,mauLead:182998,dauMau:7.35},
+    "2026-04":{dau:135200,dwl:11734,lead:1085203,mau:1838693,mauLead:174070,dauMau:7.35},
+    "2026-05":{dau:136804,dwl:11792,lead:1134315,mau:1917980,mauLead:179318,dauMau:7.13},
+    "2026-06":{dau:155839,dwl:12519,lead:1162858,mau:2135680,mauLead:186954,dauMau:7.3},
+    "2026-07":{dau:161043,dwl:12450,lead:1176153,mau:2276139,mauLead:192501,dauMau:7.08},
+    "2026-08":{dau:141643,dwl:11630,lead:994322,mau:2005007,mauLead:190908,dauMau:7.06},
+    "2026-09":{dau:155133,dwl:11894,lead:990915,mau:2171043,mauLead:191838,dauMau:7.15},
+    "2026-10":{dau:153094,dwl:11812,lead:1048689,mau:2157748,mauLead:194416,dauMau:7.1},
+    "2026-11":{dau:150822,dwl:11564,lead:992869,mau:2123740,mauLead:188866,dauMau:7.1},
+    "2026-12":{dau:145471,dwl:11254,lead:967706,mau:2044819,mauLead:183511,dauMau:7.11},
+  },
+  GDS:{
+    "2026-01":{dau:166707,dwl:23030,lead:1846540,mau:1913751,mauLead:281539,dauMau:8.3},
+    "2026-02":{dau:158038,dwl:21652,lead:1736103,mau:1732972,mauLead:247381,dauMau:8.7},
+    "2026-03":{dau:215495,dwl:29192,lead:2301814,mau:2517624,mauLead:343076,dauMau:8.2},
+    "2026-04":{dau:204732,dwl:27807,lead:2144371,mau:2277314,mauLead:317812,dauMau:8.6},
+    "2026-05":{dau:208305,dwl:28474,lead:2427716,mau:2350439,mauLead:341242,dauMau:8.4},
+    "2026-06":{dau:219569,dwl:29802,lead:2491511,mau:2408262,mauLead:343216,dauMau:8.7},
+    "2026-07":{dau:223491,dwl:29241,lead:2470579,mau:2372688,mauLead:328549,dauMau:8.8},
+    "2026-08":{dau:223548,dwl:29263,lead:2316005,mau:2308110,mauLead:338599,dauMau:9.1},
+    "2026-09":{dau:217712,dwl:28033,lead:2156918,mau:2273922,mauLead:320678,dauMau:9.1},
+    "2026-10":{dau:210534,dwl:27510,lead:2251917,mau:2220960,mauLead:311581,dauMau:9.1},
+    "2026-11":{dau:204185,dwl:26713,lead:2118725,mau:2267342,mauLead:299556,dauMau:9.1},
+    "2026-12":{dau:198716,dwl:25768,lead:2045190,mau:2146433,mauLead:286091,dauMau:9.1},
   },
 };
+
+// KPI per vertical — FC1
+const KPI_VERT_FC1 = {
+  PTY:{
+    "2026-04":{dau:93097,dwl:13512,lead:1579874,mau:1566297,mauLead:225199,dauMau:5.94},
+    "2026-05":{dau:95528,dwl:13510,lead:1655890,mau:1566114,mauLead:225173,dauMau:6.1},
+    "2026-06":{dau:103848,dwl:14609,lead:1770424,mau:1693458,mauLead:243482,dauMau:6.13},
+    "2026-07":{dau:109548,dwl:15472,lead:1891900,mau:1793454,mauLead:257860,dauMau:6.11},
+    "2026-08":{dau:110382,dwl:15735,lead:1907409,mau:1823976,mauLead:262248,dauMau:6.05},
+    "2026-09":{dau:102221,dwl:14541,lead:1754945,mau:1685561,mauLead:242347,dauMau:6.06},
+    "2026-10":{dau:102522,dwl:14684,lead:1783977,mau:1702103,mauLead:244725,dauMau:6.02},
+    "2026-11":{dau:100844,dwl:14589,lead:1726055,mau:1691118,mauLead:243146,dauMau:5.96},
+    "2026-12":{dau:93324,dwl:13792,lead:1629875,mau:1598729,mauLead:229862,dauMau:5.84},
+  },
+  JOB:{
+    "2026-04":{dau:53082,dwl:10088,lead:1102592,mau:756015,mauLead:155197,dauMau:7.02},
+    "2026-05":{dau:58100,dwl:11748,lead:1349042,mau:880404,mauLead:180732,dauMau:6.6},
+    "2026-06":{dau:60086,dwl:11805,lead:1297027,mau:884674,mauLead:181609,dauMau:6.79},
+    "2026-07":{dau:59952,dwl:12083,lead:1347807,mau:905541,mauLead:185893,dauMau:6.62},
+    "2026-08":{dau:60034,dwl:12111,lead:1384078,mau:907650,mauLead:186325,dauMau:6.61},
+    "2026-09":{dau:58557,dwl:12319,lead:1374336,mau:923203,mauLead:189518,dauMau:6.34},
+    "2026-10":{dau:52848,dwl:11180,lead:1299699,mau:837846,mauLead:171996,dauMau:6.31},
+    "2026-11":{dau:51648,dwl:10922,lead:1274142,mau:818506,mauLead:168026,dauMau:6.31},
+    "2026-12":{dau:48594,dwl:10254,lead:1146710,mau:768457,mauLead:157751,dauMau:6.32},
+  },
+  VEH:{
+    "2026-04":{dau:135200,dwl:11734,lead:1085203,mau:1838693,mauLead:174070,dauMau:7.35},
+    "2026-05":{dau:136804,dwl:11792,lead:1134315,mau:1917980,mauLead:179318,dauMau:7.13},
+    "2026-06":{dau:155839,dwl:12519,lead:1162858,mau:2135680,mauLead:186954,dauMau:7.3},
+    "2026-07":{dau:161043,dwl:12450,lead:1176153,mau:2276139,mauLead:192501,dauMau:7.08},
+    "2026-08":{dau:141643,dwl:11630,lead:994322,mau:2005007,mauLead:190908,dauMau:7.06},
+    "2026-09":{dau:155133,dwl:11894,lead:990915,mau:2171043,mauLead:191838,dauMau:7.15},
+    "2026-10":{dau:153094,dwl:11812,lead:1048689,mau:2157748,mauLead:194416,dauMau:7.1},
+    "2026-11":{dau:150822,dwl:11564,lead:992869,mau:2123740,mauLead:188866,dauMau:7.1},
+    "2026-12":{dau:145471,dwl:11254,lead:967706,mau:2044819,mauLead:183511,dauMau:7.11},
+  },
+  GDS:{
+    "2026-04":{dau:204732,dwl:27807,lead:2144371,mau:2277314,mauLead:317812,dauMau:8.99},
+    "2026-05":{dau:208305,dwl:28474,lead:2427716,mau:2350439,mauLead:341242,dauMau:8.86},
+    "2026-06":{dau:219569,dwl:29802,lead:2491511,mau:2408262,mauLead:343216,dauMau:9.12},
+    "2026-07":{dau:223491,dwl:29241,lead:2470579,mau:2372688,mauLead:328549,dauMau:9.42},
+    "2026-08":{dau:223548,dwl:29263,lead:2316005,mau:2308110,mauLead:338599,dauMau:9.69},
+    "2026-09":{dau:217712,dwl:28033,lead:2156918,mau:2273922,mauLead:320678,dauMau:9.57},
+    "2026-10":{dau:210534,dwl:27510,lead:2251917,mau:2220960,mauLead:311581,dauMau:9.48},
+    "2026-11":{dau:204185,dwl:26713,lead:2118725,mau:2267342,mauLead:299556,dauMau:9.01},
+    "2026-12":{dau:198716,dwl:25768,lead:2045190,mau:2146433,mauLead:286091,dauMau:9.26},
+  },
+};
+
+const KPI = KPI_FC0;
+
+const KPI_MAU = KPI_MAU_FC0;
+
+const KPI_VERT = KPI_VERT_FC0;
 
 // ─── ACTUALS — from chotot_mtm BQ tables ──────────────────────────────────────
 // Source: chotot-dwh.chotot_mtm.dashboard__dau_vertical_daily (avg DAU)
@@ -275,7 +366,7 @@ const VERT_ACT = {
     "2026-03":{dau:90032,dwl:12842,lead:1585808,mau:1483675,mauLead:225102},
     "2026-04":{dau:82776,dwl:10781,lead:1330043,mau:1347596,mauLead:178785},
     "2026-05":{dau:84068,dwl:10801,lead:1372581,mau:1443394,mauLead:187413},
-    "2026-06":{dau:85749,dwl:11509,lead:399133,mau:318642,mauLead:51897},
+    "2026-06":{dau:83421,dwl:11153,lead:433071,mau:361738,mauLead:57403},
   },
   JOB:{
     "2026-01":{dau:33065,dwl:5905,lead:647339,mau:513192,mauLead:95464},
@@ -283,7 +374,7 @@ const VERT_ACT = {
     "2026-03":{dau:60329,dwl:10731,lead:1151840,mau:968833,mauLead:172337},
     "2026-04":{dau:47009,dwl:8462,lead:854574,mau:721012,mauLead:130989},
     "2026-05":{dau:45562,dwl:8723,lead:917396,mau:691746,mauLead:136416},
-    "2026-06":{dau:45942,dwl:9324,lead:195561,mau:161914,mauLead:39434},
+    "2026-06":{dau:44644,dwl:9046,lead:220807,mau:182698,mauLead:43440},
   },
   VEH:{
     "2026-01":{dau:117316,dwl:8301,lead:752526,mau:2014777,mauLead:127723},
@@ -291,7 +382,7 @@ const VERT_ACT = {
     "2026-03":{dau:124311,dwl:9592,lead:1272050,mau:1965956,mauLead:152304},
     "2026-04":{dau:104666,dwl:8615,lead:1488142,mau:1488175,mauLead:131833},
     "2026-05":{dau:98122,dwl:8033,lead:1232264,mau:1435684,mauLead:129071},
-    "2026-06":{dau:91037,dwl:7590,lead:211592,mau:315821,mauLead:32303},
+    "2026-06":{dau:90642,dwl:7565,lead:237034,mau:363063,mauLead:36557},
   },
   GDS:{
     "2026-01":{dau:167681,dwl:23570,lead:1863098,mau:1976446,mauLead:290885},
@@ -299,7 +390,7 @@ const VERT_ACT = {
     "2026-03":{dau:176466,dwl:25851,lead:2098911,mau:2094334,mauLead:326567},
     "2026-04":{dau:166535,dwl:25228,lead:1947183,mau:1834010,mauLead:309551},
     "2026-05":{dau:164992,dwl:24083,lead:1917473,mau:1953978,mauLead:309708},
-    "2026-06":{dau:316802,dwl:23538,lead:381344,mau:991962,mauLead:90813},
+    "2026-06":{dau:316679,dwl:23505,lead:442509,mau:1164763,mauLead:101960},
   },
 };
 
@@ -352,7 +443,7 @@ const ACT = {
   "2026-03":{dau:513685,dwl:58004,lead:6110237,mau:6988156,mauLead:814854,dauMau:7.4},
   "2026-04":{dau:464605,dwl:52177,lead:5621250,mau:5867098,mauLead:700095,dauMau:7.9},
   "2026-05":{dau:452432,dwl:50827,lead:5441300,mau:5855563,mauLead:712850,dauMau:7.7},
-  "2026-06":{dau:608587,dwl:51173,lead:1188023,mau:2057210,mauLead:207257,dauMau:29.6},
+  "2026-06":{dau:602152,dwl:50490,lead:1333822,mau:2343663,mauLead:230794,dauMau:25.7},
 };
 const ACT_MAU = {
   "2026-01":{mau:6155280,newMau:0,retMau:0},
@@ -360,7 +451,7 @@ const ACT_MAU = {
   "2026-03":{mau:6988156,newMau:0,retMau:0},
   "2026-04":{mau:5867098,newMau:0,retMau:0},
   "2026-05":{mau:5855563,newMau:0,retMau:0},
-  "2026-06":{mau:2057210,newMau:0,retMau:0},
+  "2026-06":{mau:2343663,newMau:0,retMau:0},
 };
 
 // Marketplace Health actuals (PTY-JOBS-GDS-VEH actual sheet)
@@ -1015,7 +1106,8 @@ function VerticalSection() {
     if(met==="dauMau")  return vertMonthMau(v,m).dauMau;
     return vertMonthSum(v,m)[met]??0;
   };
-  const getKpi = (v,m) => KPI_VERT[v]?.[m]?.[met]??null;
+  const getKpiFC0 = (v,m) => KPI_VERT_FC0[v]?.[m]?.[met]??null;
+  const getKpiFC1 = (v,m) => KPI_VERT_FC1[v]?.[m]?.[met]??null;
 
   return (
     <section id="vertical">
@@ -1029,17 +1121,25 @@ function VerticalSection() {
             borderColor:VC[v], backgroundColor:VC[v]+"22",
             borderWidth:2.5, tension:0.3, pointRadius:5, fill:false,
           };
-          const kpiDs = {
-            label:"KPI",
-            data: MONTHS.map(m=>getKpi(v,m)),
+          const fc0Ds = {
+            label:"KPI FC0",
+            data: MONTHS.map(m=>getKpiFC0(v,m)),
             borderColor:"#64748b", borderDash:[6,4], borderWidth:1.5,
             pointStyle:"rectRot", pointRadius:4, pointBackgroundColor:"#64748b",
             backgroundColor:"transparent", tension:0.2, fill:false,
           };
+          const fc1Ds = {
+            label:"KPI FC1",
+            data: MONTHS.map(m=>getKpiFC1(v,m)),
+            borderColor:"#f59e0b", borderDash:[3,3], borderWidth:1.5,
+            pointStyle:"triangle", pointRadius:4, pointBackgroundColor:"#f59e0b",
+            backgroundColor:"transparent", tension:0.2, fill:false,
+          };
+          const kpiDs = fc0Ds; // default for badge calc
           // Attainment + MoM delta
           const lastM = MONTHS[MONTHS.length-1];
           const prevM = MONTHS[MONTHS.length-2];
-          const aVal = getAct(v,lastM), kVal = getKpi(v,lastM);
+          const aVal = getAct(v,lastM), kVal = getKpiFC0(v,lastM) || getKpiFC1(v,lastM);
           const aPrev = getAct(v,prevM);
           const att = (aVal&&kVal) ? Math.round(aVal/kVal*100) : null;
           const attC = att===null?"#9ca3af":att>=100?"#059669":att>=85?"#d97706":"#dc2626";
@@ -1077,7 +1177,7 @@ function VerticalSection() {
               <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>
                 {metObj.label} · ── Actual · ╌╌ KPI
               </div>
-              <LineChart labels={labels} datasets={[actDs, kpiDs]} height={200}/>
+              <LineChart labels={labels} datasets={[actDs, fc0Ds, fc1Ds]} height={200}/>
             </div>
           );
         })}
@@ -1432,6 +1532,100 @@ function GrowthSection() {
   );
 }
 
+function SDSection() {
+  const sdVerts = VERTS;
+  const sdMonths = MONTHS.filter(m => VERTS.some(v => SD_DATA[v]?.[m]?.adCov != null));
+  const [sdMet, setSdMet] = useState("adCov");
+  const SD_METRICS = [
+    {key:"adCov",    label:"Ad Coverage [S&D]",    color:"#6366f1"},
+    {key:"buyerCov", label:"Buyer Coverage [S&D]",  color:"#10b981"},
+  ];
+  const metObj = SD_METRICS.find(x=>x.key===sdMet);
+
+  const lineDs = sdVerts.map(v=>({
+    label:v,
+    data:sdMonths.map(m=>SD_DATA[v]?.[m]?.[sdMet]??null),
+    borderColor:VC[v], backgroundColor:VC[v]+"22",
+    borderWidth:2.5, tension:0.3, pointRadius:5, fill:false,
+  }));
+  // Benchmark line
+  lineDs.push({
+    label:`Benchmark ≥${SD_BENCHMARK}`,
+    data:sdMonths.map(()=>SD_BENCHMARK),
+    borderColor:"#dc2626", borderDash:[5,3], borderWidth:1.5,
+    pointRadius:0, fill:false, backgroundColor:"transparent",
+  });
+
+  return (
+    <section id="sd">
+      <div className="section-title">S&D Monthly Report</div>
+      <div style={{background:"#fff3cd",borderRadius:8,padding:"10px 14px",
+        borderLeft:"3px solid #f59e0b",fontSize:12,marginBottom:16,color:"#92400e"}}>
+        ⚠️ Nguồn: <code>ct_product_analytics.servings__marketplace_supply_demand_tracking_v2</code> via <b>/marketplace-supply-demand</b> skill.
+        Hiện chỉ có T5/2026 (từ screenshot). Script sẽ tự fetch khi có BQ access.
+        Benchmark healthy: Ad Coverage ≥ 0.70 · Buyer Coverage ≥ 0.70
+      </div>
+
+      {/* Metric tabs */}
+      <div style={{display:"flex",gap:4,background:"#f3f4f6",borderRadius:8,padding:3,marginBottom:16,width:"fit-content"}}>
+        {SD_METRICS.map(o=>(
+          <button key={o.key} onClick={()=>setSdMet(o.key)} style={{
+            padding:"5px 14px",borderRadius:6,border:"none",cursor:"pointer",
+            fontSize:12,fontWeight:600,
+            background:sdMet===o.key?o.color:"transparent",
+            color:sdMet===o.key?"#fff":"#6b7280",
+          }}>{o.label}</button>
+        ))}
+      </div>
+
+      {/* Chart */}
+      <div style={{background:"#fff",borderRadius:12,padding:"18px 20px",
+        boxShadow:"0 1px 4px rgba(0,0,0,.07)",marginBottom:16}}>
+        <div style={{fontWeight:600,marginBottom:4,color:metObj.color,fontSize:13}}>
+          {metObj.label} — Monthly Trend by Vertical
+        </div>
+        <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>
+          ── Vertical lines · ╌╌ Benchmark ≥{SD_BENCHMARK} (healthy)
+        </div>
+        <LineChart labels={sdMonths.map(m=>ML[m])} datasets={lineDs} height={260}/>
+      </div>
+
+      {/* Detail table */}
+      <div style={{background:"#fff",borderRadius:12,padding:"18px 20px",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
+        <div style={{fontWeight:600,fontSize:13,marginBottom:12,color:"#374151"}}>
+          Detail — {metObj.label} by Vertical × Month
+        </div>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+          <thead>
+            <tr style={{background:"#f8f9ff"}}>
+              <th style={{...TH,textAlign:"left"}}>Vertical</th>
+              {sdMonths.map(m=><th key={m} style={{...TH,color:metObj.color}}>{ML[m]}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {sdVerts.map(v=>(
+              <tr key={v} style={{borderTop:"1px solid #f0f0f0"}}>
+                <td style={{...TD,textAlign:"left",fontWeight:600,color:VC[v]}}>{v}</td>
+                {sdMonths.map(m=>{
+                  const val = SD_DATA[v]?.[m]?.[sdMet];
+                  const healthy = val!=null && val>=SD_BENCHMARK;
+                  const c = val==null?"#9ca3af":healthy?"#059669":"#dc2626";
+                  return (
+                    <td key={m} style={{...TD,fontWeight:600,color:c}}>
+                      {val!=null ? val.toFixed(3) : "—"}
+                      {val!=null ? (healthy?" ✅":" ⚠️") : ""}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function DetailSection() {
   const [metKey, setMetKey] = useState("dau");
   const metObj = METRICS.find(x=>x.key===metKey);
@@ -1455,7 +1649,7 @@ function DetailSection() {
                   {MONTHS.map(m=>(
                     <th key={m} style={{...TH,color:metObj.color}}>{ML[m]}</th>
                   ))}
-                  <th style={{...TH,color:"#6b7280"}}>{metKey==="lead"?"Total":"Avg/Mo"}</th>
+                  <th style={{...TH,color:"#6b7280"}}>{metKey==="lead"?"Total":metKey==="dauMau"?"Avg":"%Target"}</th>
                   <th style={{...TH,color:"#9ca3af"}}>MoM {ML[MONTHS[MONTHS.length-1]]}</th>
                 </tr>
               </thead>
@@ -1480,10 +1674,17 @@ function DetailSection() {
                     return vertRawTotal ? Math.round(raw/vertRawTotal*correctTotal) : 0;
                   });
                   const nonZero = vals.filter(v=>v>0).length||1;
-                  const summary = metKey==="lead"
-                    ? vals.reduce((a,x)=>a+x,0)
-                    : Math.round(vals.reduce((a,x)=>a+x,0)/nonZero);
-                  if (!summary) return null;
+                  const rawSum = vals.reduce((a,x)=>a+x,0);
+                  const rawAvg = Math.round(rawSum/nonZero);
+                  // % of Target (FC0) for the latest actual month
+                  const lastActM = MONTHS[MONTHS.length-1];
+                  const vertKpiM = KPI_VERT_FC0[vert]?.[lastActM]?.[metKey];
+                  const vertActM = VERT_ACT[vert]?.[lastActM]?.[metKey];
+                  const chShareM = vertActM ? vals[MONTHS.length-1]/(vertActM||1) : 0;
+                  const chKpiM = vertKpiM ? Math.round(vertKpiM*chShareM) : null;
+                  const pctTarget = (chKpiM && vals[MONTHS.length-1]) ? Math.round(vals[MONTHS.length-1]/chKpiM*100) : null;
+                  const summary = metKey==="lead" ? rawSum : metKey==="dauMau" ? rawAvg : pctTarget;
+                  if (!rawSum) return null;
                   const lastIdx=vals.length-1; const mom = vals[lastIdx]&&vals[lastIdx-1] ? delta(vals[lastIdx],vals[lastIdx-1]) : null;
                   const momColor = mom===null?"#9ca3af":mom>0?"#059669":mom<0?"#dc2626":"#9ca3af";
                   return (
@@ -1492,8 +1693,10 @@ function DetailSection() {
                       {vals.map((val,i)=>(
                         <td key={i} style={{...TD,color:val?"#111":"#ddd"}}>{val?fmtN(val):"—"}</td>
                       ))}
-                      <td style={{...TD,fontWeight:600,color:"#374151",borderLeft:"1px solid #f0f0f0"}}>
-                        {fmtN(summary)}
+                      <td style={{...TD,fontWeight:600,borderLeft:"1px solid #f0f0f0",
+                        color:summary===null?"#ddd":metKey==="lead"||metKey==="dauMau"?"#374151":
+                          summary>=100?"#059669":summary>=85?"#d97706":"#dc2626"}}>
+                        {summary===null?"—":metKey==="lead"?fmtN(summary):metKey==="dauMau"?summary:summary+"%"}
                       </td>
                       <td style={{...TD,fontWeight:600,color:momColor}}>
                         {mom!==null?sign(mom)+"%":"—"}
@@ -1948,16 +2151,40 @@ function MarketplaceHealth() {
 const TH = {padding:"8px 12px",textAlign:"right",fontSize:12,fontWeight:600,color:"#6b7280",borderBottom:"2px solid #e5e7eb"};
 const TD = {padding:"7px 12px",textAlign:"right",fontSize:12,color:"#111"};
 
+// ─── S&D DATA (from ct_product_analytics.servings__marketplace_supply_demand_tracking_v2)
+// Source: /marketplace-supply-demand skill. Auto-updated by update_marketplace.py when BQ access available.
+// Values = monthly avg of daily ad_coverage and buyer_coverage (all inventory, all segments)
+const SD_DATA = {
+  PTY:{
+    "2026-05":{adCov:0.998, buyerCov:1.000},
+    "2026-04":{adCov:null, buyerCov:null},
+  },
+  JOB:{
+    "2026-05":{adCov:0.999, buyerCov:0.998},
+    "2026-04":{adCov:null, buyerCov:null},
+  },
+  VEH:{
+    "2026-05":{adCov:0.999, buyerCov:0.999},
+    "2026-04":{adCov:null, buyerCov:null},
+  },
+  GDS:{
+    "2026-05":{adCov:0.993, buyerCov:0.987},
+    "2026-04":{adCov:null, buyerCov:null},
+  },
+};
+const SD_BENCHMARK = 0.70; // healthy threshold
+
 const VD_SECTIONS = [
   {id:"exec",    label:"📋 Executive Summary"},
   {id:"vertical",label:"📈 By Vertical"},
   {id:"channel", label:"📡 By Channel"},
   {id:"detail",  label:"🔍 Detail Table"},
+  {id:"sd",      label:"⚖️ S&D Report"},
   {id:"growth",  label:"🌱 Growth Performance"},
 ];
 
 function App() {
-  const [view, setView]   = useState("demand"); // "demand" | "health"
+  const view = "demand"; // marketplace health removed
   const [active, setActive] = useState("exec");
 
   useEffect(()=>{
@@ -1975,7 +2202,7 @@ function App() {
   return (
     <div>
       {/* Header */}
-      <div style={{background:"#1e1b4b",padding:"14px 24px",display:"flex",alignItems:"center",gap:14}}>
+      <div style={{background:"#1e1b4b",padding:"14px 24px",display:"flex",alignItems:"center",gap:14,position:"sticky",top:0,zIndex:200}}>
         <div style={{width:36,height:36,borderRadius:10,
           background:"linear-gradient(135deg,#818cf8,#6366f1)",
           display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>📊</div>
@@ -1983,21 +2210,7 @@ function App() {
           <div style={{fontWeight:700,fontSize:16,color:"#fff"}}>Chotot Marketplace Dashboard</div>
           <div style={{fontSize:11,color:"#a5b4fc"}}>T1~T5/2026 · BigQuery chotot-dwh</div>
         </div>
-        {/* Top-level view toggle */}
-        <div style={{marginLeft:"auto",display:"flex",background:"rgba(255,255,255,.1)",
-          borderRadius:8,padding:3,gap:2}}>
-          {[
-            {key:"demand", label:"📈 Vertical Demand"},
-            {key:"health", label:"🏥 Marketplace Health"},
-          ].map(o=>(
-            <button key={o.key} onClick={()=>setView(o.key)} style={{
-              padding:"6px 16px",borderRadius:6,border:"none",cursor:"pointer",
-              fontSize:12,fontWeight:600,transition:"all .15s",
-              background:view===o.key?"#fff":"transparent",
-              color:view===o.key?"#1e1b4b":"#a5b4fc",
-            }}>{o.label}</button>
-          ))}
-        </div>
+        
       </div>
 
       {/* Sticky Nav — only for Vertical Demand */}
@@ -2019,12 +2232,11 @@ function App() {
           <VerticalSection/>
           <ChannelSection/>
           <DetailSection/>
+          <SDSection/>
           <GrowthSection/>
           <div style={{height:60}}/>
         </>
-      ) : (
-        <MarketplaceHealth/>
-      )}
+      ) : null}
     </div>
   );
 }
