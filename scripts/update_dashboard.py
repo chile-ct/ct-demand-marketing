@@ -84,6 +84,7 @@ print(f"  MAU: {len(mau_rows)} months | New users: {len(new_rows)} rows")
 act_rows = []
 try:
     act_rows = run("""
+    -- Sum across all vertical_user values (not just pre-agg 'all') to get correct total
     SELECT DATE_TRUNC(visit_date,MONTH) as month,
       CASE WHEN channel='all' THEN 'Total' ELSE channel END as channel,
       AVG(dau) as avg_new_dau,
@@ -92,9 +93,11 @@ try:
       SAFE_DIVIDE(SUM(d7),SUM(d0)) as nurr_d7,
       SAFE_DIVIDE(SUM(m1),SUM(d0)) as nurr_m1
     FROM ct_digital.dashboard__retention_mapping_activation_by_source_campaign
-    WHERE return_status='new' AND campaign='all' AND vertical_user='all'
+    WHERE return_status='new' AND campaign='all'
+    AND vertical_user IN ('all','gds','veh','pty','job','other')
     AND channel IN ('all','Direct','Organic Search','Paid Search','Display','Growth','Social')
-    AND visit_date >= '2026-01-01' GROUP BY 1,2 ORDER BY 1,2
+    AND visit_date >= '2026-01-01'
+    GROUP BY 1,2 ORDER BY 1,2
     """)
     print(f"  Activation: {len(act_rows)} rows OK")
 except Exception as e:
@@ -109,7 +112,7 @@ try:
       SAFE_DIVIDE(SUM(d7),SUM(d0)) as ret_d7,
       SAFE_DIVIDE(SUM(m1),SUM(d0)) as ret_m1
     FROM ct_digital.dashboard__retention_90d
-    WHERE new_status='return' AND platform IN ('iOS','Android') AND min_date >= '2026-01-01'
+    WHERE new_status='return' AND min_date >= '2026-01-01'  -- all platforms to match reference definition
     GROUP BY 1 ORDER BY 1
     """)
     print(f"  Retention: {len(ret_rows)} rows OK")
