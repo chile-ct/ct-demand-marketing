@@ -133,62 +133,20 @@ canvas { max-height: 320px; }
   </div><!-- header-row -->
 </div>
 
+<nav style="background:#1a1a2e;border-bottom:1px solid rgba(255,255,255,0.1);position:sticky;top:48px;z-index:99;overflow-x:auto;white-space:nowrap">
+  <div style="display:flex;gap:0;max-width:1440px;margin:0 auto;padding:0 36px">
+    <a href="#section-1" style="display:inline-block;padding:8px 16px;color:#8892b0;text-decoration:none;font-size:12px;font-weight:500;border-bottom:2px solid transparent;transition:all 0.15s" onmouseover="this.style.color='white';this.style.borderColor='#4361ee'" onmouseout="this.style.color='#8892b0';this.style.borderColor='transparent'">1. Overview App</a>
+    <a href="#section-2" style="display:inline-block;padding:8px 16px;color:#8892b0;text-decoration:none;font-size:12px;font-weight:500;border-bottom:2px solid transparent;transition:all 0.15s" onmouseover="this.style.color='white';this.style.borderColor='#4361ee'" onmouseout="this.style.color='#8892b0';this.style.borderColor='transparent'">2. New User Acquisition</a>
+    <a href="#section-3" style="display:inline-block;padding:8px 16px;color:#8892b0;text-decoration:none;font-size:12px;font-weight:500;border-bottom:2px solid transparent;transition:all 0.15s" onmouseover="this.style.color='white';this.style.borderColor='#4361ee'" onmouseout="this.style.color='#8892b0';this.style.borderColor='transparent'">3. Activation</a>
+    <a href="#section-4" style="display:inline-block;padding:8px 16px;color:#8892b0;text-decoration:none;font-size:12px;font-weight:500;border-bottom:2px solid transparent;transition:all 0.15s" onmouseover="this.style.color='white';this.style.borderColor='#4361ee'" onmouseout="this.style.color='#8892b0';this.style.borderColor='transparent'">4. Retention</a>
+    <a href="#section-5" style="display:inline-block;padding:8px 16px;color:#f59e0b;text-decoration:none;font-size:12px;font-weight:600;border-bottom:2px solid transparent;transition:all 0.15s" onmouseover="this.style.borderColor='#f59e0b'" onmouseout="this.style.borderColor='transparent'">5. Growth Performance</a>
+  </div>
+</nav>
 <div class="container">
 
 <!-- ===== EXECUTIVE SUMMARY ===== -->
-<div class="exec-summary">
-  <div class="exec-title">📋 Executive Summary — App Growth</div>
-  <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap" id="exec-tabs">
-    <button onclick="selectExecMonth('jan')" data-m="jan" style="padding:6px 14px;border-radius:20px;border:1.5px solid #e5e7eb;background:white;color:#6b7280;font-size:12px;font-weight:500;cursor:pointer">Jan 2026</button>
-    <button onclick="selectExecMonth('feb')" data-m="feb" style="padding:6px 14px;border-radius:20px;border:1.5px solid #e5e7eb;background:white;color:#6b7280;font-size:12px;font-weight:500;cursor:pointer">Feb 2026</button>
-    <button onclick="selectExecMonth('mar')" data-m="mar" style="padding:6px 14px;border-radius:20px;border:1.5px solid #e5e7eb;background:white;color:#6b7280;font-size:12px;font-weight:500;cursor:pointer">Mar 2026</button>
-    <button onclick="selectExecMonth('apr')" data-m="apr" style="padding:6px 14px;border-radius:20px;border:1.5px solid #e5e7eb;background:white;color:#6b7280;font-size:12px;font-weight:500;cursor:pointer">Apr 2026</button>
-    <button onclick="selectExecMonth('may')" data-m="may" style="padding:6px 14px;border-radius:20px;border:1.5px solid #f59e0b;background:#f59e0b;color:#1a1a2e;font-size:12px;font-weight:700;cursor:pointer">May 2026* ⭐</button>
-  </div>
-  <div id="exec-jan" style="display:none">
-    <div class="exec-month neutral" style="max-width:100%">
-      <div class="exec-month-header"><span class="exec-month-name">Jan 2026</span><span class="exec-badge badge-blue">Baseline</span></div>
-      <div class="exec-metrics"><div class="exec-metric"><strong>1.39M</strong>App MAU</div><div class="exec-metric"><strong>261K</strong>New Users</div><div class="exec-metric"><strong>55.0%</strong>App Ret D1</div><div class="exec-metric"><strong>68.2%</strong>App Ret M1</div></div>
-      <div class="exec-text">Baseline ổn. Retention tốt (M1: 68.2%), user hiện tại gắn bó. Direct chiếm 55% acquisition. Login rate mới 74%. NURR M1 chỉ 6.8% — cứ 100 new user, chỉ ~7 người quay lại sau 1 tháng → onboarding cần cải thiện.</div>
-      <div class="exec-alert alert-warn">⚠️ NURR M1 thấp (6.8%) + Login rate 74% — 2 điểm cần fix ngay</div>
-    </div>
-  </div>
-  <div id="exec-feb" style="display:none">
-    <div class="exec-month negative" style="max-width:100%">
-      <div class="exec-month-header"><span class="exec-month-name">Feb 2026</span><span class="exec-badge badge-red">Seasonality Dip</span></div>
-      <div class="exec-metrics"><div class="exec-metric"><strong>1.30M</strong>App MAU <span style="color:#ef4444;font-size:10px">▼7%</span></div><div class="exec-metric"><strong>234K</strong>New Users <span style="color:#ef4444;font-size:10px">▼10%</span></div><div class="exec-metric"><strong>55.2%</strong>App Ret D1</div><div class="exec-metric"><strong>67.9%</strong>App Ret M1</div></div>
-      <div class="exec-text">MAU & acquisition giảm do seasonality sau Tết. Điểm tích cực: retention ổn định → churn không phải nguyên nhân. New user login rate tăng mạnh (46%→65%). Growth channel giảm mạnh 54K→42K.</div>
-      <div class="exec-alert alert-warn">⚠️ Feb dip là pattern — cần paid push sớm từ mid-Jan để counter</div>
-    </div>
-  </div>
-  <div id="exec-mar" style="display:none">
-    <div class="exec-month positive" style="max-width:100%">
-      <div class="exec-month-header"><span class="exec-month-name">Mar 2026</span><span class="exec-badge badge-green">Best Month ✨</span></div>
-      <div class="exec-metrics"><div class="exec-metric"><strong>1.55M</strong>App MAU <span style="color:#10b981;font-size:10px">▲20%</span></div><div class="exec-metric"><strong>345K</strong>New Users <span style="color:#10b981;font-size:10px">▲47%</span></div><div class="exec-metric"><strong>54.5%</strong>App Ret D1</div><div class="exec-metric"><strong>68.1%</strong>App Ret M1</div></div>
-      <div class="exec-text">Tháng tốt nhất. Growth channel bùng nổ (42K→78K), kéo acquisition +47%. NURR cải thiện (D1: 37.9%, M1: 7.3%). Login rate new user 71% — cao nhất kỳ. Activation đạt đỉnh 108K. Retention giữ vững 68.1%.</div>
-      <div class="exec-alert alert-ok">✅ Acquisition + Retention cùng đỉnh — tháng mẫu để replicate</div>
-    </div>
-  </div>
-  <div id="exec-apr" style="display:none">
-    <div class="exec-month warning" style="max-width:100%">
-      <div class="exec-month-header"><span class="exec-month-name">Apr 2026</span><span class="exec-badge badge-amber">⚠️ Retention Alert</span></div>
-      <div class="exec-metrics"><div class="exec-metric"><strong>1.47M</strong>App MAU <span style="color:#ef4444;font-size:10px">▼5%</span></div><div class="exec-metric"><strong>294K</strong>New Users <span style="color:#ef4444;font-size:10px">▼15%</span></div><div class="exec-metric"><strong style="color:#ef4444">51.0%</strong>App Ret D1 ▼3.5pp</div><div class="exec-metric"><strong style="color:#ef4444">63.8%</strong>App Ret M1 ▼4.3pp</div></div>
-      <div class="exec-text">MAU giảm nhẹ vs Mar nhưng còn cao hơn Jan+Feb. Critical: <strong>App Ret M1 giảm 68.1%→63.8% (−4.3pp)</strong> — nguy cơ lớn nhất với sustainable growth. Growth channel duy trì 76K. Login rate new user 71% ổn định.</div>
-      <div class="exec-alert alert-danger">🔴 App Ret M1 −4.3pp — PRIORITY #1 trước khi scale thêm acquisition</div>
-    </div>
-  </div>
-  <div id="exec-may" style="display:block">
-    <div class="exec-month neutral" style="max-width:100%;border-color:#f59e0b;background:#fffbeb">
-      <div class="exec-month-header"><span class="exec-month-name">May 2026*</span><span class="exec-badge badge-amber">⏳ Partial Month</span></div>
-      <div class="exec-metrics"><div class="exec-metric"><strong>1.49M</strong>App MAU <span style="color:#10b981;font-size:10px">▲+1.1%</span></div><div class="exec-metric"><strong>296K</strong>New Users <span style="color:#10b981;font-size:10px">▲+0.8%</span></div><div class="exec-metric"><strong>49.3%</strong>App Ret D1 ▼</div><div class="exec-metric"><strong>—</strong>App Ret M1 (pending)</div></div>
-      <div class="exec-text">MAU ổn định, nhích nhẹ vs Apr. Activation rate 29.9% (adview), 26.0% (lead). App Ret D1 49.3%, D7 32.7% — cần monitor tiếp. NURR D1 36.1%, D7 11.7%. Growth channel 80.4K new users, CPA 6,481₫. Ret M1 & NURR M1 pending (partial month).</div>
-      <div class="exec-alert alert-warn">⏳ Partial data — App Ret M1 & NURR M1 chưa đo được. Growth cost 521.1M₫.</div>
-    </div>
-  </div>
-</div>
-
 <!-- ===== SECTION 1: OVERVIEW ===== -->
-<div class="section">
+<div class="section" id="section-1">
   <div class="section-title">1. Overview App</div>
   <div class="section-subtitle"><strong>App MAU</strong>: Unique users mở app ít nhất 1 lần trong tháng (Android + iOS) | <strong>DAU</strong>: Unique users mở app trong ngày | <strong>New App MAU</strong>: User lần đầu tải &amp; mở app trong tháng</div>
 
@@ -235,7 +193,7 @@ canvas { max-height: 320px; }
 <div class="divider"></div>
 
 <!-- ===== SECTION 2: ACQUISITION ===== -->
-<div class="section">
+<div class="section" id="section-2">
   <div class="section-title">2. New App User Acquisition</div>
   <div class="section-subtitle">
     <strong>New App User</strong>: User lần đầu tải app và mở app vào D0 — counted once per device lifetime | Channel: Direct · Organic Search · Growth (Paid+Display+CRM) · (Other)
@@ -325,7 +283,7 @@ canvas { max-height: 320px; }
 <div class="divider"></div>
 
 <!-- ===== SECTION 3: ACTIVATION ===== -->
-<div class="section">
+<div class="section" id="section-3">
   <div class="section-title">3. New App User Activation</div>
   <div class="section-subtitle">
     <strong>Activation</strong>: New app user cần được activate trong D7 — 7 ngày đầu tiên kể từ D0 (ngày đầu mở app). Điều kiện: ≥20 adview D7 hoặc ≥1 lead D7 (tính riêng)
@@ -450,7 +408,7 @@ canvas { max-height: 320px; }
 <div class="divider"></div>
 
 <!-- ===== SECTION 4: RETENTION ===== -->
-<div class="section">
+<div class="section" id="section-4">
   <div class="section-title">4. App User Retention (New + Returning)</div>
   <div class="section-subtitle">
     <strong>Retention</strong>: % users quay lại app sau D1 (ngày 2), D7 (tuần đầu), M1 (tháng đầu). Bao gồm cả new users (NURR) và returning/current users (CURR/App Ret)
@@ -523,7 +481,7 @@ canvas { max-height: 320px; }
 <div class="divider"></div>
 
 <!-- ===== SECTION 5: GROWTH PERFORMANCE ===== -->
-<div class="section">
+<div class="section" id="section-5">
   <div class="section-title">5. Growth Performance — Growth Channel (Paid+Display+CRM)</div>
   <div class="section-subtitle">
     <strong>Growth Channel</strong>: Toàn bộ performance về volume &amp; quality của new app user được drive bởi Growth Marketing (Paid Search + Display + CRM campaigns) · Acquisition → Activation → Retention → Cost efficiency
@@ -1584,7 +1542,7 @@ async function initDashboard() {
   renderCampaignTables();
   // Default to latest month
   const latestKey = D.months[D.months.length-1].replace(/[^a-zA-Z]/g,'').toLowerCase().substring(0,3);
-  selectExecMonth(latestKey);
+
 }
 
 document.addEventListener('DOMContentLoaded', initDashboard);
