@@ -464,6 +464,10 @@ canvas { max-height: 320px; }
   </div>
 
   <div class="tab-content active" id="ret-0">
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-title">Retention D1 — Total CT vs App (iOS+Android) vs Web vs NURR</div>
+      <div style="position:relative;height:260px"><canvas id="chartRetD1Compare"></canvas></div>
+    </div>
     <div class="charts-grid" style="margin-bottom:16px">
       <div class="chart-card">
         <div class="chart-title">Retention D7 — Total CT vs App vs Web vs NURR</div>
@@ -477,19 +481,7 @@ canvas { max-height: 320px; }
     <div class="card">
       <div class="card-title">Total User & App User Retention — D1 / D7 / M1</div>
       <div style="overflow-x:auto">
-      <table>
-        <thead><tr><th>Metric</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th class="apr">May*</th></tr></thead>
-        <tbody>
-          <tr><td>Total User Retention D1</td><td>52.4%</td><td>52.6%</td><td>52.0%</td><td>51.7%</td><td class="apr">—</td></tr>
-          <tr><td>Total User Retention D7</td><td>43.9%</td><td>44.1%</td><td>43.6%</td><td>43.4%</td><td class="apr">—</td></tr>
-          <tr><td>Total User Retention M1</td><td>65.4%</td><td>65.2%</td><td>65.2%</td><td>64.9%</td><td class="apr">—</td></tr>
-          <tr class="sep"><td>App User Retention D1</td><td>55.0%</td><td>55.2%</td><td>54.5%</td><td class="apr">51.0%</td><td class="apr">49.3%</td></tr>
-          <tr><td>App User Retention D7</td><td>46.0%</td><td>46.4%</td><td>45.8%</td><td class="apr">42.2%</td><td class="apr">32.7%</td></tr>
-          <tr class="total-row"><td>App User Retention M1</td><td>68.2%</td><td>67.9%</td><td>68.1%</td><td class="apr">63.8%</td><td class="apr">—</td></tr>
-          <tr class="sep"><td>NURR D1 (New User)</td><td>36.1%</td><td>36.1%</td><td>37.9%</td><td>37.1%</td><td class="apr">36.1%</td></tr>
-          <tr><td>NURR D7 (New User)</td><td>14.5%</td><td>14.8%</td><td>15.7%</td><td>14.9%</td><td class="apr">11.7%</td></tr>
-          <tr><td>NURR M1 (New User)</td><td>6.8%</td><td>7.0%</td><td>7.3%</td><td>7.0%</td><td class="apr">—</td></tr>
-        </tbody>
+      <table id="retMainTable">
       </table>
       </div>
     </div>
@@ -1103,10 +1095,32 @@ function renderAllCharts() {
   makeChart('chartActDailyCh1','bar',MONTHS,[B('Direct',act.direct_adview_daily,C.blue),B('Organic Search',act.organic_adview_daily,C.green),B('Growth (P+D+CRM)',act.growth_adview_daily,C.orange)],{noAR:true});
   makeChart('chartActDailyCh2','bar',MONTHS,[B('Direct',act.direct_lead_daily,C.blue),B('Organic Search',act.organic_lead_daily,C.green),B('Growth (P+D+CRM)',act.growth_lead_daily,C.orange)],{noAR:true});
 
-  // S4 Ret Overview: comparison charts D7 and M1
+  // S4 Ret Overview: comparison charts D1, D7 and M1
   (function(){
     const n = MONTHS.length;
     const web_other_mau = ov.web_other_mau;
+    // Retention D1 chart
+    (function(){
+      const ctx = document.getElementById('chartRetD1Compare'); if(!ctx) return;
+      const ex = Object.values(Chart.instances||{}).find(c=>c.canvas?.id==='chartRetD1Compare');
+      if(ex) ex.destroy();
+      const webD1 = MONTHS.map((_,i) => {
+        const t=ret.total_d1[i], a=ret.app_d1[i], wm=ov.web_other_mau[i], tm=ov.total_ct_mau[i], am=ov.mau_app[i];
+        if(t==null||a==null||!wm||!tm||!am) return null;
+        return (tm*t - am*a)/wm;
+      });
+      new Chart(ctx,{type:'line',data:{labels:MONTHS,datasets:[
+        {label:'Total CT User D1',data:ret.total_d1,borderColor:'#9ca3af',backgroundColor:'#9ca3af22',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
+        {label:'App User D1 (iOS+Android)',data:ret.app_d1,borderColor:'#4361ee',backgroundColor:'#4361ee22',fill:false,tension:0.4,pointRadius:4,borderWidth:2},
+        {label:'Web User D1',data:webD1,borderColor:'#0891b2',backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:4,borderWidth:2,borderDash:[4,4]},
+        {label:'NURR D1 (New User)',data:ret.nurr_d1,borderColor:'#f59e0b',backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:4,borderWidth:1,borderDash:[2,2]}
+      ]},options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}},
+          tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y!=null?(c.parsed.y*100).toFixed(1)+'%':'—'}`}}},
+        scales:{x:{grid:{display:false},ticks:{font:{size:11}}},
+          y:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>(v*100).toFixed(0)+'%'}}}}
+      });
+    })();
     const web_d7 = MONTHS.map((m,i) => {
       const wm = web_other_mau[i], tm = ov.total_ct_mau ? ov.total_ct_mau[i] : null, am = ov.mau_app[i];
       const td = ret.total_d7[i], ad = ret.app_d7[i];
@@ -1520,6 +1534,36 @@ function renderStaticTables() {
   ]);
 }
 
+function renderRetentionTable() {
+  if (!D) return;
+  const ret = D.retention, MONTHS = D.months, n = MONTHS.length;
+  const el = document.getElementById('retMainTable'); if (!el) return;
+  const fmtP = v => v==null?'—':(v*100).toFixed(1)+'%';
+  const ths = MONTHS.map((m,i)=>`<th${i===n-1?' class="apr"':''}>${m}</th>`).join('');
+  const thead = `<tr><th>Metric</th>${ths}</tr>`;
+
+  function row(label, arr, cls) {
+    const cells = MONTHS.map((m,i)=>`<td${i===n-1?' class="apr"':''}>${fmtP(arr[i])}</td>`).join('');
+    return `<tr class="${cls||''}"><td>${label}</td>${cells}</tr>`;
+  }
+
+  const tbody = [
+    row('Total User Retention D1', ret.total_d1),
+    row('Total User Retention D7', ret.total_d7),
+    row('Total User Retention M1', ret.total_m1),
+    '<tr class="sep"><td colspan="'+(n+1)+'" style="font-size:10px;padding:4px 14px;color:#4361ee;font-weight:600">APP (iOS+Android only)</td></tr>',
+    row('App User Retention D1', ret.app_d1, 'total-row'),
+    row('App User Retention D7', ret.app_d7),
+    row('App User Retention M1', ret.app_m1),
+    '<tr class="sep"><td colspan="'+(n+1)+'" style="font-size:10px;padding:4px 14px;color:#4361ee;font-weight:600">NEW USER (NURR)</td></tr>',
+    row('NURR D1 (New User)', ret.nurr_d1),
+    row('NURR D7 (New User)', ret.nurr_d7),
+    row('NURR M1 (New User)', ret.nurr_m1),
+  ].join('');
+
+  el.innerHTML = `<thead>${thead}</thead><tbody>${tbody}</tbody>`;
+}
+
 async function initDashboard() {
   await loadDashboardData();
   if (!D) { console.error('Dashboard data unavailable'); return; }
@@ -1531,6 +1575,7 @@ async function initDashboard() {
   renderCommentary('s5');
 
   renderAllCharts();
+  renderRetentionTable();
   renderStaticTables();
   renderGrowthTables();
   updateKPICards(D.months.length-1);
