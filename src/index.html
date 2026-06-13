@@ -2100,16 +2100,18 @@ function CostInputSection({costData, setCostData}) {
     return d;
   });
   const [saved,setSaved] = useState(false);
+  const focusedCell = React.useRef(null);
 
   const setCell = (v,m,val) => {
     setDraft(p=>({...p,[v]:{...p[v],[m]:parseFloat(val)||0}}));
     setSaved(false);
   };
 
-  const handlePaste = (startV, startM, e) => {
+  const handleTablePaste = (e) => {
     const text = e.clipboardData.getData('text');
-    if (!text.includes('\t') && !text.includes('\n')) return;
+    if (!focusedCell.current || (!text.includes('\t') && !text.includes('\n'))) return;
     e.preventDefault();
+    const {v: startV, m: startM} = focusedCell.current;
     const rows = text.trim().split(/\r?\n/).map(r=>r.split('\t'));
     const vIdx = COST_ROWS.indexOf(startV);
     const mIdx = M12.indexOf(startM);
@@ -2124,7 +2126,9 @@ function CostInputSection({costData, setCostData}) {
         cols.forEach((cell,ci) => {
           const mi = mIdx+ci;
           if (mi>=M12.length) return;
-          const num = parseFloat(cell.replace(/[^0-9.\-]/g,''));
+          // Strip thousands separators and currency symbols, keep digits/dot/minus
+          const cleaned = cell.replace(/[^0-9.\-]/g,'');
+          const num = parseFloat(cleaned);
           next[rowKey][M12[mi]] = isNaN(num) ? 0 : num;
         });
       });
@@ -2153,17 +2157,18 @@ function CostInputSection({costData, setCostData}) {
   const rowTot = v => M12.reduce((s,m)=>s+(draft[v]?.[m]||0),0);
   const colTot = m => COST_ROWS.reduce((s,v)=>s+(draft[v]?.[m]||0),0);
   const grand  = () => COST_ROWS.reduce((s,v)=>s+rowTot(v),0);
-  const fmtM   = n => n ? n.toFixed(1) : "—";
+  const fmtM   = n => n ? n.toFixed(3).replace(/\.?0+$/,'') : "—";
 
   const actMs = M12.filter(isAct);
   const fcMs  = M12.filter(m=>!isAct(m));
 
   const thStyle = (act) => ({
-    padding:"5px 3px",textAlign:"center",fontWeight:700,fontSize:10,
+    padding:"5px 4px",textAlign:"center",fontWeight:700,fontSize:11,
     color:act?"#166534":"#854d0e",
     background:act?"#f0fdf4":"#fefce8",
     borderBottom:`2px solid ${act?"#86efac":"#fde047"}`,
-    minWidth:52,
+    minWidth:72,
+    whiteSpace:"nowrap",
   });
   const cellBg = (act) => act?"#f0fdf4":"#fefce8";
 
@@ -2174,11 +2179,11 @@ function CostInputSection({costData, setCostData}) {
         <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>
           Đơn vị: <b>M VND</b> · Actual = tháng đã qua · Forecast = kế hoạch · Lưu để cập nhật charts Growth Performance
         </div>
-        <div style={{overflowX:"auto"}}>
-          <table style={{borderCollapse:"collapse",fontSize:11,width:"100%"}}>
+        <div style={{overflowX:"auto"}} onPaste={handleTablePaste}>
+          <table style={{borderCollapse:"collapse",fontSize:12,width:"100%"}}>
             <thead>
               <tr>
-                <td style={{minWidth:65}}/>
+                <td style={{minWidth:75}}/>
                 <td colSpan={actMs.length} style={{textAlign:"center",padding:"4px 6px",
                   background:"#dcfce7",color:"#166534",fontWeight:700,fontSize:11,
                   border:"1px solid #86efac"}}>
@@ -2189,7 +2194,7 @@ function CostInputSection({costData, setCostData}) {
                   border:"1px solid #fde047"}}>
                   ← FORECAST →
                 </td>
-                <td style={{minWidth:58}}/>
+                <td style={{minWidth:70}}/>
               </tr>
               <tr>
                 <th style={{textAlign:"left",padding:"6px 8px",color:"#374151",fontWeight:700,fontSize:11,background:"#f8f9ff"}}>VERTICAL</th>
@@ -2206,20 +2211,19 @@ function CostInputSection({costData, setCostData}) {
                   {M12.map(m=>(
                     <td key={m} style={{padding:"1px 1px",background:cellBg(isAct(m))}}>
                       <input
-                        type="number" step="0.1"
+                        type="number" step="0.001"
                         value={draft[v]?.[m]||""}
                         onChange={e=>setCell(v,m,e.target.value)}
-                        onPaste={e=>handlePaste(v,m,e)}
                         placeholder="—"
-                        style={{width:"100%",border:"none",background:"transparent",
-                          textAlign:"center",fontSize:11,padding:"4px 2px",outline:"none",
-                          color:draft[v]?.[m]?"#111":"#bbb",fontFamily:"inherit"}}
-                        onFocus={e=>{e.target.style.background="#eff6ff";e.target.style.borderRadius="4px";}}
+                        style={{width:"100%",minWidth:70,border:"none",background:"transparent",
+                          textAlign:"right",fontSize:12,padding:"4px 6px",outline:"none",
+                          color:draft[v]?.[m]?"#111":"#bbb",fontFamily:"inherit",boxSizing:"border-box"}}
+                        onFocus={e=>{focusedCell.current={v,m};e.target.style.background="#eff6ff";e.target.style.borderRadius="4px";e.target.select();}}
                         onBlur={e=>{e.target.style.background="transparent";}}
                       />
                     </td>
                   ))}
-                  <td style={{padding:"4px 6px",textAlign:"center",fontWeight:700,fontSize:11,color:"#374151",background:"#f3f4f6"}}>
+                  <td style={{padding:"4px 8px",textAlign:"right",fontWeight:700,fontSize:12,color:"#374151",background:"#f3f4f6",minWidth:70,whiteSpace:"nowrap"}}>
                     {fmtM(rowTot(v))}
                   </td>
                 </tr>
@@ -2227,8 +2231,8 @@ function CostInputSection({costData, setCostData}) {
               <tr style={{borderTop:"2px solid #e5e7eb"}}>
                 <td style={{padding:"5px 8px",fontWeight:800,fontSize:11,color:"#1f2937",background:"#f3f4f6"}}>Total</td>
                 {M12.map(m=>(
-                  <td key={m} style={{padding:"5px 3px",textAlign:"center",fontWeight:700,fontSize:11,
-                    color:colTot(m)?"#1f2937":"#ddd",
+                  <td key={m} style={{padding:"5px 6px",textAlign:"right",fontWeight:700,fontSize:12,
+                    color:colTot(m)?"#1f2937":"#ddd",minWidth:70,whiteSpace:"nowrap",
                     background:isAct(m)?"#dcfce7":"#fef9c3"}}>
                     {fmtM(colTot(m))}
                   </td>

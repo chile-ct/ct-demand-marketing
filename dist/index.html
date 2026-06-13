@@ -5493,6 +5493,7 @@ function CostInputSection({
     return d;
   });
   const [saved, setSaved] = useState(false);
+  const focusedCell = React.useRef(null);
   const setCell = (v, m, val) => {
     setDraft(p => ({
       ...p,
@@ -5503,10 +5504,14 @@ function CostInputSection({
     }));
     setSaved(false);
   };
-  const handlePaste = (startV, startM, e) => {
+  const handleTablePaste = e => {
     const text = e.clipboardData.getData('text');
-    if (!text.includes('\t') && !text.includes('\n')) return;
+    if (!focusedCell.current || !text.includes('\t') && !text.includes('\n')) return;
     e.preventDefault();
+    const {
+      v: startV,
+      m: startM
+    } = focusedCell.current;
     const rows = text.trim().split(/\r?\n/).map(r => r.split('\t'));
     const vIdx = COST_ROWS.indexOf(startV);
     const mIdx = M12.indexOf(startM);
@@ -5525,7 +5530,9 @@ function CostInputSection({
         cols.forEach((cell, ci) => {
           const mi = mIdx + ci;
           if (mi >= M12.length) return;
-          const num = parseFloat(cell.replace(/[^0-9.\-]/g, ''));
+          // Strip thousands separators and currency symbols, keep digits/dot/minus
+          const cleaned = cell.replace(/[^0-9.\-]/g, '');
+          const num = parseFloat(cleaned);
           next[rowKey][M12[mi]] = isNaN(num) ? 0 : num;
         });
       });
@@ -5562,18 +5569,19 @@ function CostInputSection({
   const rowTot = v => M12.reduce((s, m) => s + (draft[v]?.[m] || 0), 0);
   const colTot = m => COST_ROWS.reduce((s, v) => s + (draft[v]?.[m] || 0), 0);
   const grand = () => COST_ROWS.reduce((s, v) => s + rowTot(v), 0);
-  const fmtM = n => n ? n.toFixed(1) : "—";
+  const fmtM = n => n ? n.toFixed(3).replace(/\.?0+$/, '') : "—";
   const actMs = M12.filter(isAct);
   const fcMs = M12.filter(m => !isAct(m));
   const thStyle = act => ({
-    padding: "5px 3px",
+    padding: "5px 4px",
     textAlign: "center",
     fontWeight: 700,
-    fontSize: 10,
+    fontSize: 11,
     color: act ? "#166534" : "#854d0e",
     background: act ? "#f0fdf4" : "#fefce8",
     borderBottom: `2px solid ${act ? "#86efac" : "#fde047"}`,
-    minWidth: 52
+    minWidth: 72,
+    whiteSpace: "nowrap"
   });
   const cellBg = act => act ? "#f0fdf4" : "#fefce8";
   return /*#__PURE__*/React.createElement("section", {
@@ -5596,16 +5604,17 @@ function CostInputSection({
   }, "\u0110\u01A1n v\u1ECB: ", /*#__PURE__*/React.createElement("b", null, "M VND"), " \xB7 Actual = th\xE1ng \u0111\xE3 qua \xB7 Forecast = k\u1EBF ho\u1EA1ch \xB7 L\u01B0u \u0111\u1EC3 c\u1EADp nh\u1EADt charts Growth Performance"), /*#__PURE__*/React.createElement("div", {
     style: {
       overflowX: "auto"
-    }
+    },
+    onPaste: handleTablePaste
   }, /*#__PURE__*/React.createElement("table", {
     style: {
       borderCollapse: "collapse",
-      fontSize: 11,
+      fontSize: 12,
       width: "100%"
     }
   }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
     style: {
-      minWidth: 65
+      minWidth: 75
     }
   }), /*#__PURE__*/React.createElement("td", {
     colSpan: actMs.length,
@@ -5631,7 +5640,7 @@ function CostInputSection({
     }
   }, "\u2190 FORECAST \u2192"), /*#__PURE__*/React.createElement("td", {
     style: {
-      minWidth: 58
+      minWidth: 70
     }
   })), /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
     style: {
@@ -5676,37 +5685,45 @@ function CostInputSection({
     }
   }, /*#__PURE__*/React.createElement("input", {
     type: "number",
-    step: "0.1",
+    step: "0.001",
     value: draft[v]?.[m] || "",
     onChange: e => setCell(v, m, e.target.value),
-    onPaste: e => handlePaste(v, m, e),
     placeholder: "\u2014",
     style: {
       width: "100%",
+      minWidth: 70,
       border: "none",
       background: "transparent",
-      textAlign: "center",
-      fontSize: 11,
-      padding: "4px 2px",
+      textAlign: "right",
+      fontSize: 12,
+      padding: "4px 6px",
       outline: "none",
       color: draft[v]?.[m] ? "#111" : "#bbb",
-      fontFamily: "inherit"
+      fontFamily: "inherit",
+      boxSizing: "border-box"
     },
     onFocus: e => {
+      focusedCell.current = {
+        v,
+        m
+      };
       e.target.style.background = "#eff6ff";
       e.target.style.borderRadius = "4px";
+      e.target.select();
     },
     onBlur: e => {
       e.target.style.background = "transparent";
     }
   }))), /*#__PURE__*/React.createElement("td", {
     style: {
-      padding: "4px 6px",
-      textAlign: "center",
+      padding: "4px 8px",
+      textAlign: "right",
       fontWeight: 700,
-      fontSize: 11,
+      fontSize: 12,
       color: "#374151",
-      background: "#f3f4f6"
+      background: "#f3f4f6",
+      minWidth: 70,
+      whiteSpace: "nowrap"
     }
   }, fmtM(rowTot(v))))), /*#__PURE__*/React.createElement("tr", {
     style: {
@@ -5723,11 +5740,13 @@ function CostInputSection({
   }, "Total"), M12.map(m => /*#__PURE__*/React.createElement("td", {
     key: m,
     style: {
-      padding: "5px 3px",
-      textAlign: "center",
+      padding: "5px 6px",
+      textAlign: "right",
       fontWeight: 700,
-      fontSize: 11,
+      fontSize: 12,
       color: colTot(m) ? "#1f2937" : "#ddd",
+      minWidth: 70,
+      whiteSpace: "nowrap",
       background: isAct(m) ? "#dcfce7" : "#fef9c3"
     }
   }, fmtM(colTot(m)))), /*#__PURE__*/React.createElement("td", {
