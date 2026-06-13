@@ -1,1 +1,4 @@
 node_modules/
+*.log
+update-log.txt
+scripts/update.log
