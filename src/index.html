@@ -34242,9 +34242,8 @@ function CostInputSection({costData, setCostData}) {
         </div>
         <table style={{borderCollapse:"collapse",fontSize:11,width:"100%",tableLayout:"fixed"}}>
           <colgroup>
-            <col style={{width:"60px"}}/>
-            {M12.map(m => <col key={m} style={{width:"calc((100% - 130px) / 12)"}}/>)}
-            <col style={{width:"70px"}}/>
+            <col style={{width:"58px"}}/>
+            {M12.map(m => <col key={m} style={{width:"calc((100% - 58px) / 12)"}}/>)}
           </colgroup>
           <thead>
             <tr>
@@ -34255,14 +34254,11 @@ function CostInputSection({costData, setCostData}) {
               <td colSpan={fcMs.length} style={{textAlign:"center",padding:"4px 2px",
                 background:"#fef9c3",color:"#854d0e",fontWeight:700,fontSize:10,
                 border:"1px solid #fde047"}}>← FORECAST →</td>
-              <td style={{background:"#f3f4f6"}}/>
             </tr>
             <tr>
               <th style={{textAlign:"left",padding:"5px 6px",color:"#fff",fontWeight:700,
                 fontSize:11,background:"#1e293b"}}>VRT</th>
               {M12.map((m,i) => <th key={m} style={thStyle(isAct(m))}>{MO_LBL[i]}</th>)}
-              <th style={{padding:"4px 4px",textAlign:"right",fontWeight:700,fontSize:11,
-                color:"#374151",background:"#f3f4f6"}}>Tot</th>
             </tr>
           </thead>
           <tbody>
@@ -34290,14 +34286,10 @@ function CostInputSection({costData, setCostData}) {
                     />
                   </td>
                 ))}
-                <td style={{padding:"4px 4px",textAlign:"right",fontWeight:700,fontSize:11,
-                  color:"#374151",background:"#f3f4f6",borderLeft:"2px solid #e2e8f0",whiteSpace:"nowrap"}}>
-                  {fmtTot(rowTot(v))}
-                </td>
               </tr>
             ))}
             <tr style={{borderTop:"2px solid #334155"}}>
-              <td style={{padding:"4px 6px",fontWeight:800,fontSize:11,color:"#fff",background:"#1e293b"}}>Tot</td>
+              <td style={{padding:"4px 6px",fontWeight:800,fontSize:11,color:"#fff",background:"#1e293b"}}>Total</td>
               {M12.map(m => (
                 <td key={m} style={{padding:"4px 3px",textAlign:"right",fontWeight:700,fontSize:11,
                   color:colTot(m)?"#1f2937":"#ddd",whiteSpace:"nowrap",
@@ -34305,10 +34297,6 @@ function CostInputSection({costData, setCostData}) {
                   {fmtTot(colTot(m))}
                 </td>
               ))}
-              <td style={{padding:"4px 4px",textAlign:"right",fontWeight:800,fontSize:11,
-                color:"#fff",background:"#334155",borderLeft:"2px solid #1e293b"}}>
-                {fmtTot(grand())}
-              </td>
             </tr>
           </tbody>
         </table>
