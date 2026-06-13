@@ -1292,6 +1292,8 @@ const GROWTH_COST = {
     "2026-12":103000000,
   },
 };
+// Campaign data — auto-updated by update_marketplace.py
+const CAMPAIGN_DATA = [];
 // All months including forecast T6-T12
 const ALL_MONTHS = [...MONTHS,"2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"];
 const ALL_ML = {...ML,"2026-06":"T6/26","2026-07":"T7/26","2026-08":"T8/26","2026-09":"T9/26","2026-10":"T10/26","2026-11":"T11/26","2026-12":"T12/26"};
@@ -2082,108 +2084,39 @@ function MarketplaceHealth() {
 }
 
 function CampaignSection() {
-  const COLS = [
-    {key:"name",  label:"Campaign",      type:"text",   w:160, computed:false},
-    {key:"ch",    label:"Channel",       type:"ch",     w:90,  computed:false},
-    {key:"dwl",   label:"DwL",           type:"num",    w:80,  computed:false},
-    {key:"cost",  label:"Cost (M₫)",     type:"num",    w:85,  computed:false},
-    {key:"cpdwl", label:"₫/DwL",         type:"num",    w:72,  computed:true},
-    {key:"dau",   label:"DAU",           type:"num",    w:75,  computed:false},
-    {key:"cpdau", label:"₫/DAU",         type:"num",    w:72,  computed:true},
-    {key:"lead",  label:"Lead",          type:"num",    w:72,  computed:false},
-    {key:"cplead",label:"₫/Lead",        type:"num",    w:72,  computed:true},
-  ];
-  const EDIT_KEYS = COLS.filter(c=>!c.computed).map(c=>c.key);
-  // Growth (Paid) = Display + Paid Search; Growth (CRM) = growth_outapp
-  const DEFAULT_ROWS = [
-    {name:"Display",        ch:"Paid", dwl:0,cost:0,dau:0,lead:0},
-    {name:"Paid Search",    ch:"Paid", dwl:0,cost:0,dau:0,lead:0},
-    {name:"journey",        ch:"CRM",  dwl:0,cost:0,dau:0,lead:0},
-    {name:"growth_social",  ch:"CRM",  dwl:0,cost:0,dau:0,lead:0},
-    {name:"top_banner",     ch:"CRM",  dwl:0,cost:0,dau:0,lead:0},
-    {name:"web_to_app",     ch:"CRM",  dwl:0,cost:0,dau:0,lead:0},
-    {name:"growth_offline", ch:"CRM",  dwl:0,cost:0,dau:0,lead:0},
-    {name:"partnership",    ch:"CRM",  dwl:0,cost:0,dau:0,lead:0},
-  ];
-  const [rows, setRows] = React.useState(() => {
-    try { const s=localStorage.getItem('ctCampaignData'); return s?JSON.parse(s):DEFAULT_ROWS; }
-    catch { return DEFAULT_ROWS; }
-  });
-  const [sortBy, setSortBy] = React.useState("dwl");
-  const [saved, setSaved] = React.useState(false);
-  const focusedCell = React.useRef(null);
+  // Available months from CAMPAIGN_DATA
+  const campMonths = [...new Set(CAMPAIGN_DATA.map(r=>r.m))].sort();
+  const defaultM = campMonths.length ? campMonths[campMonths.length-1] : MONTHS[MONTHS.length-1];
+  const [selM, setSelM] = React.useState(defaultM);
 
-  const computed = r => ({
-    cpdwl:  r.dwl  ? Math.round(r.cost*1e6/r.dwl)   : 0,
-    cpdau:  r.dau  ? Math.round(r.cost*1e6/r.dau)    : 0,
-    cplead: r.lead ? Math.round(r.cost*1e6/r.lead)   : 0,
-  });
-  const withComputed = r => ({...r, ...computed(r)});
-  const fmtK  = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? Math.round(n/1e3)+'K' : n||'—';
-  const fmtN  = n => n ? n.toLocaleString() : '—';
-  const fmtM2 = n => n ? parseFloat(n.toFixed(3)).toString() : '';
+  // channel display: digital→Paid, growth_outapp→CRM
+  const chColor = ch => ch==="Paid" ? "#6366f1" : "#0ea5e9";
+  const chLabel = ch => ch==="Paid" ? "Growth (Paid)" : "Growth (CRM)";
 
-  const sorted = [...rows].map((r,i)=>({...withComputed(r),_i:i}))
-    .sort((a,b) => b[sortBy]-(a[sortBy]));
+  const fmtN = n => n ? n.toLocaleString() : '—';
 
-  const setCell = (i, key, val) => {
-    setRows(prev => {
-      const next=[...prev]; next[i]={...next[i],[key]:key==='name'||key==='ch'?val:(parseFloat(val)||0)};
-      return next;
-    });
-    setSaved(false);
-  };
+  // Filter and sort by DwL desc for selected month
+  const rows = CAMPAIGN_DATA
+    .filter(r => r.m === selM)
+    .sort((a,b) => b.dwl - a.dwl);
 
-  const handleTablePaste = e => {
-    const text = e.clipboardData.getData('text');
-    if (!focusedCell.current || (!text.includes('\t')&&!text.includes('\n'))) return;
-    e.preventDefault();
-    const {rowIdx, colKey} = focusedCell.current;
-    const pasteRows = text.trim().split(/\r?\n/).map(r=>r.split('\t'));
-    const colStart = EDIT_KEYS.indexOf(colKey);
-    if (colStart<0) return;
-    setRows(prev => {
-      const next = prev.map(r=>({...r}));
-      pasteRows.forEach((pcols, ri) => {
-        const ti = rowIdx + ri;
-        if (ti >= next.length) next.push({name:'',ch:'Paid',dwl:0,cost:0,dau:0,lead:0});
-        pcols.forEach((cell, ci) => {
-          const ki = colStart + ci;
-          if (ki >= EDIT_KEYS.length) return;
-          const k = EDIT_KEYS[ki];
-          const cleaned = cell.replace(/[^0-9.\-]/g,'');
-          if (k==='name') next[ti][k]=cell.trim();
-          else if (k==='ch') next[ti][k]=cell.trim()||'Paid';
-          else next[ti][k]=parseFloat(cleaned)||0;
-        });
-      });
-      return next;
-    });
-    setSaved(false);
-  };
+  const totDau  = rows.reduce((s,r)=>s+r.dau,0);
+  const totDwl  = rows.reduce((s,r)=>s+r.dwl,0);
+  const totLead = rows.reduce((s,r)=>s+r.lead,0);
 
-  const handleSave = () => {
-    try { localStorage.setItem('ctCampaignData',JSON.stringify(rows)); } catch {}
-    setSaved(true); setTimeout(()=>setSaved(false),2500);
-  };
-  const handleReset = () => { setRows(DEFAULT_ROWS); setSaved(false); };
-  const addRow = () => setRows(p=>[...p,{name:'',ch:'Paid',dwl:0,cost:0,dau:0,lead:0}]);
-  const delRow = i => setRows(p=>p.filter((_,j)=>j!==i));
+  const TH = {padding:"7px 10px",fontWeight:700,fontSize:11,background:"#f8f9ff",
+    color:"#374151",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"};
+  const TD = (i) => ({padding:"5px 10px",fontSize:12,borderBottom:"1px solid #f3f4f6",
+    background:i%2===0?"#fff":"#fafafa"});
 
-  const TH = {padding:"6px 8px",fontWeight:700,fontSize:11,background:"#f8f9ff",
-    color:"#374151",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap",textAlign:"right"};
-  const TD = {padding:"2px 2px",fontSize:12,borderBottom:"1px solid #f3f4f6"};
-  const chColor = ch => ch==="Paid"?"#6366f1":"#0ea5e9";
-  const totDwl  = rows.reduce((s,r)=>s+(r.dwl||0),0);
-  const totCost = rows.reduce((s,r)=>s+(r.cost||0),0);
-  const totDau  = rows.reduce((s,r)=>s+(r.dau||0),0);
-  const totLead = rows.reduce((s,r)=>s+(r.lead||0),0);
-  const sortBtn = (key,label) => (
-    <button onClick={()=>setSortBy(key)} style={{
-      padding:"3px 8px",fontSize:10,border:"none",borderRadius:4,cursor:"pointer",
-      background:sortBy===key?"#6366f1":"#f3f4f6",
-      color:sortBy===key?"#fff":"#374151",fontWeight:600,
-    }}>{label}</button>
+  if (!CAMPAIGN_DATA.length) return (
+    <section id="campaign">
+      <div className="section-title">📊 Campaign Breakdown — Growth Paid &amp; CRM</div>
+      <div style={{background:"#fff",borderRadius:12,padding:"32px 20px",boxShadow:"0 1px 4px rgba(0,0,0,.07)",
+        textAlign:"center",color:"#9ca3af",fontSize:13}}>
+        Data chưa có — chạy <code>python3 scripts/update_marketplace.py</code> để pull từ BQ
+      </div>
+    </section>
   );
 
   return (
@@ -2191,147 +2124,56 @@ function CampaignSection() {
       <div className="section-title">📊 Campaign Breakdown — Growth Paid &amp; CRM</div>
       <div style={{background:"#fff",borderRadius:12,padding:"18px 20px",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
         <div style={{display:"flex",gap:6,marginBottom:12,alignItems:"center",flexWrap:"wrap"}}>
-          <span style={{fontSize:11,color:"#9ca3af",marginRight:4}}>Sort by:</span>
-          {sortBtn("dwl","DwL")}
-          {sortBtn("cost","Cost")}
-          {sortBtn("dau","DAU")}
-          {sortBtn("lead","Lead")}
-          <span style={{marginLeft:"auto",fontSize:10,color:"#9ca3af"}}>Cost đơn vị M VND · ₫/metric = VND</span>
+          <span style={{fontSize:11,color:"#6b7280",fontWeight:600}}>Tháng:</span>
+          {campMonths.map(m=>(
+            <button key={m} onClick={()=>setSelM(m)} style={{
+              padding:"3px 10px",fontSize:11,border:"1px solid",borderRadius:4,cursor:"pointer",
+              fontWeight:600,
+              background:selM===m?"#6366f1":"#fff",
+              color:selM===m?"#fff":"#6b7280",
+              borderColor:selM===m?"#6366f1":"#e5e7eb",
+            }}>T{parseInt(m.slice(5))}</button>
+          ))}
+          <span style={{marginLeft:"auto",fontSize:10,color:"#9ca3af"}}>
+            Nguồn: ct_digital.mtm_chotot_vertical_channel_campaign_dau_mau · sorted by DwL
+          </span>
         </div>
-        <div style={{overflowX:"auto"}} onPaste={handleTablePaste}>
+        <div style={{overflowX:"auto"}}>
           <table style={{borderCollapse:"collapse",fontSize:12,width:"100%"}}>
             <thead>
               <tr>
-                {COLS.map(c=>(
-                  <th key={c.key} style={{...TH,textAlign:c.key==="name"?"left":"right",
-                    minWidth:c.w,color:c.computed?"#9ca3af":"#374151",
-                    cursor:!c.computed&&c.type==="num"?"pointer":undefined}}
-                    onClick={()=>!c.computed&&c.type==="num"&&setSortBy(c.key)}>
-                    {c.label}{sortBy===c.key?" ▼":""}
-                  </th>
-                ))}
-                <th style={{...TH,width:28,textAlign:"center"}}/>
+                <th style={{...TH,textAlign:"left",minWidth:260}}>Campaign</th>
+                <th style={{...TH,textAlign:"center",minWidth:110}}>Channel</th>
+                <th style={{...TH,textAlign:"right",minWidth:90}}>DAU</th>
+                <th style={{...TH,textAlign:"right",minWidth:90}}>DwL ▼</th>
+                <th style={{...TH,textAlign:"right",minWidth:100}}>Lead</th>
               </tr>
             </thead>
             <tbody>
-              {sorted.map(row=>{
-                const i = row._i;
-                return (
-                  <tr key={i} style={{background:i%2===0?"#fff":"#fafafa"}}>
-                    <td style={{...TD,paddingLeft:6}}>
-                      <input type="text" value={row.name}
-                        onChange={e=>setCell(i,"name",e.target.value)}
-                        onFocus={()=>{focusedCell.current={rowIdx:i,colKey:"name"};}}
-                        placeholder="Campaign name"
-                        style={{border:"none",background:"transparent",fontSize:12,
-                          width:"100%",minWidth:150,outline:"none",fontFamily:"inherit",color:"#111"}}/>
-                    </td>
-                    <td style={{...TD,textAlign:"center"}}>
-                      <button onClick={()=>setCell(i,"ch",row.ch==="Paid"?"CRM":"Paid")}
-                        style={{border:"none",borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700,
-                          cursor:"pointer",background:chColor(row.ch)+"22",color:chColor(row.ch)}}>
-                        {row.ch}
-                      </button>
-                    </td>
-                    {["dwl","cost"].map(k=>(
-                      <td key={k} style={{...TD,textAlign:"right"}}>
-                        <input type="number" step="0.001" value={fmtM2(row[k])||""}
-                          onChange={e=>setCell(i,k,e.target.value)}
-                          onFocus={e=>{focusedCell.current={rowIdx:i,colKey:k};e.target.select();}}
-                          placeholder="—"
-                          style={{border:"none",background:"transparent",textAlign:"right",
-                            fontSize:12,padding:"3px 6px",outline:"none",width:"100%",
-                            minWidth:k==="name"?150:60,fontFamily:"inherit",
-                            color:row[k]?"#111":"#bbb",boxSizing:"border-box"}}
-                          onBlur={e=>{e.target.style.background="transparent";}}
-                          onFocusCapture={e=>{e.target.style.background="#eff6ff";e.target.style.borderRadius="3px";}}/>
-                      </td>
-                    ))}
-                    <td style={{...TD,textAlign:"right",color:"#6b7280",paddingRight:6,fontSize:11}}>
-                      {row.cpdwl?fmtK(row.cpdwl):"—"}
-                    </td>
-                    {["dau"].map(k=>(
-                      <td key={k} style={{...TD,textAlign:"right"}}>
-                        <input type="number" step="1" value={row[k]||""}
-                          onChange={e=>setCell(i,k,e.target.value)}
-                          onFocus={e=>{focusedCell.current={rowIdx:i,colKey:k};e.target.select();}}
-                          placeholder="—"
-                          style={{border:"none",background:"transparent",textAlign:"right",
-                            fontSize:12,padding:"3px 6px",outline:"none",width:"100%",
-                            minWidth:60,fontFamily:"inherit",
-                            color:row[k]?"#111":"#bbb",boxSizing:"border-box"}}
-                          onBlur={e=>{e.target.style.background="transparent";}}
-                          onFocusCapture={e=>{e.target.style.background="#eff6ff";e.target.style.borderRadius="3px";}}/>
-                      </td>
-                    ))}
-                    <td style={{...TD,textAlign:"right",color:"#6b7280",paddingRight:6,fontSize:11}}>
-                      {row.cpdau?fmtK(row.cpdau):"—"}
-                    </td>
-                    {["lead"].map(k=>(
-                      <td key={k} style={{...TD,textAlign:"right"}}>
-                        <input type="number" step="1" value={row[k]||""}
-                          onChange={e=>setCell(i,k,e.target.value)}
-                          onFocus={e=>{focusedCell.current={rowIdx:i,colKey:k};e.target.select();}}
-                          placeholder="—"
-                          style={{border:"none",background:"transparent",textAlign:"right",
-                            fontSize:12,padding:"3px 6px",outline:"none",width:"100%",
-                            minWidth:60,fontFamily:"inherit",
-                            color:row[k]?"#111":"#bbb",boxSizing:"border-box"}}
-                          onBlur={e=>{e.target.style.background="transparent";}}
-                          onFocusCapture={e=>{e.target.style.background="#eff6ff";e.target.style.borderRadius="3px";}}/>
-                      </td>
-                    ))}
-                    <td style={{...TD,textAlign:"right",color:"#6b7280",paddingRight:6,fontSize:11}}>
-                      {row.cplead?fmtK(row.cplead):"—"}
-                    </td>
-                    <td style={{...TD,textAlign:"center"}}>
-                      <button onClick={()=>delRow(i)} title="Xóa row"
-                        style={{border:"none",background:"none",color:"#d1d5db",cursor:"pointer",
-                          fontSize:13,lineHeight:1,padding:"2px 4px"}}
-                        onMouseEnter={e=>e.target.style.color="#ef4444"}
-                        onMouseLeave={e=>e.target.style.color="#d1d5db"}>×</button>
-                    </td>
-                  </tr>
-                );
-              })}
-              <tr style={{borderTop:"2px solid #e5e7eb",background:"#f3f4f6"}}>
-                <td style={{padding:"5px 6px",fontWeight:800,fontSize:11,color:"#1f2937"}}>Total</td>
+              {rows.map((r,i)=>(
+                <tr key={i}>
+                  <td style={{...TD(i),textAlign:"left",fontFamily:"monospace",fontSize:11,color:"#374151",maxWidth:320,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}
+                    title={r.campaign}>{r.campaign}</td>
+                  <td style={{...TD(i),textAlign:"center"}}>
+                    <span style={{display:"inline-block",padding:"2px 8px",borderRadius:4,fontSize:11,
+                      fontWeight:700,background:chColor(r.ch)+"18",color:chColor(r.ch)}}>
+                      {chLabel(r.ch)}
+                    </span>
+                  </td>
+                  <td style={{...TD(i),textAlign:"right"}}>{fmtN(r.dau)}</td>
+                  <td style={{...TD(i),textAlign:"right",fontWeight:r.dwl>10000?600:400}}>{fmtN(r.dwl)}</td>
+                  <td style={{...TD(i),textAlign:"right"}}>{fmtN(r.lead)}</td>
+                </tr>
+              ))}
+              <tr style={{borderTop:"2px solid #334155",background:"#f3f4f6"}}>
+                <td style={{padding:"6px 10px",fontWeight:800,fontSize:12,color:"#1f2937"}}>Total ({rows.length} campaigns)</td>
                 <td/>
-                <td style={{padding:"5px 6px",textAlign:"right",fontWeight:700,fontSize:12,color:"#1f2937"}}>{fmtN(totDwl)}</td>
-                <td style={{padding:"5px 6px",textAlign:"right",fontWeight:700,fontSize:12,color:"#1f2937"}}>{totCost?totCost.toFixed(3).replace(/\.?0+$/,''):'—'}</td>
-                <td style={{padding:"5px 6px",textAlign:"right",fontWeight:700,fontSize:11,color:"#6b7280"}}>
-                  {totDwl?fmtK(Math.round(totCost*1e6/totDwl)):"—"}
-                </td>
-                <td style={{padding:"5px 6px",textAlign:"right",fontWeight:700,fontSize:12,color:"#1f2937"}}>{fmtN(totDau)}</td>
-                <td style={{padding:"5px 6px",textAlign:"right",fontWeight:700,fontSize:11,color:"#6b7280"}}>
-                  {totDau?fmtK(Math.round(totCost*1e6/totDau)):"—"}
-                </td>
-                <td style={{padding:"5px 6px",textAlign:"right",fontWeight:700,fontSize:12,color:"#1f2937"}}>{fmtN(totLead)}</td>
-                <td style={{padding:"5px 6px",textAlign:"right",fontWeight:700,fontSize:11,color:"#6b7280"}}>
-                  {totLead?fmtK(Math.round(totCost*1e6/totLead)):"—"}
-                </td>
-                <td/>
+                <td style={{padding:"6px 10px",textAlign:"right",fontWeight:700,fontSize:12}}>{fmtN(totDau)}</td>
+                <td style={{padding:"6px 10px",textAlign:"right",fontWeight:700,fontSize:12}}>{fmtN(totDwl)}</td>
+                <td style={{padding:"6px 10px",textAlign:"right",fontWeight:700,fontSize:12}}>{fmtN(totLead)}</td>
               </tr>
             </tbody>
           </table>
-        </div>
-        <div style={{display:"flex",gap:10,marginTop:12,alignItems:"center",flexWrap:"wrap"}}>
-          <button onClick={handleSave} style={{
-            padding:"7px 16px",background:saved?"#059669":"#6366f1",color:"#fff",
-            border:"none",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer"}}>
-            {saved?"✓ Đã lưu":"💾 Lưu"}
-          </button>
-          <button onClick={addRow} style={{
-            padding:"7px 12px",background:"#f0fdf4",color:"#166534",
-            border:"1px solid #86efac",borderRadius:8,fontSize:12,fontWeight:500,cursor:"pointer"}}>
-            + Thêm campaign
-          </button>
-          <button onClick={handleReset} style={{
-            padding:"7px 12px",background:"#f3f4f6",color:"#374151",
-            border:"1px solid #e5e7eb",borderRadius:8,fontSize:12,fontWeight:500,cursor:"pointer"}}>
-            ↺ Reset
-          </button>
-          <span style={{fontSize:10,color:"#9ca3af",marginLeft:4}}>Click Channel để toggle Paid/CRM · Paste range từ Sheets vào bất kỳ ô nào</span>
         </div>
       </div>
     </section>
@@ -2358,6 +2200,8 @@ function CostInputSection({costData, setCostData}) {
   });
   const [activeCell, setActiveCell] = useState(null); // {v,m} currently focused
   const [saved, setSaved] = useState(false);
+  const [pasteMsg, setPasteMsg] = useState('');
+  const [flashCells, setFlashCells] = useState({}); // {v+m: true}
 
   // Parse a pasted cell string to raw VND integer
   const parseVND = s => {
@@ -2370,10 +2214,13 @@ function CostInputSection({costData, setCostData}) {
     const text = e.clipboardData.getData('text');
     if (!text.includes('\t') && !text.includes('\n')) return; // single cell: let browser handle
     e.preventDefault();
+    e.stopPropagation();
     const pasteRows = text.trim().split(/\r?\n/).map(r => r.split('\t'));
     const vIdx = COST_ROWS.indexOf(startV);
     const mIdx = M12.indexOf(startM);
     if (vIdx < 0 || mIdx < 0) return;
+    let filled = 0;
+    const flash = {};
     setDraft(prev => {
       const next = {}; COST_ROWS.forEach(k => { next[k] = {...prev[k]}; });
       pasteRows.forEach((cols, ri) => {
@@ -2382,10 +2229,15 @@ function CostInputSection({costData, setCostData}) {
         cols.forEach((cell, ci) => {
           const mi = mIdx + ci; if (mi >= M12.length) return;
           next[rk][M12[mi]] = parseVND(cell);
+          flash[rk + M12[mi]] = true;
+          filled++;
         });
       });
       return next;
     });
+    setFlashCells(flash);
+    setPasteMsg(`✓ Đã paste ${filled} ô`);
+    setTimeout(() => { setFlashCells({}); setPasteMsg(''); }, 900);
     setSaved(false);
   };
 
@@ -2477,7 +2329,9 @@ function CostInputSection({costData, setCostData}) {
                         onFocus={e => { setActiveCell({v,m}); e.target.style.background="#dbeafe"; e.target.style.outline="2px solid #3b82f6"; e.target.style.borderRadius="2px"; e.target.select(); }}
                         onBlur={e => { setActiveCell(null); e.target.style.background="transparent"; e.target.style.outline="none"; }}
                         placeholder="—"
-                        style={{width:"100%",minWidth:108,border:"none",background:"transparent",
+                        style={{width:"100%",minWidth:108,border:"none",
+                          background: flashCells[v+m] ? "#bbf7d0" : "transparent",
+                          transition: flashCells[v+m] ? "none" : "background .6s",
                           textAlign:"right",fontSize:12,padding:"5px 8px",outline:"none",
                           color:draft[v]?.[m]?"#111":"#bbb",fontFamily:"inherit",
                           boxSizing:"border-box",cursor:"text"}}
@@ -2517,7 +2371,10 @@ function CostInputSection({costData, setCostData}) {
             padding:"8px 14px",background:"#f3f4f6",color:"#374151",
             border:"1px solid #e5e7eb",borderRadius:8,fontSize:12,fontWeight:500,cursor:"pointer",
           }}>↺ Reset về default</button>
-          <span style={{fontSize:10,color:"#9ca3af"}}>Data lưu trong browser · click ô → Cmd+V để paste range từ Sheets</span>
+          {pasteMsg
+            ? <span style={{fontSize:11,color:"#059669",fontWeight:600}}>{pasteMsg}</span>
+            : <span style={{fontSize:10,color:"#9ca3af"}}>Click ô bất kỳ → Cmd+V để paste range từ Sheets</span>
+          }
         </div>
       </div>
     </section>
