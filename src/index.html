@@ -6397,31 +6397,6 @@ function MarketplaceHealth() {
 }
 
 function CampaignSection() {
-  // Available months from CAMPAIGN_DATA
-  const campMonths = [...new Set(CAMPAIGN_DATA.map(r=>r.m))].sort();
-  const defaultM = campMonths.length ? campMonths[campMonths.length-1] : MONTHS[MONTHS.length-1];
-  const [selM, setSelM] = React.useState(defaultM);
-
-  // channel display: digital→Paid, growth_outapp→CRM
-  const chColor = ch => ch==="Paid" ? "#6366f1" : "#0ea5e9";
-  const chLabel = ch => ch==="Paid" ? "Growth (Paid)" : "Growth (CRM)";
-
-  const fmtN = n => n ? n.toLocaleString() : '—';
-
-  // Filter and sort by DwL desc for selected month
-  const rows = CAMPAIGN_DATA
-    .filter(r => r.m === selM)
-    .sort((a,b) => b.dwl - a.dwl);
-
-  const totDau  = rows.reduce((s,r)=>s+r.dau,0);
-  const totDwl  = rows.reduce((s,r)=>s+r.dwl,0);
-  const totLead = rows.reduce((s,r)=>s+r.lead,0);
-
-  const TH = {padding:"7px 10px",fontWeight:700,fontSize:11,background:"#f8f9ff",
-    color:"#374151",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"};
-  const TD = (i) => ({padding:"5px 10px",fontSize:12,borderBottom:"1px solid #f3f4f6",
-    background:i%2===0?"#fff":"#fafafa"});
-
   if (!CAMPAIGN_DATA.length) return (
     <section id="campaign">
       <div className="section-title">📊 Campaign Breakdown — Growth Paid &amp; CRM</div>
@@ -6432,25 +6407,95 @@ function CampaignSection() {
     </section>
   );
 
+  const campMonths = [...new Set(CAMPAIGN_DATA.map(r=>r.m))].sort();
+  const defaultM = campMonths[campMonths.length-1];
+
+  // Vertical inferred from campaign name prefix
+  const inferVert = name => {
+    const n = name.toLowerCase();
+    if (n.includes('_pty_') || n.includes('pty_')) return 'PTY';
+    if (n.includes('_job_') || n.includes('job_') || n.includes('_jobs_')) return 'JOB';
+    if (n.includes('_veh_') || n.includes('veh_') || n.includes('_mc_') || n.includes('_car_')) return 'VEH';
+    if (n.includes('_gds_') || n.includes('gds_') || n.includes('_c2c_') || n.includes('_elt_')) return 'GDS';
+    return 'other';
+  };
+
+  const [selM,   setSelM]   = React.useState(defaultM);
+  const [selV,   setSelV]   = React.useState('all');   // all | PTY | JOB | VEH | GDS
+  const [selCh,  setSelCh]  = React.useState('all');   // all | Paid | CRM
+  const [page,   setPage]   = React.useState(0);
+  const PAGE_SIZE = 10;
+
+  // Reset page when filters change
+  const setFilter = (setter) => (val) => { setter(val); setPage(0); };
+
+  const chColor = ch => ch==="Paid" ? "#6366f1" : "#0ea5e9";
+  const chLabel = ch => ch==="Paid" ? "Growth (Paid)" : "Growth (CRM)";
+  const fmtN = n => n ? n.toLocaleString() : '—';
+
+  // Apply all 3 filters
+  const filtered = CAMPAIGN_DATA
+    .filter(r => r.m === selM)
+    .filter(r => selCh === 'all' || r.ch === selCh)
+    .filter(r => selV === 'all' || inferVert(r.campaign) === selV)
+    .sort((a,b) => b.dwl - a.dwl);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const pageRows = filtered.slice(page * PAGE_SIZE, (page+1) * PAGE_SIZE);
+
+  const totDau  = filtered.reduce((s,r)=>s+r.dau, 0);
+  const totDwl  = filtered.reduce((s,r)=>s+r.dwl, 0);
+  const totLead = filtered.reduce((s,r)=>s+r.lead,0);
+
+  const TH = {padding:"7px 10px",fontWeight:700,fontSize:11,background:"#f8f9ff",
+    color:"#374151",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"};
+  const TD = (i) => ({padding:"5px 10px",fontSize:12,borderBottom:"1px solid #f3f4f6",
+    background:i%2===0?"#fff":"#fafafa"});
+
+  const FilterChip = ({active, onClick, color, children}) => (
+    <button onClick={onClick} style={{
+      padding:"3px 11px",fontSize:11,border:"1px solid",borderRadius:4,cursor:"pointer",fontWeight:600,
+      background:active?(color||"#6366f1"):"#fff",
+      color:active?"#fff":(color||"#6366f1"),
+      borderColor:active?(color||"#6366f1"):"#e5e7eb",
+    }}>{children}</button>
+  );
+
   return (
     <section id="campaign">
       <div className="section-title">📊 Campaign Breakdown — Growth Paid &amp; CRM</div>
       <div style={{background:"#fff",borderRadius:12,padding:"18px 20px",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
-        <div style={{display:"flex",gap:6,marginBottom:12,alignItems:"center",flexWrap:"wrap"}}>
-          <span style={{fontSize:11,color:"#6b7280",fontWeight:600}}>Tháng:</span>
+
+        {/* Filter row 1: Month */}
+        <div style={{display:"flex",gap:6,marginBottom:8,alignItems:"center",flexWrap:"wrap"}}>
+          <span style={{fontSize:11,color:"#6b7280",fontWeight:600,minWidth:52}}>Tháng:</span>
           {campMonths.map(m=>(
-            <button key={m} onClick={()=>setSelM(m)} style={{
-              padding:"3px 10px",fontSize:11,border:"1px solid",borderRadius:4,cursor:"pointer",
-              fontWeight:600,
-              background:selM===m?"#6366f1":"#fff",
-              color:selM===m?"#fff":"#6b7280",
-              borderColor:selM===m?"#6366f1":"#e5e7eb",
-            }}>T{parseInt(m.slice(5))}</button>
+            <FilterChip key={m} active={selM===m} onClick={()=>setFilter(setSelM)(m)}>
+              T{parseInt(m.slice(5))}
+            </FilterChip>
           ))}
+        </div>
+
+        {/* Filter row 2: Vertical + Channel */}
+        <div style={{display:"flex",gap:16,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <span style={{fontSize:11,color:"#6b7280",fontWeight:600,minWidth:52}}>Vertical:</span>
+            <FilterChip active={selV==='all'} onClick={()=>setFilter(setSelV)('all')} color="#6b7280">All</FilterChip>
+            {['PTY','JOB','VEH','GDS'].map(v=>(
+              <FilterChip key={v} active={selV===v} onClick={()=>setFilter(setSelV)(v)} color={VC[v]}>{v}</FilterChip>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <span style={{fontSize:11,color:"#6b7280",fontWeight:600,minWidth:52}}>Channel:</span>
+            <FilterChip active={selCh==='all'} onClick={()=>setFilter(setSelCh)('all')} color="#6b7280">All</FilterChip>
+            <FilterChip active={selCh==='Paid'} onClick={()=>setFilter(setSelCh)('Paid')} color="#6366f1">Growth (Paid)</FilterChip>
+            <FilterChip active={selCh==='CRM'} onClick={()=>setFilter(setSelCh)('CRM')} color="#0ea5e9">Growth (CRM)</FilterChip>
+          </div>
           <span style={{marginLeft:"auto",fontSize:10,color:"#9ca3af"}}>
-            Nguồn: ct_digital.mtm_chotot_vertical_channel_campaign_dau_mau · sorted by DwL
+            {filtered.length} campaigns · sorted by DwL
           </span>
         </div>
+
         <div style={{overflowX:"auto"}}>
           <table style={{borderCollapse:"collapse",fontSize:12,width:"100%"}}>
             <thead>
@@ -6463,9 +6508,10 @@ function CampaignSection() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r,i)=>(
-                <tr key={i}>
-                  <td style={{...TD(i),textAlign:"left",fontFamily:"monospace",fontSize:11,color:"#374151",maxWidth:320,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}
+              {pageRows.map((r,i)=>(
+                <tr key={page*PAGE_SIZE+i}>
+                  <td style={{...TD(i),textAlign:"left",fontFamily:"monospace",fontSize:11,color:"#374151",
+                    maxWidth:340,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}
                     title={r.campaign}>{r.campaign}</td>
                   <td style={{...TD(i),textAlign:"center"}}>
                     <span style={{display:"inline-block",padding:"2px 8px",borderRadius:4,fontSize:11,
@@ -6479,7 +6525,9 @@ function CampaignSection() {
                 </tr>
               ))}
               <tr style={{borderTop:"2px solid #334155",background:"#f3f4f6"}}>
-                <td style={{padding:"6px 10px",fontWeight:800,fontSize:12,color:"#1f2937"}}>Total ({rows.length} campaigns)</td>
+                <td style={{padding:"6px 10px",fontWeight:800,fontSize:12,color:"#1f2937"}}>
+                  Total ({filtered.length} campaigns)
+                </td>
                 <td/>
                 <td style={{padding:"6px 10px",textAlign:"right",fontWeight:700,fontSize:12}}>{fmtN(totDau)}</td>
                 <td style={{padding:"6px 10px",textAlign:"right",fontWeight:700,fontSize:12}}>{fmtN(totDwl)}</td>
@@ -6488,6 +6536,23 @@ function CampaignSection() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div style={{display:"flex",gap:6,marginTop:12,alignItems:"center",justifyContent:"flex-end"}}>
+            <button onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} style={{
+              padding:"4px 12px",fontSize:12,border:"1px solid #e5e7eb",borderRadius:6,
+              cursor:page===0?"not-allowed":"pointer",background:page===0?"#f9fafb":"#fff",
+              color:page===0?"#d1d5db":"#374151",fontWeight:500}}>← Trước</button>
+            <span style={{fontSize:11,color:"#6b7280",padding:"0 4px"}}>
+              Trang {page+1} / {totalPages} ({page*PAGE_SIZE+1}–{Math.min((page+1)*PAGE_SIZE,filtered.length)})
+            </span>
+            <button onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page===totalPages-1} style={{
+              padding:"4px 12px",fontSize:12,border:"1px solid #e5e7eb",borderRadius:6,
+              cursor:page===totalPages-1?"not-allowed":"pointer",background:page===totalPages-1?"#f9fafb":"#fff",
+              color:page===totalPages-1?"#d1d5db":"#374151",fontWeight:500}}>Tiếp →</button>
+          </div>
+        )}
       </div>
     </section>
   );
