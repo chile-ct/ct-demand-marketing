@@ -166,16 +166,32 @@ def js_act_mau():
     lines.append('};')
     return '\n'.join(lines)
 
+def map_vertical(raw):
+    """Map BQ vertical string (e.g. 'pty - Total', '2020 - Total') to PTY/JOB/VEH/GDS."""
+    if not raw: return 'GDS'
+    key = str(raw).split(' - ')[0].strip().lower()
+    # Text-based verticals
+    text_map = {'pty':'PTY','jobs':'JOB','veh':'VEH','gds':'GDS','c2c':'GDS','elt':'GDS'}
+    if key in text_map: return text_map[key]
+    # Numeric category codes
+    try:
+        code = int(key)
+        if 1000 <= code <= 1050: return 'PTY'
+        if 2000 <= code <= 2080: return 'VEH'
+        if code in (13000, 13010): return 'JOB'
+        return 'GDS'
+    except ValueError:
+        return 'GDS'
+
 def js_campaign_data(rows):
     import json as _json
-    ch_map  = {'digital':'Paid','growth_outapp':'CRM'}
-    vert_map = {'pty':'PTY','jobs':'JOB','veh':'VEH','gds':'GDS'}
+    ch_map = {'digital':'Paid','growth_outapp':'CRM'}
     lines = ['// Campaign data — auto-updated by update_marketplace.py',
              'const CAMPAIGN_DATA = [']
     for r in rows:
         ch = ch_map.get(r['channel'],'')
         if not ch: continue
-        v    = vert_map.get(str(r.get('vertical','')).lower(), str(r.get('vertical','')).upper())
+        v    = map_vertical(r.get('vertical',''))
         camp = _json.dumps(str(r['campaign']))
         dau  = int(r['dau'])  if r['dau']  is not None else 0
         dwl  = int(r['dwl'])  if r['dwl']  is not None else 0
