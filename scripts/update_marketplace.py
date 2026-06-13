@@ -115,6 +115,25 @@ def fetch_growth_cost():
 print("Fetching Google Sheets cost data...")
 growth_cost = fetch_growth_cost()
 
+# ── 3b. Campaign data (BQ) ───────────────────────────────────────────────────
+print("Querying campaign data...")
+camp_rows = q(f"""
+SELECT
+  FORMAT_DATE('%Y-%m', date) AS m,
+  channel,
+  campaign,
+  SUM(dau)        AS dau,
+  SUM(dau_w_lead) AS dwl,
+  SUM(lead_mth)   AS lead
+FROM `chotot-dwh.ct_digital.mtm_chotot_vertical_channel_campaign_dau_mau`
+WHERE date BETWEEN '{start}' AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+  AND channel IN ('digital', 'growth_outapp')
+  AND campaign NOT IN ('(none)','(not set)','(organic)','(referral)')
+GROUP BY 1, 2, 3
+ORDER BY 1, channel, dwl DESC
+""")
+print(f"  Campaign rows: {len(camp_rows)}")
+
 # ── 4. JS generators ─────────────────────────────────────────────────────────
 def js_months():
     arr=', '.join(f'"{m}"' for m in months)
@@ -146,6 +165,22 @@ def js_act_mau():
     lines.append('};')
     return '\n'.join(lines)
 
+def js_campaign_data(rows):
+    import json as _json
+    ch_map = {'digital':'Paid','growth_outapp':'CRM'}
+    lines = ['// Campaign data — auto-updated by update_marketplace.py',
+             'const CAMPAIGN_DATA = [']
+    for r in rows:
+        ch = ch_map.get(r['channel'],'')
+        if not ch: continue
+        camp = _json.dumps(str(r['campaign']))  # handles all special chars, includes surrounding quotes
+        dau  = int(r['dau'])  if r['dau']  is not None else 0
+        dwl  = int(r['dwl'])  if r['dwl']  is not None else 0
+        lead = int(r['lead']) if r['lead'] is not None else 0
+        lines.append(f'  {{m:"{r["m"]}",ch:"{ch}",campaign:{camp},dau:{dau},dwl:{dwl},lead:{lead}}},')
+    lines.append('];')
+    return '\n'.join(lines)
+
 def js_growth_cost(cost):
     lines=['// Cost data — auto-updated from Google Sheets "FC & Actual cost"',
            '// actual = accrued | forecast = planned (VND)','const GROWTH_COST = {']
@@ -173,6 +208,9 @@ html=re.sub(r'Object\.assign\(VERT_ACT\.[A-Z]+[^\n]*\n','',html)
 if growth_cost:
     html=re.sub(r'// Cost data[\s\S]*?const GROWTH_COST = \{[\s\S]*?^};',js_growth_cost(growth_cost),html,flags=re.MULTILINE)
     print("  GROWTH_COST updated from Sheets")
+_camp_js = js_campaign_data(camp_rows)
+html=re.sub(r'// Campaign data[\s\S]*?const CAMPAIGN_DATA = \[[\s\S]*?^];', lambda _: _camp_js, html, flags=re.MULTILINE)
+print("  CAMPAIGN_DATA updated")
 
 # Patch DATA_AS_OF
 yesterday = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
