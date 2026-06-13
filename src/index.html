@@ -2343,55 +2343,44 @@ function CostInputSection({costData, setCostData}) {
   const MO_LBL = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const COST_ROWS = ["GDS","VEH","JOB","PTY","PARENT"];
   const COST_COLORS = {GDS:"#10b981",VEH:"#f59e0b",JOB:"#6366f1",PTY:"#ef4444",PARENT:"#6b7280"};
-
-  // Actual = all complete months (exclude current partial month)
   const actualSet = new Set(MONTHS.slice(0,-1));
   const isAct = m => actualSet.has(m);
 
-  // costData stores raw VND. If value >1e10 it was pasted as M VND then saved (*1e6) = corrupted → recover via /1e12
-  const toM = v => {
-    if (!v) return 0;
-    if (v > 1e10) return parseFloat((v/1e12).toFixed(3));
-    return parseFloat((v/1e6).toFixed(3));
-  };
+  // Draft stores raw VND (same unit as costData / GROWTH_COST).
+  // Sanitize on load: values >1e12 are corrupted (was M VND * 1e6); recover by /1e6.
+  const sanitize = v => { if (!v) return 0; return v > 1e12 ? Math.round(v/1e6) : v; };
 
   const [draft, setDraft] = useState(() => {
     const d={};
-    COST_ROWS.forEach(v=>{d[v]={}; M12.forEach(m=>{d[v][m]=toM(costData[v]?.[m]);});});
+    COST_ROWS.forEach(v=>{d[v]={}; M12.forEach(m=>{d[v][m]=sanitize(costData[v]?.[m]);});});
     return d;
   });
-  const [saved,setSaved] = useState(false);
-  const focusedCell = React.useRef(null);
+  const [activeCell, setActiveCell] = useState(null); // {v,m} currently focused
+  const [saved, setSaved] = useState(false);
 
-  const setCell = (v,m,val) => {
-    setDraft(p=>({...p,[v]:{...p[v],[m]:parseFloat(val)||0}}));
-    setSaved(false);
+  // Parse a pasted cell string to raw VND integer
+  const parseVND = s => {
+    const n = parseFloat(s.replace(/[^0-9.\-]/g,''));
+    return isNaN(n) ? 0 : Math.round(n);
   };
 
-  const handleTablePaste = (e) => {
+  // Multi-cell paste handler — placed directly on each input so e.preventDefault fires before browser paste
+  const makePasteHandler = (startV, startM) => e => {
     const text = e.clipboardData.getData('text');
-    if (!focusedCell.current || (!text.includes('\t') && !text.includes('\n'))) return;
+    if (!text.includes('\t') && !text.includes('\n')) return; // single cell: let browser handle
     e.preventDefault();
-    const {v: startV, m: startM} = focusedCell.current;
-    const rows = text.trim().split(/\r?\n/).map(r=>r.split('\t'));
+    const pasteRows = text.trim().split(/\r?\n/).map(r => r.split('\t'));
     const vIdx = COST_ROWS.indexOf(startV);
     const mIdx = M12.indexOf(startM);
-    if (vIdx<0||mIdx<0) return;
+    if (vIdx < 0 || mIdx < 0) return;
     setDraft(prev => {
-      const next = {};
-      COST_ROWS.forEach(k=>{next[k]={...prev[k]};});
-      rows.forEach((cols,ri) => {
-        const vi = vIdx+ri;
-        if (vi>=COST_ROWS.length) return;
-        const rowKey = COST_ROWS[vi];
-        cols.forEach((cell,ci) => {
-          const mi = mIdx+ci;
-          if (mi>=M12.length) return;
-          const cleaned = cell.replace(/[^0-9.\-]/g,'');
-          const num = parseFloat(cleaned);
-          // Auto-detect raw VND paste (>10000 = unlikely to be M VND): divide by 1e6
-          const val = isNaN(num) ? 0 : (num > 10000 ? parseFloat((num/1e6).toFixed(3)) : num);
-          next[rowKey][M12[mi]] = val;
+      const next = {}; COST_ROWS.forEach(k => { next[k] = {...prev[k]}; });
+      pasteRows.forEach((cols, ri) => {
+        const vi = vIdx + ri; if (vi >= COST_ROWS.length) return;
+        const rk = COST_ROWS[vi];
+        cols.forEach((cell, ci) => {
+          const mi = mIdx + ci; if (mi >= M12.length) return;
+          next[rk][M12[mi]] = parseVND(cell);
         });
       });
       return next;
@@ -2399,108 +2388,118 @@ function CostInputSection({costData, setCostData}) {
     setSaved(false);
   };
 
+  const setCell = (v, m, val) => {
+    const n = parseFloat(val.replace(/,/g,''));
+    setDraft(p => ({...p, [v]: {...p[v], [m]: isNaN(n)?0:Math.round(n)}}));
+    setSaved(false);
+  };
+
   const handleSave = () => {
-    const nc={};
-    COST_ROWS.filter(v=>v!=="PARENT").forEach(v=>{
-      nc[v]={};
-      M12.forEach(m=>{nc[v][m]=Math.round((draft[v]?.[m]||0)*1e6);});
+    const nc = {};
+    COST_ROWS.filter(v => v !== "PARENT").forEach(v => {
+      nc[v] = {}; M12.forEach(m => { nc[v][m] = draft[v]?.[m] || 0; });
     });
     setCostData(nc);
-    try{localStorage.setItem('ctCostData',JSON.stringify(nc));}catch{}
-    setSaved(true); setTimeout(()=>setSaved(false),2500);
+    try { localStorage.setItem('ctCostData', JSON.stringify(nc)); } catch {}
+    setSaved(true); setTimeout(() => setSaved(false), 2500);
   };
 
   const handleReset = () => {
-    const d={};
-    COST_ROWS.forEach(v=>{d[v]={}; M12.forEach(m=>{d[v][m]=toM(GROWTH_COST[v]?.[m]);});});
+    const d = {}; COST_ROWS.forEach(v => { d[v] = {}; M12.forEach(m => { d[v][m] = GROWTH_COST[v]?.[m] || 0; }); });
     setDraft(d); setSaved(false);
   };
 
-  const rowTot = v => M12.reduce((s,m)=>s+(draft[v]?.[m]||0),0);
-  const colTot = m => COST_ROWS.reduce((s,v)=>s+(draft[v]?.[m]||0),0);
-  const grand  = () => COST_ROWS.reduce((s,v)=>s+rowTot(v),0);
-  const fmtM   = n => n ? n.toFixed(3).replace(/\.?0+$/,'') : "—";
+  const rowTot = v => M12.reduce((s,m) => s + (draft[v]?.[m]||0), 0);
+  const colTot = m => COST_ROWS.reduce((s,v) => s + (draft[v]?.[m]||0), 0);
+  const grand  = () => COST_ROWS.reduce((s,v) => s + rowTot(v), 0);
+  const fmtTot = n => n ? (n >= 1e9 ? (n/1e9).toFixed(2)+"B" : n >= 1e6 ? (n/1e6).toFixed(1)+"M" : n.toLocaleString()) : "—";
+  // Display value: comma-formatted when idle, plain number when editing
+  const displayVal = (v, m) => {
+    const n = draft[v]?.[m] || 0;
+    if (!n) return "";
+    const isEditing = activeCell && activeCell.v===v && activeCell.m===m;
+    return isEditing ? String(n) : n.toLocaleString('en-US');
+  };
 
   const actMs = M12.filter(isAct);
-  const fcMs  = M12.filter(m=>!isAct(m));
-
-  const thStyle = (act) => ({
-    padding:"5px 4px",textAlign:"center",fontWeight:700,fontSize:11,
+  const fcMs  = M12.filter(m => !isAct(m));
+  const thStyle = act => ({
+    padding:"5px 6px", textAlign:"right", fontWeight:700, fontSize:11,
     color:act?"#166534":"#854d0e",
     background:act?"#f0fdf4":"#fefce8",
     borderBottom:`2px solid ${act?"#86efac":"#fde047"}`,
-    minWidth:72,
-    whiteSpace:"nowrap",
+    minWidth:110, whiteSpace:"nowrap",
   });
-  const cellBg = (act) => act?"#f0fdf4":"#fefce8";
+  const cellBg = act => act ? "#f0fdf4" : "#fefce8";
 
   return (
     <section id="cost">
       <div className="section-title">📝 Cost Input — DwL Campaign Spend</div>
       <div style={{background:"#fff",borderRadius:12,padding:"18px 20px",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
         <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>
-          Đơn vị: <b>M VND</b> · Actual = tháng đã qua · Forecast = kế hoạch · Lưu để cập nhật charts Growth Performance
+          Đơn vị: <b>VND</b> · Actual = tháng đã qua · Forecast = kế hoạch · Paste range từ Sheets vào ô đầu tiên · Lưu để cập nhật charts
         </div>
-        <div style={{overflowX:"auto"}} onPaste={handleTablePaste}>
+        <div style={{overflowX:"auto"}}>
           <table style={{borderCollapse:"collapse",fontSize:12,width:"100%"}}>
             <thead>
               <tr>
-                <td style={{minWidth:75}}/>
-                <td colSpan={actMs.length} style={{textAlign:"center",padding:"4px 6px",
+                <td style={{minWidth:80,background:"#1e293b"}}/>
+                <td colSpan={actMs.length} style={{textAlign:"center",padding:"5px 6px",
                   background:"#dcfce7",color:"#166534",fontWeight:700,fontSize:11,
-                  border:"1px solid #86efac"}}>
-                  ← ACTUAL →
-                </td>
-                <td colSpan={fcMs.length} style={{textAlign:"center",padding:"4px 6px",
+                  border:"1px solid #86efac"}}>← ACTUAL →</td>
+                <td colSpan={fcMs.length} style={{textAlign:"center",padding:"5px 6px",
                   background:"#fef9c3",color:"#854d0e",fontWeight:700,fontSize:11,
-                  border:"1px solid #fde047"}}>
-                  ← FORECAST →
-                </td>
-                <td style={{minWidth:70}}/>
+                  border:"1px solid #fde047"}}>← FORECAST →</td>
+                <td style={{minWidth:80,background:"#f3f4f6"}}/>
               </tr>
               <tr>
-                <th style={{textAlign:"left",padding:"6px 8px",color:"#374151",fontWeight:700,fontSize:11,background:"#f8f9ff"}}>VERTICAL</th>
-                {M12.map((m,i)=>(
-                  <th key={m} style={thStyle(isAct(m))}>{MO_LBL[i]}</th>
-                ))}
-                <th style={{padding:"5px 4px",textAlign:"center",fontWeight:700,fontSize:10,color:"#374151",background:"#f3f4f6",minWidth:58}}>Total</th>
+                <th style={{textAlign:"left",padding:"6px 10px",color:"#fff",fontWeight:700,
+                  fontSize:11,background:"#1e293b",minWidth:80}}>VERTICAL</th>
+                {M12.map((m,i) => <th key={m} style={thStyle(isAct(m))}>{MO_LBL[i]}</th>)}
+                <th style={{padding:"5px 8px",textAlign:"right",fontWeight:700,fontSize:11,
+                  color:"#374151",background:"#f3f4f6",minWidth:80}}>Total</th>
               </tr>
             </thead>
             <tbody>
-              {COST_ROWS.map(v=>(
-                <tr key={v} style={{borderBottom:"1px solid #f0f0f0"}}>
-                  <td style={{padding:"3px 8px",fontWeight:700,color:COST_COLORS[v],fontSize:11,background:"#f8f9ff"}}>{v}</td>
-                  {M12.map(m=>(
-                    <td key={m} style={{padding:"1px 1px",background:cellBg(isAct(m))}}>
+              {COST_ROWS.map(v => (
+                <tr key={v} style={{borderBottom:"1px solid #e5e7eb"}}>
+                  <td style={{padding:"4px 10px",fontWeight:700,color:COST_COLORS[v],
+                    fontSize:12,background:"#f8fafc",borderRight:"2px solid #e2e8f0"}}>{v}</td>
+                  {M12.map(m => (
+                    <td key={m} style={{padding:"1px 2px",background:cellBg(isAct(m))}}>
                       <input
-                        type="number" step="0.001"
-                        value={draft[v]?.[m]||""}
-                        onChange={e=>setCell(v,m,e.target.value)}
+                        type="text"
+                        value={displayVal(v, m)}
+                        onChange={e => setCell(v, m, e.target.value)}
+                        onPaste={makePasteHandler(v, m)}
+                        onFocus={e => { setActiveCell({v,m}); e.target.style.background="#dbeafe"; e.target.style.outline="2px solid #3b82f6"; e.target.style.borderRadius="2px"; e.target.select(); }}
+                        onBlur={e => { setActiveCell(null); e.target.style.background="transparent"; e.target.style.outline="none"; }}
                         placeholder="—"
-                        style={{width:"100%",minWidth:70,border:"none",background:"transparent",
-                          textAlign:"right",fontSize:12,padding:"4px 6px",outline:"none",
-                          color:draft[v]?.[m]?"#111":"#bbb",fontFamily:"inherit",boxSizing:"border-box"}}
-                        onFocus={e=>{focusedCell.current={v,m};e.target.style.background="#eff6ff";e.target.style.borderRadius="4px";e.target.select();}}
-                        onBlur={e=>{e.target.style.background="transparent";}}
+                        style={{width:"100%",minWidth:108,border:"none",background:"transparent",
+                          textAlign:"right",fontSize:12,padding:"5px 8px",outline:"none",
+                          color:draft[v]?.[m]?"#111":"#bbb",fontFamily:"inherit",
+                          boxSizing:"border-box",cursor:"text"}}
                       />
                     </td>
                   ))}
-                  <td style={{padding:"4px 8px",textAlign:"right",fontWeight:700,fontSize:12,color:"#374151",background:"#f3f4f6",minWidth:70,whiteSpace:"nowrap"}}>
-                    {fmtM(rowTot(v))}
+                  <td style={{padding:"5px 10px",textAlign:"right",fontWeight:700,fontSize:12,
+                    color:"#374151",background:"#f3f4f6",borderLeft:"2px solid #e2e8f0",whiteSpace:"nowrap"}}>
+                    {fmtTot(rowTot(v))}
                   </td>
                 </tr>
               ))}
-              <tr style={{borderTop:"2px solid #e5e7eb"}}>
-                <td style={{padding:"5px 8px",fontWeight:800,fontSize:11,color:"#1f2937",background:"#f3f4f6"}}>Total</td>
-                {M12.map(m=>(
-                  <td key={m} style={{padding:"5px 6px",textAlign:"right",fontWeight:700,fontSize:12,
-                    color:colTot(m)?"#1f2937":"#ddd",minWidth:70,whiteSpace:"nowrap",
-                    background:isAct(m)?"#dcfce7":"#fef9c3"}}>
-                    {fmtM(colTot(m))}
+              <tr style={{borderTop:"2px solid #334155"}}>
+                <td style={{padding:"5px 10px",fontWeight:800,fontSize:12,color:"#fff",background:"#1e293b"}}>Total</td>
+                {M12.map(m => (
+                  <td key={m} style={{padding:"5px 8px",textAlign:"right",fontWeight:700,fontSize:12,
+                    color:colTot(m)?"#1f2937":"#ddd",whiteSpace:"nowrap",
+                    background:isAct(m)?"#bbf7d0":"#fef08a"}}>
+                    {fmtTot(colTot(m))}
                   </td>
                 ))}
-                <td style={{padding:"5px 6px",textAlign:"center",fontWeight:800,fontSize:11,color:"#1f2937",background:"#e5e7eb"}}>
-                  {fmtM(grand())}
+                <td style={{padding:"5px 10px",textAlign:"right",fontWeight:800,fontSize:12,
+                  color:"#fff",background:"#334155",borderLeft:"2px solid #1e293b"}}>
+                  {fmtTot(grand())}
                 </td>
               </tr>
             </tbody>
@@ -2511,16 +2510,12 @@ function CostInputSection({costData, setCostData}) {
             padding:"8px 18px",background:saved?"#059669":"#6366f1",color:"#fff",
             border:"none",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer",
             transition:"background .2s",
-          }}>
-            {saved?"✓ Đã lưu — charts đã cập nhật":"💾 Lưu & cập nhật charts"}
-          </button>
+          }}>{saved?"✓ Đã lưu — charts đã cập nhật":"💾 Lưu & cập nhật charts"}</button>
           <button onClick={handleReset} style={{
             padding:"8px 14px",background:"#f3f4f6",color:"#374151",
             border:"1px solid #e5e7eb",borderRadius:8,fontSize:12,fontWeight:500,cursor:"pointer",
-          }}>
-            ↺ Reset về default
-          </button>
-          <span style={{fontSize:10,color:"#9ca3af"}}>Data lưu trong browser (localStorage) · tự động load lại khi mở dashboard</span>
+          }}>↺ Reset về default</button>
+          <span style={{fontSize:10,color:"#9ca3af"}}>Data lưu trong browser · click ô → Cmd+V để paste range từ Sheets</span>
         </div>
       </div>
     </section>
