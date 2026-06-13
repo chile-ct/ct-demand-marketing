@@ -1527,8 +1527,8 @@ function GrowthSection({costData}) {
                     <tr style={{borderBottom:"1px solid #f0f0f0"}}>
                       <th style={{textAlign:"left",padding:"3px 4px",color:"#9ca3af",fontWeight:500}}>Mo</th>
                       <th style={{textAlign:"right",padding:"3px 4px",color:"#6b7280",fontWeight:600}}>Spend</th>
-                      <th style={{textAlign:"right",padding:"3px 4px",color:"#6366f1",fontWeight:600}}>₫/DAU</th>
-                      <th style={{textAlign:"right",padding:"3px 4px",color:"#f59e0b",fontWeight:600}}>₫/DwL</th>
+                      <th style={{textAlign:"right",padding:"3px 4px",color:"#6366f1",fontWeight:600}}>₫/DAU·day</th>
+                      <th style={{textAlign:"right",padding:"3px 4px",color:"#f59e0b",fontWeight:600}}>₫/DwL·day</th>
                       <th style={{textAlign:"right",padding:"3px 4px",color:"#10b981",fontWeight:600}}>₫/Lead</th>
                     </tr>
                   </thead>
@@ -2094,15 +2094,16 @@ function CampaignSection() {
     {key:"cplead",label:"₫/Lead",        type:"num",    w:72,  computed:true},
   ];
   const EDIT_KEYS = COLS.filter(c=>!c.computed).map(c=>c.key);
+  // Growth (Paid) = Display + Paid Search; Growth (CRM) = growth_outapp
   const DEFAULT_ROWS = [
-    {name:"Paid Search",   ch:"Paid", dwl:0,cost:0,dau:0,lead:0},
-    {name:"Display",       ch:"Paid", dwl:0,cost:0,dau:0,lead:0},
-    {name:"Social Paid",   ch:"Paid", dwl:0,cost:0,dau:0,lead:0},
-    {name:"CRM Push",      ch:"CRM",  dwl:0,cost:0,dau:0,lead:0},
-    {name:"CRM Email",     ch:"CRM",  dwl:0,cost:0,dau:0,lead:0},
-    {name:"",              ch:"Paid", dwl:0,cost:0,dau:0,lead:0},
-    {name:"",              ch:"Paid", dwl:0,cost:0,dau:0,lead:0},
-    {name:"",              ch:"CRM",  dwl:0,cost:0,dau:0,lead:0},
+    {name:"Display",        ch:"Paid", dwl:0,cost:0,dau:0,lead:0},
+    {name:"Paid Search",    ch:"Paid", dwl:0,cost:0,dau:0,lead:0},
+    {name:"journey",        ch:"CRM",  dwl:0,cost:0,dau:0,lead:0},
+    {name:"growth_social",  ch:"CRM",  dwl:0,cost:0,dau:0,lead:0},
+    {name:"top_banner",     ch:"CRM",  dwl:0,cost:0,dau:0,lead:0},
+    {name:"web_to_app",     ch:"CRM",  dwl:0,cost:0,dau:0,lead:0},
+    {name:"growth_offline", ch:"CRM",  dwl:0,cost:0,dau:0,lead:0},
+    {name:"partnership",    ch:"CRM",  dwl:0,cost:0,dau:0,lead:0},
   ];
   const [rows, setRows] = React.useState(() => {
     try { const s=localStorage.getItem('ctCampaignData'); return s?JSON.parse(s):DEFAULT_ROWS; }
@@ -2466,7 +2467,8 @@ function CostInputSection({costData, setCostData}) {
                   <td style={{padding:"4px 10px",fontWeight:700,color:COST_COLORS[v],
                     fontSize:12,background:"#f8fafc",borderRight:"2px solid #e2e8f0"}}>{v}</td>
                   {M12.map(m => (
-                    <td key={m} style={{padding:"1px 2px",background:cellBg(isAct(m))}}>
+                    <td key={m} style={{padding:"1px 2px",background:cellBg(isAct(m)),cursor:"text"}}
+                      onClick={e => e.currentTarget.querySelector('input')?.focus()}>
                       <input
                         type="text"
                         value={displayVal(v, m)}
@@ -2541,7 +2543,21 @@ function App() {
   const view = "demand";
   const [active, setActive] = useState("exec");
   const [costData, setCostData] = useState(()=>{
-    try{ const s=localStorage.getItem('ctCostData'); return s?JSON.parse(s):GROWTH_COST; }
+    try{
+      const s=localStorage.getItem('ctCostData');
+      if (!s) return GROWTH_COST;
+      const raw = JSON.parse(s);
+      // Sanitize: values >1e12 are corrupted (M VND pasted then *1e6 saved) → recover
+      const fixed = {};
+      Object.keys(raw).forEach(v => {
+        fixed[v] = {};
+        Object.keys(raw[v]).forEach(m => {
+          const n = raw[v][m];
+          fixed[v][m] = n > 1e12 ? Math.round(n/1e6) : n;
+        });
+      });
+      return fixed;
+    }
     catch{ return GROWTH_COST; }
   });
 

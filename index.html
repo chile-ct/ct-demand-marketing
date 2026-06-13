@@ -4341,14 +4341,14 @@ function GrowthSection({
           color: "#6366f1",
           fontWeight: 600
         }
-      }, "\u20AB/DAU"), /*#__PURE__*/React.createElement("th", {
+      }, "\u20AB/DAU\xB7day"), /*#__PURE__*/React.createElement("th", {
         style: {
           textAlign: "right",
           padding: "3px 4px",
           color: "#f59e0b",
           fontWeight: 600
         }
-      }, "\u20AB/DwL"), /*#__PURE__*/React.createElement("th", {
+      }, "\u20AB/DwL\xB7day"), /*#__PURE__*/React.createElement("th", {
         style: {
           textAlign: "right",
           padding: "3px 4px",
@@ -5517,14 +5517,8 @@ function CampaignSection() {
     computed: true
   }];
   const EDIT_KEYS = COLS.filter(c => !c.computed).map(c => c.key);
+  // Growth (Paid) = Display + Paid Search; Growth (CRM) = growth_outapp
   const DEFAULT_ROWS = [{
-    name: "Paid Search",
-    ch: "Paid",
-    dwl: 0,
-    cost: 0,
-    dau: 0,
-    lead: 0
-  }, {
     name: "Display",
     ch: "Paid",
     dwl: 0,
@@ -5532,42 +5526,49 @@ function CampaignSection() {
     dau: 0,
     lead: 0
   }, {
-    name: "Social Paid",
+    name: "Paid Search",
     ch: "Paid",
     dwl: 0,
     cost: 0,
     dau: 0,
     lead: 0
   }, {
-    name: "CRM Push",
+    name: "journey",
     ch: "CRM",
     dwl: 0,
     cost: 0,
     dau: 0,
     lead: 0
   }, {
-    name: "CRM Email",
+    name: "growth_social",
     ch: "CRM",
     dwl: 0,
     cost: 0,
     dau: 0,
     lead: 0
   }, {
-    name: "",
-    ch: "Paid",
+    name: "top_banner",
+    ch: "CRM",
     dwl: 0,
     cost: 0,
     dau: 0,
     lead: 0
   }, {
-    name: "",
-    ch: "Paid",
+    name: "web_to_app",
+    ch: "CRM",
     dwl: 0,
     cost: 0,
     dau: 0,
     lead: 0
   }, {
-    name: "",
+    name: "growth_offline",
+    ch: "CRM",
+    dwl: 0,
+    cost: 0,
+    dau: 0,
+    lead: 0
+  }, {
+    name: "partnership",
     ch: "CRM",
     dwl: 0,
     cost: 0,
@@ -6325,8 +6326,10 @@ function CostInputSection({
     key: m,
     style: {
       padding: "1px 2px",
-      background: cellBg(isAct(m))
-    }
+      background: cellBg(isAct(m)),
+      cursor: "text"
+    },
+    onClick: e => e.currentTarget.querySelector('input')?.focus()
   }, /*#__PURE__*/React.createElement("input", {
     type: "text",
     value: displayVal(v, m),
@@ -6490,7 +6493,18 @@ function App() {
   const [costData, setCostData] = useState(() => {
     try {
       const s = localStorage.getItem('ctCostData');
-      return s ? JSON.parse(s) : GROWTH_COST;
+      if (!s) return GROWTH_COST;
+      const raw = JSON.parse(s);
+      // Sanitize: values >1e12 are corrupted (M VND pasted then *1e6 saved) → recover
+      const fixed = {};
+      Object.keys(raw).forEach(v => {
+        fixed[v] = {};
+        Object.keys(raw[v]).forEach(m => {
+          const n = raw[v][m];
+          fixed[v][m] = n > 1e12 ? Math.round(n / 1e6) : n;
+        });
+      });
+      return fixed;
     } catch {
       return GROWTH_COST;
     }
