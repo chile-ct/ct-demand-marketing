@@ -3916,7 +3916,9 @@ const ALL_ML = {
 };
 // Short labels for narrow charts (no "/26" suffix)
 const ALL_ML_S = Object.fromEntries(ALL_MONTHS.map(m => [m, `T${parseInt(m.slice(5))}`]));
-function GrowthSection() {
+function GrowthSection({
+  costData
+}) {
   const [met, setMet] = useState("dau");
   const [costTab, setCostTab] = useState("dwl");
   const [unitVert, setUnitVert] = useState("PTY"); // which vertical in unit economy table
@@ -4134,7 +4136,7 @@ function GrowthSection() {
     };
     const cp = (v, m, key) => {
       const vol = gpMetric(v, m, key);
-      const spend = GROWTH_COST[v]?.[m] || 0;
+      const spend = costData[v]?.[m] || 0;
       if (!vol || !spend) return null;
       // DAU and DwL are daily averages — multiply by days to get monthly total
       const monthlyVol = key === "dau" || key === "dwl" ? vol * daysIn(m) : vol;
@@ -4151,7 +4153,7 @@ function GrowthSection() {
     }));
     const spendBarDs = VERTS.map(v => ({
       label: v,
-      data: ALL_MONTHS.map(m => GROWTH_COST[v]?.[m] || 0),
+      data: ALL_MONTHS.map(m => costData[v]?.[m] || 0),
       backgroundColor: ALL_MONTHS.map((_, i) => VC[v] + (i < MONTHS.length ? "dd" : "44"))
     }));
     const note = 'Growth (Paid) · T1-T5 actual only';
@@ -4189,7 +4191,7 @@ function GrowthSection() {
       };
       const cpTotal = (m, key) => {
         const vol = VERTS.reduce((s, v) => s + gpMetricAll(v, m, key), 0);
-        const spend = VERTS.reduce((s, v) => s + (GROWTH_COST[v]?.[m] || 0), 0);
+        const spend = VERTS.reduce((s, v) => s + (costData[v]?.[m] || 0), 0);
         if (!vol || !spend) return null;
         const mv = key === "dau" || key === "dwl" ? vol * daysIn(m) : vol;
         return Math.round(spend / mv);
@@ -4268,7 +4270,7 @@ function GrowthSection() {
     };
     const cpColor = c => !c ? "#ddd" : c > 500000 ? "#dc2626" : c > 200000 ? "#d97706" : "#059669";
     const isTotal = unitVert === "__total__";
-    const spend = m => isTotal ? VERTS.reduce((s, v) => s + (GROWTH_COST[v]?.[m] || 0), 0) : GROWTH_COST[unitVert]?.[m] || 0;
+    const spend = m => isTotal ? VERTS.reduce((s, v) => s + (costData[v]?.[m] || 0), 0) : costData[unitVert]?.[m] || 0;
     const vol = (m, k) => isTotal ? VERTS.reduce((s, v) => s + gpMetric(v, m, k), 0) : gpMetric(unitVert, m, k);
     // DAU/DwL are daily → multiply by days for monthly total
     const cpu = (m, k) => {
@@ -4284,7 +4286,7 @@ function GrowthSection() {
       isT,
       color
     }) => {
-      const spendV = m => isT ? VERTS.reduce((s, v) => s + (GROWTH_COST[v]?.[m] || 0), 0) : GROWTH_COST[vert]?.[m] || 0;
+      const spendV = m => isT ? VERTS.reduce((s, v) => s + (costData[v]?.[m] || 0), 0) : costData[vert]?.[m] || 0;
       const volV = (m, k) => isT ? VERTS.reduce((s, v) => s + gpMetric(v, m, k), 0) : gpMetric(vert, m, k);
       const cpuV = (m, k) => {
         const v2 = volV(m, k),
@@ -5461,6 +5463,291 @@ function MarketplaceHealth() {
     }
   }));
 }
+function CostInputSection({
+  costData,
+  setCostData
+}) {
+  const M12 = ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12"];
+  const MO_LBL = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const COST_ROWS = ["GDS", "VEH", "JOB", "PTY", "PARENT"];
+  const COST_COLORS = {
+    GDS: "#10b981",
+    VEH: "#f59e0b",
+    JOB: "#6366f1",
+    PTY: "#ef4444",
+    PARENT: "#6b7280"
+  };
+
+  // Actual = all complete months (exclude current partial month)
+  const actualSet = new Set(MONTHS.slice(0, -1));
+  const isAct = m => actualSet.has(m);
+  const toM = v => v ? parseFloat((v / 1e6).toFixed(3)) : 0;
+  const [draft, setDraft] = useState(() => {
+    const d = {};
+    COST_ROWS.forEach(v => {
+      d[v] = {};
+      M12.forEach(m => {
+        d[v][m] = toM(costData[v]?.[m]);
+      });
+    });
+    return d;
+  });
+  const [saved, setSaved] = useState(false);
+  const setCell = (v, m, val) => {
+    setDraft(p => ({
+      ...p,
+      [v]: {
+        ...p[v],
+        [m]: parseFloat(val) || 0
+      }
+    }));
+    setSaved(false);
+  };
+  const handleSave = () => {
+    const nc = {};
+    COST_ROWS.filter(v => v !== "PARENT").forEach(v => {
+      nc[v] = {};
+      M12.forEach(m => {
+        nc[v][m] = Math.round((draft[v]?.[m] || 0) * 1e6);
+      });
+    });
+    setCostData(nc);
+    try {
+      localStorage.setItem('ctCostData', JSON.stringify(nc));
+    } catch {}
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+  const handleReset = () => {
+    const d = {};
+    COST_ROWS.forEach(v => {
+      d[v] = {};
+      M12.forEach(m => {
+        d[v][m] = toM(GROWTH_COST[v]?.[m]);
+      });
+    });
+    setDraft(d);
+    setSaved(false);
+  };
+  const rowTot = v => M12.reduce((s, m) => s + (draft[v]?.[m] || 0), 0);
+  const colTot = m => COST_ROWS.reduce((s, v) => s + (draft[v]?.[m] || 0), 0);
+  const grand = () => COST_ROWS.reduce((s, v) => s + rowTot(v), 0);
+  const fmtM = n => n ? n.toFixed(1) : "—";
+  const actMs = M12.filter(isAct);
+  const fcMs = M12.filter(m => !isAct(m));
+  const thStyle = act => ({
+    padding: "5px 3px",
+    textAlign: "center",
+    fontWeight: 700,
+    fontSize: 10,
+    color: act ? "#166534" : "#854d0e",
+    background: act ? "#f0fdf4" : "#fefce8",
+    borderBottom: `2px solid ${act ? "#86efac" : "#fde047"}`,
+    minWidth: 52
+  });
+  const cellBg = act => act ? "#f0fdf4" : "#fefce8";
+  return /*#__PURE__*/React.createElement("section", {
+    id: "cost"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "\uD83D\uDCDD Cost Input \u2014 DwL Campaign Spend"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff",
+      borderRadius: 12,
+      padding: "18px 20px",
+      boxShadow: "0 1px 4px rgba(0,0,0,.07)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "#9ca3af",
+      marginBottom: 12
+    }
+  }, "\u0110\u01A1n v\u1ECB: ", /*#__PURE__*/React.createElement("b", null, "M VND"), " \xB7 Actual = th\xE1ng \u0111\xE3 qua \xB7 Forecast = k\u1EBF ho\u1EA1ch \xB7 L\u01B0u \u0111\u1EC3 c\u1EADp nh\u1EADt charts Growth Performance"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      overflowX: "auto"
+    }
+  }, /*#__PURE__*/React.createElement("table", {
+    style: {
+      borderCollapse: "collapse",
+      fontSize: 11,
+      width: "100%"
+    }
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
+    style: {
+      minWidth: 65
+    }
+  }), /*#__PURE__*/React.createElement("td", {
+    colSpan: actMs.length,
+    style: {
+      textAlign: "center",
+      padding: "4px 6px",
+      background: "#dcfce7",
+      color: "#166534",
+      fontWeight: 700,
+      fontSize: 11,
+      border: "1px solid #86efac"
+    }
+  }, "\u2190 ACTUAL \u2192"), /*#__PURE__*/React.createElement("td", {
+    colSpan: fcMs.length,
+    style: {
+      textAlign: "center",
+      padding: "4px 6px",
+      background: "#fef9c3",
+      color: "#854d0e",
+      fontWeight: 700,
+      fontSize: 11,
+      border: "1px solid #fde047"
+    }
+  }, "\u2190 FORECAST \u2192"), /*#__PURE__*/React.createElement("td", {
+    style: {
+      minWidth: 58
+    }
+  })), /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
+    style: {
+      textAlign: "left",
+      padding: "6px 8px",
+      color: "#374151",
+      fontWeight: 700,
+      fontSize: 11,
+      background: "#f8f9ff"
+    }
+  }, "VERTICAL"), M12.map((m, i) => /*#__PURE__*/React.createElement("th", {
+    key: m,
+    style: thStyle(isAct(m))
+  }, MO_LBL[i])), /*#__PURE__*/React.createElement("th", {
+    style: {
+      padding: "5px 4px",
+      textAlign: "center",
+      fontWeight: 700,
+      fontSize: 10,
+      color: "#374151",
+      background: "#f3f4f6",
+      minWidth: 58
+    }
+  }, "Total"))), /*#__PURE__*/React.createElement("tbody", null, COST_ROWS.map(v => /*#__PURE__*/React.createElement("tr", {
+    key: v,
+    style: {
+      borderBottom: "1px solid #f0f0f0"
+    }
+  }, /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "3px 8px",
+      fontWeight: 700,
+      color: COST_COLORS[v],
+      fontSize: 11,
+      background: "#f8f9ff"
+    }
+  }, v), M12.map(m => /*#__PURE__*/React.createElement("td", {
+    key: m,
+    style: {
+      padding: "1px 1px",
+      background: cellBg(isAct(m))
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    step: "0.1",
+    value: draft[v]?.[m] || "",
+    onChange: e => setCell(v, m, e.target.value),
+    placeholder: "\u2014",
+    style: {
+      width: "100%",
+      border: "none",
+      background: "transparent",
+      textAlign: "center",
+      fontSize: 11,
+      padding: "4px 2px",
+      outline: "none",
+      color: draft[v]?.[m] ? "#111" : "#bbb",
+      fontFamily: "inherit"
+    },
+    onFocus: e => {
+      e.target.style.background = "#eff6ff";
+      e.target.style.borderRadius = "4px";
+    },
+    onBlur: e => {
+      e.target.style.background = "transparent";
+    }
+  }))), /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "4px 6px",
+      textAlign: "center",
+      fontWeight: 700,
+      fontSize: 11,
+      color: "#374151",
+      background: "#f3f4f6"
+    }
+  }, fmtM(rowTot(v))))), /*#__PURE__*/React.createElement("tr", {
+    style: {
+      borderTop: "2px solid #e5e7eb"
+    }
+  }, /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "5px 8px",
+      fontWeight: 800,
+      fontSize: 11,
+      color: "#1f2937",
+      background: "#f3f4f6"
+    }
+  }, "Total"), M12.map(m => /*#__PURE__*/React.createElement("td", {
+    key: m,
+    style: {
+      padding: "5px 3px",
+      textAlign: "center",
+      fontWeight: 700,
+      fontSize: 11,
+      color: colTot(m) ? "#1f2937" : "#ddd",
+      background: isAct(m) ? "#dcfce7" : "#fef9c3"
+    }
+  }, fmtM(colTot(m)))), /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "5px 6px",
+      textAlign: "center",
+      fontWeight: 800,
+      fontSize: 11,
+      color: "#1f2937",
+      background: "#e5e7eb"
+    }
+  }, fmtM(grand())))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 10,
+      marginTop: 14,
+      alignItems: "center",
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: handleSave,
+    style: {
+      padding: "8px 18px",
+      background: saved ? "#059669" : "#6366f1",
+      color: "#fff",
+      border: "none",
+      borderRadius: 8,
+      fontSize: 12,
+      fontWeight: 600,
+      cursor: "pointer",
+      transition: "background .2s"
+    }
+  }, saved ? "✓ Đã lưu — charts đã cập nhật" : "💾 Lưu & cập nhật charts"), /*#__PURE__*/React.createElement("button", {
+    onClick: handleReset,
+    style: {
+      padding: "8px 14px",
+      background: "#f3f4f6",
+      color: "#374151",
+      border: "1px solid #e5e7eb",
+      borderRadius: 8,
+      fontSize: 12,
+      fontWeight: 500,
+      cursor: "pointer"
+    }
+  }, "\u21BA Reset v\u1EC1 default"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 10,
+      color: "#9ca3af"
+    }
+  }, "Data l\u01B0u trong browser (localStorage) \xB7 t\u1EF1 \u0111\u1ED9ng load l\u1EA1i khi m\u1EDF dashboard"))));
+}
 
 // ─── MAIN ────────────────────────────────────────────────────────────────────
 const TH = {
@@ -5492,10 +5779,21 @@ const VD_SECTIONS = [{
 }, {
   id: "growth",
   label: "🌱 Growth Performance"
+}, {
+  id: "cost",
+  label: "📝 Cost Input"
 }];
 function App() {
-  const view = "demand"; // marketplace health removed
+  const view = "demand";
   const [active, setActive] = useState("exec");
+  const [costData, setCostData] = useState(() => {
+    try {
+      const s = localStorage.getItem('ctCostData');
+      return s ? JSON.parse(s) : GROWTH_COST;
+    } catch {
+      return GROWTH_COST;
+    }
+  });
   useEffect(() => {
     if (view !== "demand") return;
     const obs = new IntersectionObserver(entries => {
@@ -5564,7 +5862,12 @@ function App() {
         behavior: "smooth"
       });
     }
-  }, s.label))), view === "demand" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ExecSummary, null), /*#__PURE__*/React.createElement(VerticalSection, null), /*#__PURE__*/React.createElement(ChannelSection, null), /*#__PURE__*/React.createElement(DetailSection, null), /*#__PURE__*/React.createElement(GrowthSection, null), /*#__PURE__*/React.createElement("div", {
+  }, s.label))), view === "demand" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ExecSummary, null), /*#__PURE__*/React.createElement(VerticalSection, null), /*#__PURE__*/React.createElement(ChannelSection, null), /*#__PURE__*/React.createElement(DetailSection, null), /*#__PURE__*/React.createElement(GrowthSection, {
+    costData: costData
+  }), /*#__PURE__*/React.createElement(CostInputSection, {
+    costData: costData,
+    setCostData: setCostData
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 60
     }
