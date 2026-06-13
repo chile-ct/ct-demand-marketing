@@ -120,6 +120,7 @@ print("Querying campaign data...")
 camp_rows = q(f"""
 SELECT
   FORMAT_DATE('%Y-%m', date) AS m,
+  vertical,
   channel,
   campaign,
   SUM(dau)        AS dau,
@@ -129,8 +130,8 @@ FROM `chotot-dwh.ct_digital.mtm_chotot_vertical_channel_campaign_dau_mau`
 WHERE date BETWEEN '{start}' AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
   AND channel IN ('digital', 'growth_outapp')
   AND campaign NOT IN ('(none)','(not set)','(organic)','(referral)')
-GROUP BY 1, 2, 3
-ORDER BY 1, channel, dwl DESC
+GROUP BY 1, 2, 3, 4
+ORDER BY 1, vertical, channel, dwl DESC
 """)
 print(f"  Campaign rows: {len(camp_rows)}")
 
@@ -167,17 +168,19 @@ def js_act_mau():
 
 def js_campaign_data(rows):
     import json as _json
-    ch_map = {'digital':'Paid','growth_outapp':'CRM'}
+    ch_map  = {'digital':'Paid','growth_outapp':'CRM'}
+    vert_map = {'pty':'PTY','jobs':'JOB','veh':'VEH','gds':'GDS'}
     lines = ['// Campaign data — auto-updated by update_marketplace.py',
              'const CAMPAIGN_DATA = [']
     for r in rows:
         ch = ch_map.get(r['channel'],'')
         if not ch: continue
-        camp = _json.dumps(str(r['campaign']))  # handles all special chars, includes surrounding quotes
+        v    = vert_map.get(str(r.get('vertical','')).lower(), str(r.get('vertical','')).upper())
+        camp = _json.dumps(str(r['campaign']))
         dau  = int(r['dau'])  if r['dau']  is not None else 0
         dwl  = int(r['dwl'])  if r['dwl']  is not None else 0
         lead = int(r['lead']) if r['lead'] is not None else 0
-        lines.append(f'  {{m:"{r["m"]}",ch:"{ch}",campaign:{camp},dau:{dau},dwl:{dwl},lead:{lead}}},')
+        lines.append(f'  {{m:"{r["m"]}",v:"{v}",ch:"{ch}",campaign:{camp},dau:{dau},dwl:{dwl},lead:{lead}}},')
     lines.append('];')
     return '\n'.join(lines)
 
