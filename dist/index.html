@@ -5463,6 +5463,637 @@ function MarketplaceHealth() {
     }
   }));
 }
+function CampaignSection() {
+  const COLS = [{
+    key: "name",
+    label: "Campaign",
+    type: "text",
+    w: 160,
+    computed: false
+  }, {
+    key: "ch",
+    label: "Channel",
+    type: "ch",
+    w: 90,
+    computed: false
+  }, {
+    key: "dwl",
+    label: "DwL",
+    type: "num",
+    w: 80,
+    computed: false
+  }, {
+    key: "cost",
+    label: "Cost (M₫)",
+    type: "num",
+    w: 85,
+    computed: false
+  }, {
+    key: "cpdwl",
+    label: "₫/DwL",
+    type: "num",
+    w: 72,
+    computed: true
+  }, {
+    key: "dau",
+    label: "DAU",
+    type: "num",
+    w: 75,
+    computed: false
+  }, {
+    key: "cpdau",
+    label: "₫/DAU",
+    type: "num",
+    w: 72,
+    computed: true
+  }, {
+    key: "lead",
+    label: "Lead",
+    type: "num",
+    w: 72,
+    computed: false
+  }, {
+    key: "cplead",
+    label: "₫/Lead",
+    type: "num",
+    w: 72,
+    computed: true
+  }];
+  const EDIT_KEYS = COLS.filter(c => !c.computed).map(c => c.key);
+  const DEFAULT_ROWS = [{
+    name: "Paid Search",
+    ch: "Paid",
+    dwl: 0,
+    cost: 0,
+    dau: 0,
+    lead: 0
+  }, {
+    name: "Display",
+    ch: "Paid",
+    dwl: 0,
+    cost: 0,
+    dau: 0,
+    lead: 0
+  }, {
+    name: "Social Paid",
+    ch: "Paid",
+    dwl: 0,
+    cost: 0,
+    dau: 0,
+    lead: 0
+  }, {
+    name: "CRM Push",
+    ch: "CRM",
+    dwl: 0,
+    cost: 0,
+    dau: 0,
+    lead: 0
+  }, {
+    name: "CRM Email",
+    ch: "CRM",
+    dwl: 0,
+    cost: 0,
+    dau: 0,
+    lead: 0
+  }, {
+    name: "",
+    ch: "Paid",
+    dwl: 0,
+    cost: 0,
+    dau: 0,
+    lead: 0
+  }, {
+    name: "",
+    ch: "Paid",
+    dwl: 0,
+    cost: 0,
+    dau: 0,
+    lead: 0
+  }, {
+    name: "",
+    ch: "CRM",
+    dwl: 0,
+    cost: 0,
+    dau: 0,
+    lead: 0
+  }];
+  const [rows, setRows] = React.useState(() => {
+    try {
+      const s = localStorage.getItem('ctCampaignData');
+      return s ? JSON.parse(s) : DEFAULT_ROWS;
+    } catch {
+      return DEFAULT_ROWS;
+    }
+  });
+  const [sortBy, setSortBy] = React.useState("dwl");
+  const [saved, setSaved] = React.useState(false);
+  const focusedCell = React.useRef(null);
+  const computed = r => ({
+    cpdwl: r.dwl ? Math.round(r.cost * 1e6 / r.dwl) : 0,
+    cpdau: r.dau ? Math.round(r.cost * 1e6 / r.dau) : 0,
+    cplead: r.lead ? Math.round(r.cost * 1e6 / r.lead) : 0
+  });
+  const withComputed = r => ({
+    ...r,
+    ...computed(r)
+  });
+  const fmtK = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'K' : n || '—';
+  const fmtN = n => n ? n.toLocaleString() : '—';
+  const fmtM2 = n => n ? parseFloat(n.toFixed(3)).toString() : '';
+  const sorted = [...rows].map((r, i) => ({
+    ...withComputed(r),
+    _i: i
+  })).sort((a, b) => b[sortBy] - a[sortBy]);
+  const setCell = (i, key, val) => {
+    setRows(prev => {
+      const next = [...prev];
+      next[i] = {
+        ...next[i],
+        [key]: key === 'name' || key === 'ch' ? val : parseFloat(val) || 0
+      };
+      return next;
+    });
+    setSaved(false);
+  };
+  const handleTablePaste = e => {
+    const text = e.clipboardData.getData('text');
+    if (!focusedCell.current || !text.includes('\t') && !text.includes('\n')) return;
+    e.preventDefault();
+    const {
+      rowIdx,
+      colKey
+    } = focusedCell.current;
+    const pasteRows = text.trim().split(/\r?\n/).map(r => r.split('\t'));
+    const colStart = EDIT_KEYS.indexOf(colKey);
+    if (colStart < 0) return;
+    setRows(prev => {
+      const next = prev.map(r => ({
+        ...r
+      }));
+      pasteRows.forEach((pcols, ri) => {
+        const ti = rowIdx + ri;
+        if (ti >= next.length) next.push({
+          name: '',
+          ch: 'Paid',
+          dwl: 0,
+          cost: 0,
+          dau: 0,
+          lead: 0
+        });
+        pcols.forEach((cell, ci) => {
+          const ki = colStart + ci;
+          if (ki >= EDIT_KEYS.length) return;
+          const k = EDIT_KEYS[ki];
+          const cleaned = cell.replace(/[^0-9.\-]/g, '');
+          if (k === 'name') next[ti][k] = cell.trim();else if (k === 'ch') next[ti][k] = cell.trim() || 'Paid';else next[ti][k] = parseFloat(cleaned) || 0;
+        });
+      });
+      return next;
+    });
+    setSaved(false);
+  };
+  const handleSave = () => {
+    try {
+      localStorage.setItem('ctCampaignData', JSON.stringify(rows));
+    } catch {}
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+  const handleReset = () => {
+    setRows(DEFAULT_ROWS);
+    setSaved(false);
+  };
+  const addRow = () => setRows(p => [...p, {
+    name: '',
+    ch: 'Paid',
+    dwl: 0,
+    cost: 0,
+    dau: 0,
+    lead: 0
+  }]);
+  const delRow = i => setRows(p => p.filter((_, j) => j !== i));
+  const TH = {
+    padding: "6px 8px",
+    fontWeight: 700,
+    fontSize: 11,
+    background: "#f8f9ff",
+    color: "#374151",
+    borderBottom: "2px solid #e5e7eb",
+    whiteSpace: "nowrap",
+    textAlign: "right"
+  };
+  const TD = {
+    padding: "2px 2px",
+    fontSize: 12,
+    borderBottom: "1px solid #f3f4f6"
+  };
+  const chColor = ch => ch === "Paid" ? "#6366f1" : "#0ea5e9";
+  const totDwl = rows.reduce((s, r) => s + (r.dwl || 0), 0);
+  const totCost = rows.reduce((s, r) => s + (r.cost || 0), 0);
+  const totDau = rows.reduce((s, r) => s + (r.dau || 0), 0);
+  const totLead = rows.reduce((s, r) => s + (r.lead || 0), 0);
+  const sortBtn = (key, label) => /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSortBy(key),
+    style: {
+      padding: "3px 8px",
+      fontSize: 10,
+      border: "none",
+      borderRadius: 4,
+      cursor: "pointer",
+      background: sortBy === key ? "#6366f1" : "#f3f4f6",
+      color: sortBy === key ? "#fff" : "#374151",
+      fontWeight: 600
+    }
+  }, label);
+  return /*#__PURE__*/React.createElement("section", {
+    id: "campaign"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "\uD83D\uDCCA Campaign Breakdown \u2014 Growth Paid & CRM"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff",
+      borderRadius: 12,
+      padding: "18px 20px",
+      boxShadow: "0 1px 4px rgba(0,0,0,.07)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 6,
+      marginBottom: 12,
+      alignItems: "center",
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 11,
+      color: "#9ca3af",
+      marginRight: 4
+    }
+  }, "Sort by:"), sortBtn("dwl", "DwL"), sortBtn("cost", "Cost"), sortBtn("dau", "DAU"), sortBtn("lead", "Lead"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      marginLeft: "auto",
+      fontSize: 10,
+      color: "#9ca3af"
+    }
+  }, "Cost \u0111\u01A1n v\u1ECB M VND \xB7 \u20AB/metric = VND")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      overflowX: "auto"
+    },
+    onPaste: handleTablePaste
+  }, /*#__PURE__*/React.createElement("table", {
+    style: {
+      borderCollapse: "collapse",
+      fontSize: 12,
+      width: "100%"
+    }
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, COLS.map(c => /*#__PURE__*/React.createElement("th", {
+    key: c.key,
+    style: {
+      ...TH,
+      textAlign: c.key === "name" ? "left" : "right",
+      minWidth: c.w,
+      color: c.computed ? "#9ca3af" : "#374151",
+      cursor: !c.computed && c.type === "num" ? "pointer" : undefined
+    },
+    onClick: () => !c.computed && c.type === "num" && setSortBy(c.key)
+  }, c.label, sortBy === c.key ? " ▼" : "")), /*#__PURE__*/React.createElement("th", {
+    style: {
+      ...TH,
+      width: 28,
+      textAlign: "center"
+    }
+  }))), /*#__PURE__*/React.createElement("tbody", null, sorted.map(row => {
+    const i = row._i;
+    return /*#__PURE__*/React.createElement("tr", {
+      key: i,
+      style: {
+        background: i % 2 === 0 ? "#fff" : "#fafafa"
+      }
+    }, /*#__PURE__*/React.createElement("td", {
+      style: {
+        ...TD,
+        paddingLeft: 6
+      }
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "text",
+      value: row.name,
+      onChange: e => setCell(i, "name", e.target.value),
+      onFocus: () => {
+        focusedCell.current = {
+          rowIdx: i,
+          colKey: "name"
+        };
+      },
+      placeholder: "Campaign name",
+      style: {
+        border: "none",
+        background: "transparent",
+        fontSize: 12,
+        width: "100%",
+        minWidth: 150,
+        outline: "none",
+        fontFamily: "inherit",
+        color: "#111"
+      }
+    })), /*#__PURE__*/React.createElement("td", {
+      style: {
+        ...TD,
+        textAlign: "center"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => setCell(i, "ch", row.ch === "Paid" ? "CRM" : "Paid"),
+      style: {
+        border: "none",
+        borderRadius: 4,
+        padding: "2px 8px",
+        fontSize: 11,
+        fontWeight: 700,
+        cursor: "pointer",
+        background: chColor(row.ch) + "22",
+        color: chColor(row.ch)
+      }
+    }, row.ch)), ["dwl", "cost"].map(k => /*#__PURE__*/React.createElement("td", {
+      key: k,
+      style: {
+        ...TD,
+        textAlign: "right"
+      }
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "number",
+      step: "0.001",
+      value: fmtM2(row[k]) || "",
+      onChange: e => setCell(i, k, e.target.value),
+      onFocus: e => {
+        focusedCell.current = {
+          rowIdx: i,
+          colKey: k
+        };
+        e.target.select();
+      },
+      placeholder: "\u2014",
+      style: {
+        border: "none",
+        background: "transparent",
+        textAlign: "right",
+        fontSize: 12,
+        padding: "3px 6px",
+        outline: "none",
+        width: "100%",
+        minWidth: k === "name" ? 150 : 60,
+        fontFamily: "inherit",
+        color: row[k] ? "#111" : "#bbb",
+        boxSizing: "border-box"
+      },
+      onBlur: e => {
+        e.target.style.background = "transparent";
+      },
+      onFocusCapture: e => {
+        e.target.style.background = "#eff6ff";
+        e.target.style.borderRadius = "3px";
+      }
+    }))), /*#__PURE__*/React.createElement("td", {
+      style: {
+        ...TD,
+        textAlign: "right",
+        color: "#6b7280",
+        paddingRight: 6,
+        fontSize: 11
+      }
+    }, row.cpdwl ? fmtK(row.cpdwl) : "—"), ["dau"].map(k => /*#__PURE__*/React.createElement("td", {
+      key: k,
+      style: {
+        ...TD,
+        textAlign: "right"
+      }
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "number",
+      step: "1",
+      value: row[k] || "",
+      onChange: e => setCell(i, k, e.target.value),
+      onFocus: e => {
+        focusedCell.current = {
+          rowIdx: i,
+          colKey: k
+        };
+        e.target.select();
+      },
+      placeholder: "\u2014",
+      style: {
+        border: "none",
+        background: "transparent",
+        textAlign: "right",
+        fontSize: 12,
+        padding: "3px 6px",
+        outline: "none",
+        width: "100%",
+        minWidth: 60,
+        fontFamily: "inherit",
+        color: row[k] ? "#111" : "#bbb",
+        boxSizing: "border-box"
+      },
+      onBlur: e => {
+        e.target.style.background = "transparent";
+      },
+      onFocusCapture: e => {
+        e.target.style.background = "#eff6ff";
+        e.target.style.borderRadius = "3px";
+      }
+    }))), /*#__PURE__*/React.createElement("td", {
+      style: {
+        ...TD,
+        textAlign: "right",
+        color: "#6b7280",
+        paddingRight: 6,
+        fontSize: 11
+      }
+    }, row.cpdau ? fmtK(row.cpdau) : "—"), ["lead"].map(k => /*#__PURE__*/React.createElement("td", {
+      key: k,
+      style: {
+        ...TD,
+        textAlign: "right"
+      }
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "number",
+      step: "1",
+      value: row[k] || "",
+      onChange: e => setCell(i, k, e.target.value),
+      onFocus: e => {
+        focusedCell.current = {
+          rowIdx: i,
+          colKey: k
+        };
+        e.target.select();
+      },
+      placeholder: "\u2014",
+      style: {
+        border: "none",
+        background: "transparent",
+        textAlign: "right",
+        fontSize: 12,
+        padding: "3px 6px",
+        outline: "none",
+        width: "100%",
+        minWidth: 60,
+        fontFamily: "inherit",
+        color: row[k] ? "#111" : "#bbb",
+        boxSizing: "border-box"
+      },
+      onBlur: e => {
+        e.target.style.background = "transparent";
+      },
+      onFocusCapture: e => {
+        e.target.style.background = "#eff6ff";
+        e.target.style.borderRadius = "3px";
+      }
+    }))), /*#__PURE__*/React.createElement("td", {
+      style: {
+        ...TD,
+        textAlign: "right",
+        color: "#6b7280",
+        paddingRight: 6,
+        fontSize: 11
+      }
+    }, row.cplead ? fmtK(row.cplead) : "—"), /*#__PURE__*/React.createElement("td", {
+      style: {
+        ...TD,
+        textAlign: "center"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => delRow(i),
+      title: "X\xF3a row",
+      style: {
+        border: "none",
+        background: "none",
+        color: "#d1d5db",
+        cursor: "pointer",
+        fontSize: 13,
+        lineHeight: 1,
+        padding: "2px 4px"
+      },
+      onMouseEnter: e => e.target.style.color = "#ef4444",
+      onMouseLeave: e => e.target.style.color = "#d1d5db"
+    }, "\xD7")));
+  }), /*#__PURE__*/React.createElement("tr", {
+    style: {
+      borderTop: "2px solid #e5e7eb",
+      background: "#f3f4f6"
+    }
+  }, /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "5px 6px",
+      fontWeight: 800,
+      fontSize: 11,
+      color: "#1f2937"
+    }
+  }, "Total"), /*#__PURE__*/React.createElement("td", null), /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "5px 6px",
+      textAlign: "right",
+      fontWeight: 700,
+      fontSize: 12,
+      color: "#1f2937"
+    }
+  }, fmtN(totDwl)), /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "5px 6px",
+      textAlign: "right",
+      fontWeight: 700,
+      fontSize: 12,
+      color: "#1f2937"
+    }
+  }, totCost ? totCost.toFixed(3).replace(/\.?0+$/, '') : '—'), /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "5px 6px",
+      textAlign: "right",
+      fontWeight: 700,
+      fontSize: 11,
+      color: "#6b7280"
+    }
+  }, totDwl ? fmtK(Math.round(totCost * 1e6 / totDwl)) : "—"), /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "5px 6px",
+      textAlign: "right",
+      fontWeight: 700,
+      fontSize: 12,
+      color: "#1f2937"
+    }
+  }, fmtN(totDau)), /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "5px 6px",
+      textAlign: "right",
+      fontWeight: 700,
+      fontSize: 11,
+      color: "#6b7280"
+    }
+  }, totDau ? fmtK(Math.round(totCost * 1e6 / totDau)) : "—"), /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "5px 6px",
+      textAlign: "right",
+      fontWeight: 700,
+      fontSize: 12,
+      color: "#1f2937"
+    }
+  }, fmtN(totLead)), /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "5px 6px",
+      textAlign: "right",
+      fontWeight: 700,
+      fontSize: 11,
+      color: "#6b7280"
+    }
+  }, totLead ? fmtK(Math.round(totCost * 1e6 / totLead)) : "—"), /*#__PURE__*/React.createElement("td", null))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 10,
+      marginTop: 12,
+      alignItems: "center",
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: handleSave,
+    style: {
+      padding: "7px 16px",
+      background: saved ? "#059669" : "#6366f1",
+      color: "#fff",
+      border: "none",
+      borderRadius: 8,
+      fontSize: 12,
+      fontWeight: 600,
+      cursor: "pointer"
+    }
+  }, saved ? "✓ Đã lưu" : "💾 Lưu"), /*#__PURE__*/React.createElement("button", {
+    onClick: addRow,
+    style: {
+      padding: "7px 12px",
+      background: "#f0fdf4",
+      color: "#166534",
+      border: "1px solid #86efac",
+      borderRadius: 8,
+      fontSize: 12,
+      fontWeight: 500,
+      cursor: "pointer"
+    }
+  }, "+ Th\xEAm campaign"), /*#__PURE__*/React.createElement("button", {
+    onClick: handleReset,
+    style: {
+      padding: "7px 12px",
+      background: "#f3f4f6",
+      color: "#374151",
+      border: "1px solid #e5e7eb",
+      borderRadius: 8,
+      fontSize: 12,
+      fontWeight: 500,
+      cursor: "pointer"
+    }
+  }, "\u21BA Reset"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 10,
+      color: "#9ca3af",
+      marginLeft: 4
+    }
+  }, "Click Channel \u0111\u1EC3 toggle Paid/CRM \xB7 Paste range t\u1EEB Sheets v\xE0o b\u1EA5t k\u1EF3 \xF4 n\xE0o"))));
+}
 function CostInputSection({
   costData,
   setCostData
@@ -5830,6 +6461,9 @@ const VD_SECTIONS = [{
   id: "growth",
   label: "🌱 Growth Performance"
 }, {
+  id: "campaign",
+  label: "📊 Campaign Detail"
+}, {
   id: "cost",
   label: "📝 Cost Input"
 }];
@@ -5914,7 +6548,7 @@ function App() {
     }
   }, s.label))), view === "demand" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ExecSummary, null), /*#__PURE__*/React.createElement(VerticalSection, null), /*#__PURE__*/React.createElement(ChannelSection, null), /*#__PURE__*/React.createElement(DetailSection, null), /*#__PURE__*/React.createElement(GrowthSection, {
     costData: costData
-  }), /*#__PURE__*/React.createElement(CostInputSection, {
+  }), /*#__PURE__*/React.createElement(CampaignSection, null), /*#__PURE__*/React.createElement(CostInputSection, {
     costData: costData,
     setCostData: setCostData
   }), /*#__PURE__*/React.createElement("div", {
