@@ -36,6 +36,9 @@ const {
   useMemo
 } = React;
 
+// auto-updated by update_marketplace.py
+const DATA_AS_OF = "2026-06-12";
+
 // ─── DATA ────────────────────────────────────────────────────────────────────
 const RAW = [{
   v: "PTY",
@@ -3840,9 +3843,8 @@ function ChannelSection() {
 }
 
 // ─── GROWTH PERFORMANCE ──────────────────────────────────────────────────────
-// Cost data — Google Sheets "Data for Claude", Activities contains "DwL"
-// Source: spreadsheets/1VkmHBo_1RtzCyo24yhoJbYmZqrgjSl9KGY3w9XWDUqQ
-// T1-T5 = Actual, T6-T12 = Forecast (VND)
+// Cost data — auto-updated from Google Sheets "FC & Actual cost"
+// actual = accrued | forecast = planned (VND)
 const GROWTH_COST = {
   PTY: {
     "2026-01": 234890760,
@@ -3851,12 +3853,12 @@ const GROWTH_COST = {
     "2026-04": 416431277,
     "2026-05": 408916410,
     "2026-06": 450000000,
-    "2026-07": 500000000,
-    "2026-08": 500000000,
-    "2026-09": 500000000,
+    "2026-07": 550000000,
+    "2026-08": 550000000,
+    "2026-09": 550000000,
     "2026-10": 500000000,
     "2026-11": 500000000,
-    "2026-12": 400000000
+    "2026-12": 250000000
   },
   JOB: {
     "2026-01": 111645340,
@@ -3867,21 +3869,20 @@ const GROWTH_COST = {
     "2026-06": 400000000,
     "2026-07": 450000000,
     "2026-08": 450000000,
-    "2026-09": 400000000,
+    "2026-09": 450000000,
     "2026-10": 400000000,
     "2026-11": 400000000,
     "2026-12": 300000000
   },
   VEH: {
-    "2026-01": 0,
     "2026-02": 31293690,
     "2026-03": 187000000,
     "2026-04": 176000000,
     "2026-05": 161669927,
-    "2026-06": 150000000,
+    "2026-06": 100000000,
     "2026-07": 200000000,
-    "2026-08": 225000000,
-    "2026-09": 225000000,
+    "2026-08": 250000000,
+    "2026-09": 250000000,
     "2026-10": 225000000,
     "2026-11": 225000000,
     "2026-12": 200000000
@@ -3893,12 +3894,12 @@ const GROWTH_COST = {
     "2026-04": 74674975,
     "2026-05": 91168945,
     "2026-06": 135000000,
-    "2026-07": 157500000,
-    "2026-08": 157500000,
-    "2026-09": 157500000,
-    "2026-10": 125000000,
-    "2026-11": 112500000,
-    "2026-12": 112500000
+    "2026-07": 150000000,
+    "2026-08": 150000000,
+    "2026-09": 150000000,
+    "2026-10": 113000000,
+    "2026-11": 113000000,
+    "2026-12": 103000000
   }
 };
 // All months including forecast T6-T12
@@ -4425,197 +4426,6 @@ function GrowthSection() {
       color: VC[v]
     }))));
   })()));
-}
-function SDSection() {
-  const sdVerts = VERTS;
-  const sdMonths = MONTHS.filter(m => VERTS.some(v => SD_DATA[v]?.[m]?.adCov != null));
-  const SD_METRICS = [{
-    key: "adCov",
-    label: "Ad Coverage [S&D]",
-    color: "#6366f1"
-  }, {
-    key: "buyerCov",
-    label: "Buyer Coverage [S&D]",
-    color: "#10b981"
-  }];
-  const mkLineDs = metKey => {
-    const ds = sdVerts.map(v => ({
-      label: v,
-      data: sdMonths.map(m => SD_DATA[v]?.[m]?.[metKey] ?? null),
-      borderColor: VC[v],
-      backgroundColor: VC[v] + "22",
-      borderWidth: 2.5,
-      tension: 0.3,
-      pointRadius: 5,
-      fill: false
-    }));
-    ds.push({
-      label: `≥${SD_BENCHMARK}`,
-      data: sdMonths.map(() => SD_BENCHMARK),
-      borderColor: "#dc2626",
-      borderDash: [5, 3],
-      borderWidth: 1.5,
-      pointRadius: 0,
-      fill: false,
-      backgroundColor: "transparent"
-    });
-    return ds;
-  };
-  return /*#__PURE__*/React.createElement("section", {
-    id: "sd"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "section-title"
-  }, "S&D Monthly Report"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: "#f0f9ff",
-      borderRadius: 8,
-      padding: "9px 14px",
-      borderLeft: "3px solid #6366f1",
-      fontSize: 11,
-      marginBottom: 16,
-      color: "#374151"
-    }
-  }, "Ngu\u1ED3n: ", /*#__PURE__*/React.createElement("code", null, "ct_product_analytics.servings__marketplace_supply_demand_tracking_v2"), " \xB7 /marketplace-supply-demand skill \xB7 T5-T6/2026 (table available from 21/5/2026) \xB7 Benchmark healthy \u2265 0.70 (\u254C \u0111\u1ECF)"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: 16,
-      marginBottom: 16
-    }
-  }, SD_METRICS.map(({
-    key,
-    label,
-    color
-  }) => /*#__PURE__*/React.createElement("div", {
-    key: key,
-    style: {
-      background: "#fff",
-      borderRadius: 12,
-      padding: "16px 18px",
-      boxShadow: "0 1px 4px rgba(0,0,0,.07)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontWeight: 600,
-      marginBottom: 4,
-      color,
-      fontSize: 13
-    }
-  }, label), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "#9ca3af",
-      marginBottom: 10
-    }
-  }, "Monthly avg \xB7 All inventory \xB7 \u254C Benchmark \u2265", SD_BENCHMARK), /*#__PURE__*/React.createElement(LineChart, {
-    labels: sdMonths.map(m => ML[m]),
-    datasets: mkLineDs(key),
-    height: 220
-  })))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontWeight: 600,
-      fontSize: 13,
-      color: "#374151",
-      marginBottom: 12
-    }
-  }, "Detail \u2014 Ad & Buyer Coverage by Vertical"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: 12
-    }
-  }, sdVerts.map(v => /*#__PURE__*/React.createElement("div", {
-    key: v,
-    style: {
-      background: "#fff",
-      borderRadius: 12,
-      padding: "14px 16px",
-      boxShadow: "0 1px 4px rgba(0,0,0,.07)",
-      borderTop: `3px solid ${VC[v]}`
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontWeight: 700,
-      color: VC[v],
-      marginBottom: 8,
-      fontSize: 13
-    }
-  }, v), /*#__PURE__*/React.createElement("table", {
-    style: {
-      width: "100%",
-      borderCollapse: "collapse",
-      fontSize: 11
-    }
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
-    style: {
-      borderBottom: "1px solid #f0f0f0"
-    }
-  }, /*#__PURE__*/React.createElement("th", {
-    style: {
-      textAlign: "left",
-      padding: "3px 4px",
-      color: "#9ca3af",
-      fontWeight: 500
-    }
-  }, "Month"), /*#__PURE__*/React.createElement("th", {
-    style: {
-      textAlign: "right",
-      padding: "3px 4px",
-      color: "#6366f1",
-      fontWeight: 600
-    }
-  }, "Ad Cov"), /*#__PURE__*/React.createElement("th", {
-    style: {
-      textAlign: "right",
-      padding: "3px 4px",
-      color: "#10b981",
-      fontWeight: 600
-    }
-  }, "Buyer Cov"), /*#__PURE__*/React.createElement("th", {
-    style: {
-      textAlign: "right",
-      padding: "3px 4px",
-      color: "#9ca3af",
-      fontWeight: 500
-    }
-  }, "Days"))), /*#__PURE__*/React.createElement("tbody", null, sdMonths.map(m => {
-    const d = SD_DATA[v]?.[m];
-    if (!d) return null;
-    const acC = d.adCov >= SD_BENCHMARK ? "#059669" : "#dc2626";
-    const bcC = d.buyerCov >= SD_BENCHMARK ? "#059669" : "#dc2626";
-    return /*#__PURE__*/React.createElement("tr", {
-      key: m,
-      style: {
-        borderBottom: "1px solid #fafafa"
-      }
-    }, /*#__PURE__*/React.createElement("td", {
-      style: {
-        padding: "4px 4px",
-        color: "#374151",
-        fontWeight: 500
-      }
-    }, ML[m]), /*#__PURE__*/React.createElement("td", {
-      style: {
-        textAlign: "right",
-        padding: "4px 4px",
-        fontWeight: 700,
-        color: acC
-      }
-    }, d.adCov.toFixed(3)), /*#__PURE__*/React.createElement("td", {
-      style: {
-        textAlign: "right",
-        padding: "4px 4px",
-        fontWeight: 700,
-        color: bcC
-      }
-    }, d.buyerCov?.toFixed(3) ?? '—'), /*#__PURE__*/React.createElement("td", {
-      style: {
-        textAlign: "right",
-        padding: "4px 4px",
-        color: "#9ca3af"
-      }
-    }, d.days, "d"));
-  })))))));
 }
 function DetailSection() {
   const [metKey, setMetKey] = useState("dau");
@@ -5667,65 +5477,6 @@ const TD = {
   fontSize: 12,
   color: "#111"
 };
-
-// ─── S&D DATA (from ct_product_analytics.servings__marketplace_supply_demand_tracking_v2)
-// Source: /marketplace-supply-demand skill. Auto-updated by update_marketplace.py when BQ access available.
-// Values = monthly avg of daily ad_coverage and buyer_coverage (all inventory, all segments)
-const SD_DATA = {
-  // Source: ct_product_analytics.servings__marketplace_supply_demand_tracking_v2
-  // AVG(ad_coverage) and AVG(buyer_coverage) across segments with ≥5 buyers, inventory_filter=all
-  // Last verified: 2026-06-06 via BQ query (verified against skill /marketplace-supply-demand)
-  PTY: {
-    "2026-05": {
-      adCov: 0.944,
-      buyerCov: 0.742,
-      days: 11
-    },
-    "2026-06": {
-      adCov: 0.943,
-      buyerCov: 0.733,
-      days: 5
-    }
-  },
-  JOB: {
-    "2026-05": {
-      adCov: 0.967,
-      buyerCov: 0.943,
-      days: 11
-    },
-    "2026-06": {
-      adCov: 0.967,
-      buyerCov: 0.952,
-      days: 5
-    }
-  },
-  VEH: {
-    "2026-05": {
-      adCov: 0.986,
-      buyerCov: 0.943,
-      days: 11
-    },
-    "2026-06": {
-      adCov: 0.986,
-      buyerCov: 0.946,
-      days: 5
-    }
-  },
-  GDS: {
-    "2026-05": {
-      adCov: 0.951,
-      buyerCov: 0.925,
-      days: 11
-    },
-    "2026-06": {
-      adCov: 0.948,
-      buyerCov: 0.863,
-      days: 5
-    }
-  }
-};
-const SD_BENCHMARK = 0.70; // healthy threshold
-
 const VD_SECTIONS = [{
   id: "exec",
   label: "📋 Executive Summary"
@@ -5738,9 +5489,6 @@ const VD_SECTIONS = [{
 }, {
   id: "detail",
   label: "🔍 Detail Table"
-}, {
-  id: "sd",
-  label: "⚖️ S&D Report"
 }, {
   id: "growth",
   label: "🌱 Growth Performance"
@@ -5791,12 +5539,20 @@ function App() {
       fontSize: 16,
       color: "#fff"
     }
-  }, "Chotot Marketplace Dashboard"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#a5b4fc"
-    }
-  }, "T1~T5/2026 \xB7 BigQuery chotot-dwh"))), view === "demand" && /*#__PURE__*/React.createElement("nav", {
+  }, "Chotot Marketplace Dashboard"), (() => {
+    const latestNum = parseInt(MONTHS[MONTHS.length - 1].split('-')[1]);
+    const [, mm, dd] = DATA_AS_OF.split('-');
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: "#a5b4fc"
+      }
+    }, "T1~T", latestNum, "/2026 \xB7 BigQuery chotot-dwh \xB7 ", /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#fbbf24"
+      }
+    }, "T", latestNum, " ch\u01B0a \u0111\u1EE7 th\xE1ng, data t\u1EDBi ", dd, "/", mm));
+  })())), view === "demand" && /*#__PURE__*/React.createElement("nav", {
     className: "sticky-nav"
   }, VD_SECTIONS.map(s => /*#__PURE__*/React.createElement("a", {
     key: s.id,
@@ -5808,7 +5564,7 @@ function App() {
         behavior: "smooth"
       });
     }
-  }, s.label))), view === "demand" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ExecSummary, null), /*#__PURE__*/React.createElement(VerticalSection, null), /*#__PURE__*/React.createElement(ChannelSection, null), /*#__PURE__*/React.createElement(DetailSection, null), /*#__PURE__*/React.createElement(SDSection, null), /*#__PURE__*/React.createElement(GrowthSection, null), /*#__PURE__*/React.createElement("div", {
+  }, s.label))), view === "demand" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ExecSummary, null), /*#__PURE__*/React.createElement(VerticalSection, null), /*#__PURE__*/React.createElement(ChannelSection, null), /*#__PURE__*/React.createElement(DetailSection, null), /*#__PURE__*/React.createElement(GrowthSection, null), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 60
     }

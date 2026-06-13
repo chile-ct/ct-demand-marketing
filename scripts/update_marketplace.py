@@ -171,8 +171,12 @@ html=re.sub(r'const ACT_MAU = \{[\s\S]*?^};',js_act_mau(),html,flags=re.MULTILIN
 html=re.sub(r'\n?//\s*T\d+ partial[^\n]*\n(Object\.assign\(VERT_ACT\.[A-Z]+[^\n]*\n)*','\n',html)
 html=re.sub(r'Object\.assign\(VERT_ACT\.[A-Z]+[^\n]*\n','',html)
 if growth_cost:
-    html=re.sub(r'// Cost data.*?const GROWTH_COST = \{[\s\S]*?^};',js_growth_cost(growth_cost),html,flags=re.MULTILINE)
+    html=re.sub(r'// Cost data[\s\S]*?const GROWTH_COST = \{[\s\S]*?^};',js_growth_cost(growth_cost),html,flags=re.MULTILINE)
     print("  GROWTH_COST updated from Sheets")
+
+# Patch DATA_AS_OF
+yesterday = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+html=re.sub(r'const DATA_AS_OF = "[^"]*"',f'const DATA_AS_OF = "{yesterday}"',html)
 
 with open(SRC_HTML,'w') as f: f.write(html)
 print(f"  Patched: {len(months)} months, latest={latest_m}")

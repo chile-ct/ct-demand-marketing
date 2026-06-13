@@ -32,6 +32,9 @@ section{padding:28px 24px 0;scroll-margin-top:114px}
 <script type="text/babel">
 const {useRef,useEffect,useState,useMemo} = React;
 
+// auto-updated by update_marketplace.py
+const DATA_AS_OF = "2026-06-12";
+
 // ─── DATA ────────────────────────────────────────────────────────────────────
 const RAW = [
   {v:"PTY",ch:"Direct",       m:"2026-01",dau:33382,dwl:5146, lead:639717},
@@ -1230,29 +1233,63 @@ function ChannelSection() {
 
 
 // ─── GROWTH PERFORMANCE ──────────────────────────────────────────────────────
-// Cost data — Google Sheets "Data for Claude", Activities contains "DwL"
-// Source: spreadsheets/1VkmHBo_1RtzCyo24yhoJbYmZqrgjSl9KGY3w9XWDUqQ
-// T1-T5 = Actual, T6-T12 = Forecast (VND)
+// Cost data — auto-updated from Google Sheets "FC & Actual cost"
+// actual = accrued | forecast = planned (VND)
 const GROWTH_COST = {
   PTY:{
-    "2026-01":234890760,"2026-02":132396000,"2026-03":360973800,"2026-04":416431277,
-    "2026-05":408916410,"2026-06":450000000,"2026-07":500000000,"2026-08":500000000,
-    "2026-09":500000000,"2026-10":500000000,"2026-11":500000000,"2026-12":400000000,
+    "2026-01":234890760,
+    "2026-02":132396000,
+    "2026-03":360973800,
+    "2026-04":416431277,
+    "2026-05":408916410,
+    "2026-06":450000000,
+    "2026-07":550000000,
+    "2026-08":550000000,
+    "2026-09":550000000,
+    "2026-10":500000000,
+    "2026-11":500000000,
+    "2026-12":250000000,
   },
   JOB:{
-    "2026-01":111645340,"2026-02":75991201,"2026-03":520000000,"2026-04":342395675,
-    "2026-05":327636350,"2026-06":400000000,"2026-07":450000000,"2026-08":450000000,
-    "2026-09":400000000,"2026-10":400000000,"2026-11":400000000,"2026-12":300000000,
+    "2026-01":111645340,
+    "2026-02":75991201,
+    "2026-03":520000000,
+    "2026-04":342395675,
+    "2026-05":327636350,
+    "2026-06":400000000,
+    "2026-07":450000000,
+    "2026-08":450000000,
+    "2026-09":450000000,
+    "2026-10":400000000,
+    "2026-11":400000000,
+    "2026-12":300000000,
   },
   VEH:{
-    "2026-01":0,"2026-02":31293690,"2026-03":187000000,"2026-04":176000000,
-    "2026-05":161669927,"2026-06":150000000,"2026-07":200000000,"2026-08":225000000,
-    "2026-09":225000000,"2026-10":225000000,"2026-11":225000000,"2026-12":200000000,
+    "2026-02":31293690,
+    "2026-03":187000000,
+    "2026-04":176000000,
+    "2026-05":161669927,
+    "2026-06":100000000,
+    "2026-07":200000000,
+    "2026-08":250000000,
+    "2026-09":250000000,
+    "2026-10":225000000,
+    "2026-11":225000000,
+    "2026-12":200000000,
   },
   GDS:{
-    "2026-01":46945140,"2026-02":48552744,"2026-03":132459496,"2026-04":74674975,
-    "2026-05":91168945,"2026-06":135000000,"2026-07":157500000,"2026-08":157500000,
-    "2026-09":157500000,"2026-10":125000000,"2026-11":112500000,"2026-12":112500000,
+    "2026-01":46945140,
+    "2026-02":48552744,
+    "2026-03":132459496,
+    "2026-04":74674975,
+    "2026-05":91168945,
+    "2026-06":135000000,
+    "2026-07":150000000,
+    "2026-08":150000000,
+    "2026-09":150000000,
+    "2026-10":113000000,
+    "2026-11":113000000,
+    "2026-12":103000000,
   },
 };
 // All months including forecast T6-T12
@@ -1527,98 +1564,6 @@ function GrowthSection() {
             </div>
           );
         })()}
-      </div>
-    </section>
-  );
-}
-
-function SDSection() {
-  const sdVerts = VERTS;
-  const sdMonths = MONTHS.filter(m => VERTS.some(v => SD_DATA[v]?.[m]?.adCov != null));
-  const SD_METRICS = [
-    {key:"adCov",    label:"Ad Coverage [S&D]",    color:"#6366f1"},
-    {key:"buyerCov", label:"Buyer Coverage [S&D]",  color:"#10b981"},
-  ];
-
-  const mkLineDs = (metKey) => {
-    const ds = sdVerts.map(v=>({
-      label:v,
-      data:sdMonths.map(m=>SD_DATA[v]?.[m]?.[metKey]??null),
-      borderColor:VC[v], backgroundColor:VC[v]+"22",
-      borderWidth:2.5, tension:0.3, pointRadius:5, fill:false,
-    }));
-    ds.push({
-      label:`≥${SD_BENCHMARK}`,
-      data:sdMonths.map(()=>SD_BENCHMARK),
-      borderColor:"#dc2626", borderDash:[5,3], borderWidth:1.5,
-      pointRadius:0, fill:false, backgroundColor:"transparent",
-    });
-    return ds;
-  };
-
-  return (
-    <section id="sd">
-      <div className="section-title">S&D Monthly Report</div>
-      <div style={{background:"#f0f9ff",borderRadius:8,padding:"9px 14px",
-        borderLeft:"3px solid #6366f1",fontSize:11,marginBottom:16,color:"#374151"}}>
-        Nguồn: <code>ct_product_analytics.servings__marketplace_supply_demand_tracking_v2</code> · /marketplace-supply-demand skill
-        · T5-T6/2026 (table available from 21/5/2026) · Benchmark healthy ≥ 0.70 (╌ đỏ)
-      </div>
-
-      {/* 2 charts side by side */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
-        {SD_METRICS.map(({key,label,color})=>(
-          <div key={key} style={{background:"#fff",borderRadius:12,padding:"16px 18px",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
-            <div style={{fontWeight:600,marginBottom:4,color,fontSize:13}}>{label}</div>
-            <div style={{fontSize:10,color:"#9ca3af",marginBottom:10}}>
-              Monthly avg · All inventory · ╌ Benchmark ≥{SD_BENCHMARK}
-            </div>
-            <LineChart labels={sdMonths.map(m=>ML[m])} datasets={mkLineDs(key)} height={220}/>
-          </div>
-        ))}
-      </div>
-
-      {/* 4-box detail — like Unit Economy */}
-      <div style={{fontWeight:600,fontSize:13,color:"#374151",marginBottom:12}}>
-        Detail — Ad & Buyer Coverage by Vertical
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-        {sdVerts.map(v=>(
-          <div key={v} style={{background:"#fff",borderRadius:12,padding:"14px 16px",
-            boxShadow:"0 1px 4px rgba(0,0,0,.07)",borderTop:`3px solid ${VC[v]}`}}>
-            <div style={{fontWeight:700,color:VC[v],marginBottom:8,fontSize:13}}>{v}</div>
-            <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-              <thead>
-                <tr style={{borderBottom:"1px solid #f0f0f0"}}>
-                  <th style={{textAlign:"left",padding:"3px 4px",color:"#9ca3af",fontWeight:500}}>Month</th>
-                  <th style={{textAlign:"right",padding:"3px 4px",color:"#6366f1",fontWeight:600}}>Ad Cov</th>
-                  <th style={{textAlign:"right",padding:"3px 4px",color:"#10b981",fontWeight:600}}>Buyer Cov</th>
-                  <th style={{textAlign:"right",padding:"3px 4px",color:"#9ca3af",fontWeight:500}}>Days</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sdMonths.map(m=>{
-                  const d=SD_DATA[v]?.[m];
-                  if(!d) return null;
-                  const acC=d.adCov>=SD_BENCHMARK?"#059669":"#dc2626";
-                  const bcC=d.buyerCov>=SD_BENCHMARK?"#059669":"#dc2626";
-                  return (
-                    <tr key={m} style={{borderBottom:"1px solid #fafafa"}}>
-                      <td style={{padding:"4px 4px",color:"#374151",fontWeight:500}}>{ML[m]}</td>
-                      <td style={{textAlign:"right",padding:"4px 4px",fontWeight:700,color:acC}}>
-                        {d.adCov.toFixed(3)}
-                      </td>
-                      <td style={{textAlign:"right",padding:"4px 4px",fontWeight:700,color:bcC}}>
-                        {d.buyerCov?.toFixed(3)??'—'}
-                      </td>
-                      <td style={{textAlign:"right",padding:"4px 4px",color:"#9ca3af"}}>{d.days}d</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ))}
       </div>
     </section>
   );
@@ -2140,38 +2085,12 @@ function MarketplaceHealth() {
 const TH = {padding:"8px 12px",textAlign:"right",fontSize:12,fontWeight:600,color:"#6b7280",borderBottom:"2px solid #e5e7eb"};
 const TD = {padding:"7px 12px",textAlign:"right",fontSize:12,color:"#111"};
 
-// ─── S&D DATA (from ct_product_analytics.servings__marketplace_supply_demand_tracking_v2)
-// Source: /marketplace-supply-demand skill. Auto-updated by update_marketplace.py when BQ access available.
-// Values = monthly avg of daily ad_coverage and buyer_coverage (all inventory, all segments)
-const SD_DATA = {
-  // Source: ct_product_analytics.servings__marketplace_supply_demand_tracking_v2
-  // AVG(ad_coverage) and AVG(buyer_coverage) across segments with ≥5 buyers, inventory_filter=all
-  // Last verified: 2026-06-06 via BQ query (verified against skill /marketplace-supply-demand)
-  PTY:{
-    "2026-05":{adCov:0.944, buyerCov:0.742, days:11},
-    "2026-06":{adCov:0.943, buyerCov:0.733, days:5},
-  },
-  JOB:{
-    "2026-05":{adCov:0.967, buyerCov:0.943, days:11},
-    "2026-06":{adCov:0.967, buyerCov:0.952, days:5},
-  },
-  VEH:{
-    "2026-05":{adCov:0.986, buyerCov:0.943, days:11},
-    "2026-06":{adCov:0.986, buyerCov:0.946, days:5},
-  },
-  GDS:{
-    "2026-05":{adCov:0.951, buyerCov:0.925, days:11},
-    "2026-06":{adCov:0.948, buyerCov:0.863, days:5},
-  },
-};
-const SD_BENCHMARK = 0.70; // healthy threshold
 
 const VD_SECTIONS = [
   {id:"exec",    label:"📋 Executive Summary"},
   {id:"vertical",label:"📈 By Vertical"},
   {id:"channel", label:"📡 By Channel"},
   {id:"detail",  label:"🔍 Detail Table"},
-  {id:"sd",      label:"⚖️ S&D Report"},
   {id:"growth",  label:"🌱 Growth Performance"},
 ];
 
@@ -2200,7 +2119,11 @@ function App() {
           display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>📊</div>
         <div>
           <div style={{fontWeight:700,fontSize:16,color:"#fff"}}>Chotot Marketplace Dashboard</div>
-          <div style={{fontSize:11,color:"#a5b4fc"}}>T1~T5/2026 · BigQuery chotot-dwh</div>
+          {(()=>{
+            const latestNum=parseInt(MONTHS[MONTHS.length-1].split('-')[1]);
+            const [,mm,dd]=DATA_AS_OF.split('-');
+            return <div style={{fontSize:11,color:"#a5b4fc"}}>T1~T{latestNum}/2026 · BigQuery chotot-dwh · <span style={{color:"#fbbf24"}}>T{latestNum} chưa đủ tháng, data tới {dd}/{mm}</span></div>;
+          })()}
         </div>
         
       </div>
@@ -2224,7 +2147,6 @@ function App() {
           <VerticalSection/>
           <ChannelSection/>
           <DetailSection/>
-          <SDSection/>
           <GrowthSection/>
           <div style={{height:60}}/>
         </>
