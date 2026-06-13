@@ -1502,7 +1502,7 @@ function GrowthSection({costData}) {
             const ct  = VERT_ACT[v]?.[m]?.[key]??0;
             return vr ? Math.round(raw/vr*ct) : 0;
           };
-          const cpColor = c => !c?"#ddd":c>500000?"#dc2626":c>200000?"#d97706":"#059669";
+          const cpColor = () => "#374151";
           const isTotal = unitVert==="__total__";
           const spend = m => isTotal ? VERTS.reduce((s,v)=>s+(costData[v]?.[m]||0),0) : costData[unitVert]?.[m]||0;
           const vol   = (m,k) => isTotal ? VERTS.reduce((s,v)=>s+gpMetric(v,m,k),0) : gpMetric(unitVert,m,k);
@@ -1540,9 +1540,9 @@ function GrowthSection({costData}) {
                         <tr key={m} style={{borderBottom:"1px solid #fafafa"}}>
                           <td style={{padding:"3px 4px",color:"#374151",fontWeight:500}}>{ALL_ML_S[m]}</td>
                           <td style={{textAlign:"right",padding:"3px 4px",color:s?"#374151":"#ddd"}}>{s?fmtK(s):"—"}</td>
-                          <td style={{textAlign:"right",padding:"3px 4px",fontWeight:600,color:cpColor(cdau)}}>{cdau?fmtK(cdau):"—"}</td>
-                          <td style={{textAlign:"right",padding:"3px 4px",fontWeight:600,color:cpColor(cdwl)}}>{cdwl?fmtK(cdwl):"—"}</td>
-                          <td style={{textAlign:"right",padding:"3px 4px",fontWeight:600,color:cpColor(clead)}}>{clead?fmtK(clead):"—"}</td>
+                          <td style={{textAlign:"right",padding:"3px 4px",color:cpColor()}}>{cdau?fmtK(cdau):"—"}</td>
+                          <td style={{textAlign:"right",padding:"3px 4px",color:cpColor()}}>{cdwl?fmtK(cdwl):"—"}</td>
+                          <td style={{textAlign:"right",padding:"3px 4px",color:cpColor()}}>{clead?fmtK(clead):"—"}</td>
                         </tr>
                       );
                     })}
@@ -2348,7 +2348,12 @@ function CostInputSection({costData, setCostData}) {
   const actualSet = new Set(MONTHS.slice(0,-1));
   const isAct = m => actualSet.has(m);
 
-  const toM = v => v ? parseFloat((v/1e6).toFixed(3)) : 0;
+  // costData stores raw VND. If value >1e10 it was pasted as M VND then saved (*1e6) = corrupted → recover via /1e12
+  const toM = v => {
+    if (!v) return 0;
+    if (v > 1e10) return parseFloat((v/1e12).toFixed(3));
+    return parseFloat((v/1e6).toFixed(3));
+  };
 
   const [draft, setDraft] = useState(() => {
     const d={};
@@ -2382,10 +2387,11 @@ function CostInputSection({costData, setCostData}) {
         cols.forEach((cell,ci) => {
           const mi = mIdx+ci;
           if (mi>=M12.length) return;
-          // Strip thousands separators and currency symbols, keep digits/dot/minus
           const cleaned = cell.replace(/[^0-9.\-]/g,'');
           const num = parseFloat(cleaned);
-          next[rowKey][M12[mi]] = isNaN(num) ? 0 : num;
+          // Auto-detect raw VND paste (>10000 = unlikely to be M VND): divide by 1e6
+          const val = isNaN(num) ? 0 : (num > 10000 ? parseFloat((num/1e6).toFixed(3)) : num);
+          next[rowKey][M12[mi]] = val;
         });
       });
       return next;
