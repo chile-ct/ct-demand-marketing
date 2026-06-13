@@ -2106,6 +2106,33 @@ function CostInputSection({costData, setCostData}) {
     setSaved(false);
   };
 
+  const handlePaste = (startV, startM, e) => {
+    const text = e.clipboardData.getData('text');
+    if (!text.includes('\t') && !text.includes('\n')) return;
+    e.preventDefault();
+    const rows = text.trim().split(/\r?\n/).map(r=>r.split('\t'));
+    const vIdx = COST_ROWS.indexOf(startV);
+    const mIdx = M12.indexOf(startM);
+    if (vIdx<0||mIdx<0) return;
+    setDraft(prev => {
+      const next = {};
+      COST_ROWS.forEach(k=>{next[k]={...prev[k]};});
+      rows.forEach((cols,ri) => {
+        const vi = vIdx+ri;
+        if (vi>=COST_ROWS.length) return;
+        const rowKey = COST_ROWS[vi];
+        cols.forEach((cell,ci) => {
+          const mi = mIdx+ci;
+          if (mi>=M12.length) return;
+          const num = parseFloat(cell.replace(/[^0-9.\-]/g,''));
+          next[rowKey][M12[mi]] = isNaN(num) ? 0 : num;
+        });
+      });
+      return next;
+    });
+    setSaved(false);
+  };
+
   const handleSave = () => {
     const nc={};
     COST_ROWS.filter(v=>v!=="PARENT").forEach(v=>{
@@ -2182,6 +2209,7 @@ function CostInputSection({costData, setCostData}) {
                         type="number" step="0.1"
                         value={draft[v]?.[m]||""}
                         onChange={e=>setCell(v,m,e.target.value)}
+                        onPaste={e=>handlePaste(v,m,e)}
                         placeholder="—"
                         style={{width:"100%",border:"none",background:"transparent",
                           textAlign:"center",fontSize:11,padding:"4px 2px",outline:"none",
