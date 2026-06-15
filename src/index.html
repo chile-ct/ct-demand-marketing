@@ -1179,9 +1179,7 @@ function ChannelSection() {
     if(met==="mau")     return chMonthMau(ch,m).mau;
     if(met==="mauLead") return chMonthMau(ch,m).mauLead;
     if(met==="dauMau")  return chMonthMau(ch,m).dauMau;
-    const raw = chMonthSum(ch,m)[met]??0;
-    const tot = CHANNELS.reduce((s,c)=>s+chMonthSum(c,m)[met],0);
-    return tot ? Math.round(raw/tot*(ACT[m][met]??0)) : 0;
+    return chMonthSum(ch,m)[met]??0;
   };
 
   const datasets = CHANNELS.map((ch,i)=>({
