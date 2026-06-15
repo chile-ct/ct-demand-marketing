@@ -550,7 +550,7 @@ function genChannelCommentary(metric) {
 }
 
 // ─── CHART WRAPPERS ──────────────────────────────────────────────────────────
-function LineChart({labels,datasets,height=240,maxTicks}) {
+function LineChart({labels,datasets,height=240,maxTicks,hideLegend=false}) {
   const ref=useRef(null), ch=useRef(null);
   useEffect(()=>{
     if(ch.current) ch.current.destroy();
@@ -570,21 +570,19 @@ function LineChart({labels,datasets,height=240,maxTicks}) {
     });
     return ()=>ch.current?.destroy();
   },[labels,datasets,maxTicks]);
-  // HTML legend — crisp DOM text, not canvas
   return (
     <div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:"6px 14px",marginBottom:10}}>
-        {datasets.map((d,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:5,fontSize:12,fontWeight:500,color:'#374151'}}>
-            <span style={{
-              display:"inline-block",width:20,height:3,borderRadius:2,
-              background: d.borderColor||d.backgroundColor||'#999',
-              flexShrink:0,
-            }}/>
-            {d.label}
-          </div>
-        ))}
-      </div>
+      {!hideLegend && (
+        <div style={{display:"flex",flexWrap:"wrap",gap:"6px 14px",marginBottom:10}}>
+          {datasets.map((d,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:5,fontSize:12,fontWeight:500,color:'#374151'}}>
+              <span style={{display:"inline-block",width:20,height:3,borderRadius:2,
+                background:d.borderColor||d.backgroundColor||'#999',flexShrink:0}}/>
+              {d.label}
+            </div>
+          ))}
+        </div>
+      )}
       <div style={{position:"relative",height}}><canvas ref={ref}/></div>
     </div>
   );
@@ -612,7 +610,7 @@ function BarChart({labels,datasets,height=220,stacked=false}) {
   return <div style={{position:"relative",height}}><canvas ref={ref}/></div>;
 }
 
-function BarChartWithTotals({labels,datasets,height=220}) {
+function BarChartWithTotals({labels,datasets,height=220,hideLegend=false}) {
   const ref=useRef(null), ch=useRef(null);
   const fmtB = n => n>=1e9?parseFloat((n/1e9).toFixed(2))+"B": n>=1e6?Math.round(n/1e6)+"M": n>=1e3?Math.round(n/1e3)+"K": String(n);
   useEffect(()=>{
@@ -653,14 +651,16 @@ function BarChartWithTotals({labels,datasets,height=220}) {
   },[labels,datasets]);
   return (
     <div>
-      <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:8}}>
-        {datasets.map((d,i)=>(
-          <span key={i} style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#374151"}}>
-            <span style={{width:12,height:12,borderRadius:2,background:d.backgroundColor?.[0]?.slice(0,7)||d.backgroundColor,display:"inline-block",flexShrink:0}}/>
-            {d.label}
-          </span>
-        ))}
-      </div>
+      {!hideLegend && (
+        <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:8}}>
+          {datasets.map((d,i)=>(
+            <span key={i} style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#374151"}}>
+              <span style={{width:12,height:12,borderRadius:2,background:d.backgroundColor?.[0]?.slice(0,7)||d.backgroundColor,display:"inline-block",flexShrink:0}}/>
+              {d.label}
+            </span>
+          ))}
+        </div>
+      )}
       <div style={{position:"relative",height}}><canvas ref={ref}/></div>
     </div>
   );
@@ -12479,8 +12479,20 @@ function GrowthSection({costData}) {
         <div style={{fontWeight:700,fontSize:13,marginBottom:4,color:"#374151"}}>
           💰 Cost & Unit Economy — DwL Campaign Spend by Vertical
         </div>
-        <div style={{fontSize:11,color:"#9ca3af",marginBottom:16}}>
+        <div style={{fontSize:11,color:"#9ca3af",marginBottom:10}}>
           Nguồn: Google Sheets "Data for Claude" · Activities chứa "DwL" · T1-T5 = Actual, T6-T12 = Forecast (VND)
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:"6px 16px",marginBottom:16}}>
+          {VERTS.map(v=>(
+            <span key={v} style={{display:"flex",alignItems:"center",gap:5,fontSize:12,fontWeight:500,color:"#374151"}}>
+              <span style={{display:"inline-block",width:20,height:3,borderRadius:2,background:VC[v]}}/>
+              {v}
+            </span>
+          ))}
+          <span style={{display:"flex",alignItems:"center",gap:5,fontSize:12,fontWeight:500,color:"#374151"}}>
+            <span style={{display:"inline-block",width:20,height:3,borderRadius:2,background:"#374151",borderTop:"2px dashed #374151"}}/>
+            Total
+          </span>
         </div>
         {(()=>{
           const gpMetric = (v, m, key) =>
@@ -12521,12 +12533,12 @@ function GrowthSection({costData}) {
               <div style={{background:"#fff",borderRadius:12,padding:"16px 18px",boxShadow:"0 1px 4px rgba(0,0,0,.07)",minWidth:0,overflow:"hidden"}}>
                 <div style={{fontWeight:600,fontSize:13,marginBottom:4,color:"#374151"}}>Monthly Spend by Vertical (VND)</div>
                 <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>■ Darker = Actual (T1-T5) · ■ Lighter = Forecast (T6-T12)</div>
-                <BarChartWithTotals labels={ALL_MONTHS.map(m=>ALL_ML_S[m])} datasets={spendBarDs} height={260}/>
+                <BarChartWithTotals labels={ALL_MONTHS.map(m=>ALL_ML_S[m])} datasets={spendBarDs} height={260} hideLegend/>
               </div>
               <div style={{background:"#fff",borderRadius:12,padding:"16px 18px",boxShadow:"0 1px 4px rgba(0,0,0,.07)",minWidth:0,overflow:"hidden"}}>
                 <div style={{fontWeight:600,fontSize:13,marginBottom:4,color:"#374151"}}>% CR to Lead (DwL / DAU)</div>
                 <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>Growth (Paid + CRM) · % · T1-T5 actual</div>
-                <LineChart labels={MONTHS.map(m=>ALL_ML_S[m])} datasets={crDs} height={260}/>
+                <LineChart labels={MONTHS.map(m=>ALL_ML_S[m])} datasets={crDs} height={260} hideLegend/>
               </div>
             </div>
             {(()=>{
@@ -12549,7 +12561,7 @@ function GrowthSection({costData}) {
                     <div key={key} style={{background:"#fff",borderRadius:12,padding:"16px 18px",boxShadow:"0 1px 4px rgba(0,0,0,.07)",minWidth:0,overflow:"hidden"}}>
                       <div style={{fontWeight:600,fontSize:13,marginBottom:2,color:"#374151"}}>{label}</div>
                       <div style={{fontSize:10,color:"#9ca3af",marginBottom:10}}>₫ · {note} · ╌╌ Total</div>
-                      <LineChart labels={MONTHS.map(m=>ALL_ML_S[m])} datasets={lnDsWithTotal(key)} height={200}/>
+                      <LineChart labels={MONTHS.map(m=>ALL_ML_S[m])} datasets={lnDsWithTotal(key)} height={200} hideLegend/>
                     </div>
                   ))}
                 </div>
