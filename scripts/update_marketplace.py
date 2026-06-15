@@ -115,18 +115,26 @@ def fetch_growth_cost():
 print("Fetching Google Sheets cost data...")
 growth_cost = fetch_growth_cost()
 
-# ── 3b. Detail data (daumaulead_mkt_rp) ─────────────────────────────────────
+# ── 3b. Detail data (mtm_chotot_vertical_channel) ───────────────────────────
 print("Querying detail channel data...")
 detail_rows = q(f"""
 SELECT
-  FORMAT_DATE('%Y-%m', date) AS m,
+  FORMAT_DATE('%Y-%m', date)  AS m,
   vertical,
-  channel,
-  ROUND(AVG(dau), 0)        AS dau,
-  ROUND(AVG(dau_w_lead), 0) AS dwl,
-  MAX(lead_mth)              AS lead
-FROM `chotot-dwh.ct_product_analytics.daumaulead_mkt_rp`
+  CASE channel
+    WHEN 'digital'        THEN 'Growth (Paid)'
+    WHEN 'growth_outapp'  THEN 'Growth (CRM)'
+    WHEN 'growth_inapp'   THEN 'Growth (CRM)'
+    WHEN 'seo'            THEN 'Organic Search'
+    WHEN 'direct'         THEN 'Direct'
+    ELSE '(Other)'
+  END AS channel,
+  ROUND(AVG(dau), 0)          AS dau,
+  ROUND(AVG(dau_w_lead), 0)   AS dwl,
+  SUM(lead_count)             AS lead
+FROM `chotot-dwh.ct_digital.mtm_chotot_vertical_channel`
 WHERE date BETWEEN '{start}' AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+  AND vertical IN ('pty','jobs','veh','gds')
 GROUP BY 1, 2, 3
 ORDER BY 1, 2, 3
 """)
