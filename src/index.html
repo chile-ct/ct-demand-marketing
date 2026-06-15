@@ -12487,14 +12487,22 @@ function GrowthSection({costData}) {
             backgroundColor:ALL_MONTHS.map((_,i)=>VC[v]+(i<MONTHS.length?"dd":"44")),
           }));
           const note = 'Growth (Paid + CRM) · T1-T5 actual only';
-          const crDs = VERTS.map(v=>({
-            label:v,
-            data:MONTHS.map(m=>{
-              const dau=gpMetric(v,m,"dau"), dwl=gpMetric(v,m,"dwl");
-              return dau ? parseFloat((dwl/dau*100).toFixed(1)) : null;
-            }),
-            borderColor:VC[v], backgroundColor:VC[v]+"22", tension:0.3, pointRadius:4, fill:false,
-          }));
+          const crDs = [
+            ...VERTS.map(v=>({
+              label:v,
+              data:MONTHS.map(m=>{
+                const dau=gpMetric(v,m,"dau"), dwl=gpMetric(v,m,"dwl");
+                return dau ? parseFloat((dwl/dau*100).toFixed(1)) : null;
+              }),
+              borderColor:VC[v], backgroundColor:VC[v]+"22", tension:0.3, pointRadius:4, fill:false,
+            })),
+            {label:"Total",borderColor:"#374151",backgroundColor:"#37415122",borderWidth:2,borderDash:[5,3],tension:0.3,pointRadius:4,fill:false,
+              data:MONTHS.map(m=>{
+                const dau=VERTS.reduce((s,v)=>s+gpMetric(v,m,"dau"),0);
+                const dwl=VERTS.reduce((s,v)=>s+gpMetric(v,m,"dwl"),0);
+                return dau ? parseFloat((dwl/dau*100).toFixed(1)) : null;
+              })},
+          ];
           return (<>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
               <div style={{background:"#fff",borderRadius:12,padding:"16px 18px",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
