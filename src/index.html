@@ -12470,13 +12470,8 @@ function GrowthSection({costData}) {
           Nguồn: Google Sheets "Data for Claude" · Activities chứa "DwL" · T1-T5 = Actual, T6-T12 = Forecast (VND)
         </div>
         {(()=>{
-          const CH = "Growth (Paid)";
-          const gpMetric = (v, m, key) => {
-            const raw = DATA.find(x=>x.v===v&&x.ch===CH&&x.m===m)?.[key]??0;
-            const vr  = CHANNELS.reduce((s,c)=>s+(DATA.find(x=>x.v===v&&x.ch===c&&x.m===m)?.[key]??0),0);
-            const ct  = VERT_ACT[v]?.[m]?.[key]??0;
-            return vr ? Math.round(raw/vr*ct) : 0;
-          };
+          const gpMetric = (v, m, key) =>
+            ["Growth (Paid)","Growth (CRM)"].reduce((s,ch)=>s+(DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m)?.[key]??0),0);
           const cp = (v, m, key) => {
             const vol = gpMetric(v, m, key); const spend = costData[v]?.[m]||0;
             if(!vol||!spend) return null;
@@ -12491,7 +12486,7 @@ function GrowthSection({costData}) {
             label:v, data:ALL_MONTHS.map(m=>costData[v]?.[m]||0),
             backgroundColor:ALL_MONTHS.map((_,i)=>VC[v]+(i<MONTHS.length?"dd":"44")),
           }));
-          const note = 'Growth (Paid) · T1-T5 actual only';
+          const note = 'Growth (Paid + CRM) · T1-T5 actual only';
           return (<>
             <div style={{background:"#fff",borderRadius:12,padding:"16px 18px",
               boxShadow:"0 1px 4px rgba(0,0,0,.07)",marginBottom:14}}>
@@ -12500,12 +12495,8 @@ function GrowthSection({costData}) {
               <BarChartWithTotals labels={ALL_MONTHS.map(m=>ALL_ML_S[m])} datasets={spendBarDs} height={300}/>
             </div>
             {(()=>{
-              const gpMetricAll = (v, m, key) => {
-                const raw = DATA.find(x=>x.v===v&&x.ch===CH&&x.m===m)?.[key]??0;
-                const vr  = CHANNELS.reduce((s,c)=>s+(DATA.find(x=>x.v===v&&x.ch===c&&x.m===m)?.[key]??0),0);
-                const ct  = VERT_ACT[v]?.[m]?.[key]??0;
-                return vr ? Math.round(raw/vr*ct) : 0;
-              };
+              const gpMetricAll = (v, m, key) =>
+                ["Growth (Paid)","Growth (CRM)"].reduce((s,ch)=>s+(DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m)?.[key]??0),0);
               const cpTotal = (m, key) => {
                 const vol = VERTS.reduce((s,v)=>s+gpMetricAll(v,m,key),0);
                 const spend = VERTS.reduce((s,v)=>s+(costData[v]?.[m]||0),0);
@@ -12532,13 +12523,8 @@ function GrowthSection({costData}) {
           </>);
         })()}
         {(()=>{
-          const CH = "Growth (Paid)";
-          const gpMetric = (v, m, key) => {
-            const raw = DATA.find(x=>x.v===v&&x.ch===CH&&x.m===m)?.[key]??0;
-            const vr  = CHANNELS.reduce((s,c)=>s+(DATA.find(x=>x.v===v&&x.ch===c&&x.m===m)?.[key]??0),0);
-            const ct  = VERT_ACT[v]?.[m]?.[key]??0;
-            return vr ? Math.round(raw/vr*ct) : 0;
-          };
+          const gpMetric = (v, m, key) =>
+            ["Growth (Paid)","Growth (CRM)"].reduce((s,ch)=>s+(DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m)?.[key]??0),0);
           const cpColor = () => "#374151";
           const MiniTable = ({vert, isT, color}) => {
             const spendV = m => isT ? VERTS.reduce((s,v)=>s+(costData[v]?.[m]||0),0) : costData[vert]?.[m]||0;
