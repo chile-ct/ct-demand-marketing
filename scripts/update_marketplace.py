@@ -119,22 +119,31 @@ growth_cost = fetch_growth_cost()
 print("Querying detail channel data...")
 detail_rows = q(f"""
 SELECT
-  FORMAT_DATE('%Y-%m', date)  AS m,
-  vertical,
-  CASE channel
-    WHEN 'digital'        THEN 'Growth (Paid)'
-    WHEN 'growth_outapp'  THEN 'Growth (CRM)'
-    WHEN 'growth_inapp'   THEN 'Growth (CRM)'
-    WHEN 'seo'            THEN 'Organic Search'
-    WHEN 'direct'         THEN 'Direct'
-    ELSE '(Other)'
-  END AS channel,
-  ROUND(AVG(dau), 0)          AS dau,
-  ROUND(AVG(dau_w_lead), 0)   AS dwl,
-  SUM(lead_count)             AS lead
-FROM `chotot-dwh.ct_digital.mtm_chotot_vertical_channel`
-WHERE date BETWEEN '{start}' AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
-  AND vertical IN ('pty','jobs','veh','gds')
+  m, vertical, channel,
+  ROUND(AVG(daily_dau), 0)  AS dau,
+  ROUND(AVG(daily_dwl), 0)  AS dwl,
+  SUM(daily_lead)           AS lead
+FROM (
+  SELECT
+    FORMAT_DATE('%Y-%m', date) AS m,
+    vertical,
+    CASE channel
+      WHEN 'digital'        THEN 'Growth (Paid)'
+      WHEN 'growth_outapp'  THEN 'Growth (CRM)'
+      WHEN 'growth_inapp'   THEN 'Growth (CRM)'
+      WHEN 'seo'            THEN 'Organic Search'
+      WHEN 'direct'         THEN 'Direct'
+      ELSE '(Other)'
+    END AS channel,
+    date,
+    SUM(dau)        AS daily_dau,
+    SUM(dau_w_lead) AS daily_dwl,
+    SUM(lead_count) AS daily_lead
+  FROM `chotot-dwh.ct_digital.mtm_chotot_vertical_channel`
+  WHERE date BETWEEN '{start}' AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+    AND vertical IN ('pty','jobs','veh','gds')
+  GROUP BY 1, 2, 3, 4
+)
 GROUP BY 1, 2, 3
 ORDER BY 1, 2, 3
 """)
@@ -230,7 +239,7 @@ def js_detail_data(detail_rows, camp_rows):
     import json as _json
     vert_map = {'pty':'PTY','jobs':'JOB','veh':'VEH','gds':'GDS'}
 
-    # CRM totals: sum AVG(dau) per campaign — same methodology as Campaign Breakdown
+    # CRM totals from campaign-level data — same methodology as Campaign Breakdown CRM filter
     crm = {}
     for r in camp_rows:
         if r.get('channel') != 'growth_outapp': continue
