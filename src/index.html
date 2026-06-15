@@ -475,7 +475,7 @@ const RET_PF_COLORS    = {App:"#6366f1",Web:"#10b981"};
 const RET_LOGIN_COLORS = {"Login":"#6366f1","Non-login":"#9ca3af"};
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
-const fmtK  = n => n==null?"—": n>=1e6?(n/1e6).toFixed(2)+"M": n>=1e3?(n/1e3).toFixed(1)+"K": n.toLocaleString();
+const fmtK  = n => n==null?"—": n>=1e9?parseFloat((n/1e9).toFixed(2))+"B": n>=1e6?parseFloat((n/1e6).toFixed(2))+"M": n>=1e3?parseFloat((n/1e3).toFixed(1))+"K": n.toLocaleString();
 const fmtN  = n => n?.toLocaleString("vi-VN")??"—";
 const pct   = (a,b) => b ? Math.round(a/b*100) : null;
 const delta = (a,b) => b ? Math.round((a-b)/b*100) : null;
@@ -13052,13 +13052,19 @@ function CampaignSection() {
   const getVert = r => r.v || 'other';
 
   const [selM,   setSelM]   = React.useState(defaultM);
-  const [selV,   setSelV]   = React.useState('all');   // all | PTY | JOB | VEH | GDS
-  const [selCh,  setSelCh]  = React.useState('all');   // all | Paid | CRM
+  const [selV,   setSelV]   = React.useState('all');
+  const [selCh,  setSelCh]  = React.useState('all');
   const [page,   setPage]   = React.useState(0);
+  const [sortCol, setSortCol] = React.useState('dwl');
+  const [sortAsc, setSortAsc] = React.useState(false);
   const PAGE_SIZE = 10;
 
-  // Reset page when filters change
   const setFilter = (setter) => (val) => { setter(val); setPage(0); };
+  const handleSort = (col) => {
+    if (col === sortCol) setSortAsc(a => !a);
+    else { setSortCol(col); setSortAsc(false); }
+    setPage(0);
+  };
 
   const chColor = ch => ch==="Paid" ? "#6366f1" : "#0ea5e9";
   const chLabel = ch => ch==="Paid" ? "Growth (Paid)" : "Growth (CRM)";
@@ -13069,7 +13075,7 @@ function CampaignSection() {
     .filter(r => r.m === selM)
     .filter(r => selCh === 'all' || r.ch === selCh)
     .filter(r => selV === 'all' || getVert(r) === selV)
-    .sort((a,b) => b.dwl - a.dwl);
+    .sort((a,b) => sortAsc ? a[sortCol]-b[sortCol] : b[sortCol]-a[sortCol]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const pageRows = filtered.slice(page * PAGE_SIZE, (page+1) * PAGE_SIZE);
@@ -13123,7 +13129,7 @@ function CampaignSection() {
             <FilterChip active={selCh==='CRM'} onClick={()=>setFilter(setSelCh)('CRM')} color="#0ea5e9">Growth (CRM)</FilterChip>
           </div>
           <span style={{marginLeft:"auto",fontSize:10,color:"#9ca3af"}}>
-            {filtered.length} campaigns · sorted by DwL
+            {filtered.length} campaigns · sorted by {sortCol==='dau'?'DAU':sortCol==='dwl'?'DwL':'Lead'} {sortAsc?'↑':'↓'}
           </span>
         </div>
 
@@ -13134,9 +13140,14 @@ function CampaignSection() {
                 <th style={{...TH,textAlign:"left",minWidth:260}}>Campaign</th>
                 <th style={{...TH,textAlign:"center",minWidth:70}}>Vertical</th>
                 <th style={{...TH,textAlign:"center",minWidth:110}}>Channel</th>
-                <th style={{...TH,textAlign:"right",minWidth:90}}>DAU</th>
-                <th style={{...TH,textAlign:"right",minWidth:90}}>DwL ▼</th>
-                <th style={{...TH,textAlign:"right",minWidth:100}}>Lead</th>
+                {['dau','dwl','lead'].map(col=>(
+                  <th key={col} onClick={()=>handleSort(col)}
+                    style={{...TH,textAlign:"right",minWidth:col==='lead'?100:90,cursor:"pointer",
+                      color:sortCol===col?"#6366f1":"#374151",userSelect:"none"}}>
+                    {col==='dau'?'DAU':col==='dwl'?'DwL':'Lead'}
+                    {sortCol===col?(sortAsc?' ▲':' ▼'):''}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
