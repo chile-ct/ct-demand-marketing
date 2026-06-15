@@ -226,19 +226,34 @@ def js_campaign_data(rows):
     lines.append('];')
     return '\n'.join(lines)
 
-def js_detail_data(rows):
+def js_detail_data(detail_rows, camp_rows):
     import json as _json
     vert_map = {'pty':'PTY','jobs':'JOB','veh':'VEH','gds':'GDS'}
-    lines = ['// Detail channel data — auto-updated from daumaulead_mkt_rp',
+
+    # CRM totals: sum AVG(dau) per campaign — same methodology as Campaign Breakdown
+    crm = {}
+    for r in camp_rows:
+        if r.get('channel') != 'growth_outapp': continue
+        v = map_vertical(r.get('vertical',''))
+        key = (r['m'], v)
+        if key not in crm: crm[key] = {'dau':0,'dwl':0,'lead':0}
+        crm[key]['dau']  += int(r['dau'])  if r['dau']  is not None else 0
+        crm[key]['dwl']  += int(r['dwl'])  if r['dwl']  is not None else 0
+        crm[key]['lead'] += int(r['lead']) if r['lead'] is not None else 0
+
+    lines = ['// Detail channel data — auto-updated from mtm_chotot_vertical_channel + campaign data',
              'const RAW = [']
-    for r in rows:
+    for r in detail_rows:
         v = vert_map.get(str(r.get('vertical','')).lower())
         if not v: continue
-        ch = _json.dumps(str(r.get('channel','')))
+        ch = str(r.get('channel',''))
+        if ch == 'Growth (CRM)': continue  # CRM comes from campaign source below
         dau  = int(r['dau'])  if r['dau']  is not None else 0
         dwl  = int(r['dwl'])  if r['dwl']  is not None else 0
         lead = int(r['lead']) if r['lead'] is not None else 0
-        lines.append(f'  {{v:"{v}",ch:{ch},m:"{r["m"]}",dau:{dau},dwl:{dwl},lead:{lead}}},')
+        lines.append(f'  {{v:"{v}",ch:{_json.dumps(ch)},m:"{r["m"]}",dau:{dau},dwl:{dwl},lead:{lead}}},')
+    for (m, v), d in sorted(crm.items()):
+        lines.append(f'  {{v:"{v}",ch:"Growth (CRM)",m:"{m}",dau:{d["dau"]},dwl:{d["dwl"]},lead:{d["lead"]}}},')
     lines.append('];')
     return '\n'.join(lines)
 
@@ -269,9 +284,9 @@ html=re.sub(r'Object\.assign\(VERT_ACT\.[A-Z]+[^\n]*\n','',html)
 if growth_cost:
     html=re.sub(r'// Cost data[\s\S]*?const GROWTH_COST = \{[\s\S]*?^};',js_growth_cost(growth_cost),html,flags=re.MULTILINE)
     print("  GROWTH_COST updated from Sheets")
-_detail_js = js_detail_data(detail_rows)
+_detail_js = js_detail_data(detail_rows, camp_rows)
 html=re.sub(r'// Detail channel data[\s\S]*?const RAW = \[[\s\S]*?^];', lambda _: _detail_js, html, flags=re.MULTILINE)
-print("  RAW (detail) updated from daumaulead_mkt_rp")
+print("  RAW (detail) updated from mtm_chotot_vertical_channel + campaign data")
 _camp_js = js_campaign_data(camp_rows)
 html=re.sub(r'// Campaign data[\s\S]*?const CAMPAIGN_DATA = \[[\s\S]*?^];', lambda _: _camp_js, html, flags=re.MULTILINE)
 print("  CAMPAIGN_DATA updated")
