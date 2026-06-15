@@ -115,7 +115,24 @@ def fetch_growth_cost():
 print("Fetching Google Sheets cost data...")
 growth_cost = fetch_growth_cost()
 
-# ── 3b. Campaign data (BQ) ───────────────────────────────────────────────────
+# ── 3b. Detail data (daumaulead_mkt_rp) ─────────────────────────────────────
+print("Querying detail channel data...")
+detail_rows = q(f"""
+SELECT
+  FORMAT_DATE('%Y-%m', date) AS m,
+  vertical,
+  channel,
+  ROUND(AVG(dau), 0)        AS dau,
+  ROUND(AVG(dau_w_lead), 0) AS dwl,
+  MAX(lead_mth)              AS lead
+FROM `chotot-dwh.ct_product_analytics.daumaulead_mkt_rp`
+WHERE date BETWEEN '{start}' AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+GROUP BY 1, 2, 3
+ORDER BY 1, 2, 3
+""")
+print(f"  Detail rows: {len(detail_rows)}")
+
+# ── 3c. Campaign data (BQ) ───────────────────────────────────────────────────
 print("Querying campaign data...")
 camp_rows = q(f"""
 SELECT
@@ -123,13 +140,14 @@ SELECT
   vertical,
   channel,
   campaign,
-  SUM(dau)        AS dau,
-  SUM(dau_w_lead) AS dwl,
-  SUM(lead_mth)   AS lead
+  ROUND(AVG(dau), 0)        AS dau,
+  ROUND(AVG(dau_w_lead), 0) AS dwl,
+  MAX(lead_mth)              AS lead
 FROM `chotot-dwh.ct_digital.mtm_chotot_vertical_channel_campaign_dau_mau`
 WHERE date BETWEEN '{start}' AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
   AND channel IN ('digital', 'growth_outapp')
   AND campaign NOT IN ('(none)','(not set)','(organic)','(referral)')
+  AND vertical IN ('pty - Total','jobs - Total','veh - Total','gds - Total')
 GROUP BY 1, 2, 3, 4
 ORDER BY 1, vertical, channel, dwl DESC
 """)
@@ -200,6 +218,22 @@ def js_campaign_data(rows):
     lines.append('];')
     return '\n'.join(lines)
 
+def js_detail_data(rows):
+    import json as _json
+    vert_map = {'pty':'PTY','jobs':'JOB','veh':'VEH','gds':'GDS'}
+    lines = ['// Detail channel data — auto-updated from daumaulead_mkt_rp',
+             'const RAW = [']
+    for r in rows:
+        v = vert_map.get(str(r.get('vertical','')).lower())
+        if not v: continue
+        ch = _json.dumps(str(r.get('channel','')))
+        dau  = int(r['dau'])  if r['dau']  is not None else 0
+        dwl  = int(r['dwl'])  if r['dwl']  is not None else 0
+        lead = int(r['lead']) if r['lead'] is not None else 0
+        lines.append(f'  {{v:"{v}",ch:{ch},m:"{r["m"]}",dau:{dau},dwl:{dwl},lead:{lead}}},')
+    lines.append('];')
+    return '\n'.join(lines)
+
 def js_growth_cost(cost):
     lines=['// Cost data — auto-updated from Google Sheets "FC & Actual cost"',
            '// actual = accrued | forecast = planned (VND)','const GROWTH_COST = {']
@@ -227,6 +261,9 @@ html=re.sub(r'Object\.assign\(VERT_ACT\.[A-Z]+[^\n]*\n','',html)
 if growth_cost:
     html=re.sub(r'// Cost data[\s\S]*?const GROWTH_COST = \{[\s\S]*?^};',js_growth_cost(growth_cost),html,flags=re.MULTILINE)
     print("  GROWTH_COST updated from Sheets")
+_detail_js = js_detail_data(detail_rows)
+html=re.sub(r'// Detail channel data[\s\S]*?const RAW = \[[\s\S]*?^];', lambda _: _detail_js, html, flags=re.MULTILINE)
+print("  RAW (detail) updated from daumaulead_mkt_rp")
 _camp_js = js_campaign_data(camp_rows)
 html=re.sub(r'// Campaign data[\s\S]*?const CAMPAIGN_DATA = \[[\s\S]*?^];', lambda _: _camp_js, html, flags=re.MULTILINE)
 print("  CAMPAIGN_DATA updated")
