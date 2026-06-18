@@ -12445,10 +12445,7 @@ function GrowthSection({costData}) {
     if(key==="mau")     return vertMonthMau(v,m).mau * (DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m)?.dau||0) / (vertMonthSum(v,m).dau||1);
     if(key==="mauLead") return vertMonthMau(v,m).mauLead * (DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m)?.dwl||0) / (vertMonthSum(v,m).dwl||1);
     if(key==="dauMau")  { const d=getData(ch,v,m,"dau"); const mu=getData(ch,v,m,"mau"); return mu?parseFloat((d/mu*100).toFixed(1)):0; }
-    const raw = DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m)?.[key]??0;
-    const vertRaw = CHANNELS.reduce((s,c)=>s+(DATA.find(x=>x.v===v&&x.ch===c&&x.m===m)?.[key]??0),0);
-    const correct = VERT_ACT[v]?.[m]?.[key]??0;
-    return vertRaw ? Math.round(raw/vertRaw*correct) : 0;
+    return DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m)?.[key]??0;
   };
   const daysIn = m => { const [y,mo]=m.split('-').map(Number); return new Date(y,mo,0).getDate(); };
   const labels = MONTHS.map(m=>ML[m]);
