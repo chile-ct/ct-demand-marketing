@@ -1251,12 +1251,12 @@ function ChannelSection() {
         <div style={{fontSize:12,color:"#9ca3af",marginBottom:14}}>{ML[MONTHS[0]]}~{ML[MONTHS[MONTHS.length-1]]} · line per channel</div>
         <LineChart labels={MONTHS.map(m=>ML[m])} datasets={datasets} height={300}/>
       </div>
-      {isMauMet&&<div style={{fontSize:11,color:"#d97706",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:6,padding:"6px 12px",marginBottom:10}}>⚠️ MAU / MAU w/ Lead được <b>ước tính</b> (tỷ lệ DAU channel × MAU vertical total) — không đo trực tiếp per channel.</div>}
-      <div style={{background:"#fff",borderRadius:12,padding:"16px 18px",boxShadow:"0 1px 4px rgba(0,0,0,.07)",overflowX:"auto"}}>
-        <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:"#374151"}}>Chi tiết — Theo Channel (All Verticals)</div>
+      {isMauMet&&<div style={{fontSize:11,color:"#d97706",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:6,padding:"7px 12px",marginBottom:10,lineHeight:1.7}}>⚠️ MAU / MAU w/ Lead được <b>ước tính</b> (tỷ lệ DAU channel × MAU vertical total) — không đo trực tiếp per channel.</div>}
+      <div style={{...card,overflowX:"auto"}}>
+        <div style={{fontWeight:700,fontSize:13,marginBottom:10,color:"#374151"}}>Chi tiết — Theo Channel (All Verticals) — {metObj.label}</div>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
           <thead>
-            <tr>
+            <tr style={{background:"#f8f9ff"}}>
               <th style={{...TH,textAlign:"left",minWidth:130}}>Channel</th>
               {MONTHS.map(m=><th key={m} style={{...TH,color:metObj.color}}>{ML[m]}</th>)}
               <th style={{...TH,color:"#6b7280"}}>{isLead?"Total":"Avg/Mo"}</th>
@@ -1268,25 +1268,29 @@ function ChannelSection() {
               const vals=MONTHS.map(m=>getVal(ch,m));
               const s=summary(vals);
               if(!s) return null;
-              const mom=delta2(vals[lastIdx-1],vals[lastIdx]);
+              const mom=delta(vals[lastIdx],vals[lastIdx-1]);
               const momC=mom===null?"#9ca3af":mom>0?"#059669":mom<0?"#dc2626":"#9ca3af";
               return (
                 <tr key={ch} style={{borderTop:"1px solid #f5f5f5"}}>
                   <td style={{...TD,textAlign:"left",fontWeight:500,color:"#374151",paddingLeft:8}}>{ch}</td>
-                  {vals.map((v,i)=><td key={i} style={{...TD,color:v?"#111":"#ddd"}}>{fmtCell(v)}</td>)}
-                  <td style={{...TD,fontWeight:600,color:"#374151",borderLeft:"1px solid #f0f0f0"}}>{fmtCell(s)}</td>
-                  <td style={{...TD,fontWeight:600,color:momC}}>{mom!==null?(mom>0?"+":"")+mom+"%":"—"}</td>
+                  {vals.map((v,i)=><td key={i} style={{...TD,color:v?"#111":"#ddd"}}>{v?fmtN(v):"—"}</td>)}
+                  <td style={{...TD,fontWeight:600,color:"#374151",borderLeft:"1px solid #f0f0f0"}}>{fmtN(s)}</td>
+                  <td style={{...TD,fontWeight:600,color:momC}}>{mom!==null?sign(mom)+"%":"—"}</td>
                 </tr>
               );
             })}
-            <tr style={{borderTop:"2px solid #e5e7eb",background:"#f8f9ff"}}>
-              <td style={{...TD,textAlign:"left",fontWeight:700,paddingLeft:8}}>Total</td>
-              {chTotals.map((v,i)=><td key={i} style={{...TD,fontWeight:700}}>{fmtCell(v)}</td>)}
-              <td style={{...TD,fontWeight:700,borderLeft:"1px solid #f0f0f0"}}>{fmtCell(summary(chTotals))}</td>
-              <td style={{...TD,fontWeight:700,color:delta2(chTotals[lastIdx-1],chTotals[lastIdx])===null?"#9ca3af":delta2(chTotals[lastIdx-1],chTotals[lastIdx])>0?"#059669":"#dc2626"}}>
-                {delta2(chTotals[lastIdx-1],chTotals[lastIdx])!==null?(delta2(chTotals[lastIdx-1],chTotals[lastIdx])>0?"+":"")+delta2(chTotals[lastIdx-1],chTotals[lastIdx])+"%":"—"}
-              </td>
-            </tr>
+            {(()=>{
+              const tMom=delta(chTotals[lastIdx],chTotals[lastIdx-1]);
+              const tMomC=tMom===null?"#9ca3af":tMom>0?"#059669":"#dc2626";
+              return (
+                <tr style={{background:"#f8f9ff",borderTop:"2px solid #e5e7eb",fontWeight:700}}>
+                  <td style={{...TD,textAlign:"left",paddingLeft:8,color:"#374151"}}>Total All Channels</td>
+                  {chTotals.map((v,i)=><td key={i} style={{...TD,color:"#374151"}}>{fmtN(v)}</td>)}
+                  <td style={{...TD,color:"#374151",borderLeft:"1px solid #e5e7eb"}}>{fmtN(summary(chTotals))}</td>
+                  <td style={{...TD,color:tMomC}}>{tMom!==null?sign(tMom)+"%":"—"}</td>
+                </tr>
+              );
+            })()}
           </tbody>
         </table>
       </div>
@@ -1297,7 +1301,7 @@ function ChannelSection() {
 
 // ─── GROWTH PERFORMANCE ──────────────────────────────────────────────────────
 // Cost data — auto-updated from Google Sheets "FC & Actual cost"
-// actual = accrued | forecast = planned (VND)
+// T1-T6 = actual (accrued) | T7-T12 = forecast (planned) (VND)
 const GROWTH_COST = {
   PTY:{
     "2026-01":234890760,
@@ -13634,7 +13638,7 @@ function GrowthSection({costData}) {
           💰 Cost & Unit Economy — DwL Campaign Spend by Vertical
         </div>
         <div style={{fontSize:11,color:"#9ca3af",marginBottom:10}}>
-          Nguồn: Google Sheets "Data for Claude" · Activities chứa "DwL" · T1-T5 = Actual, T6-T12 = Forecast (VND)
+          Nguồn: Google Sheets "Data for Claude" · Activities chứa "DwL" · T1-T6 = Actual, T7-T12 = Forecast (VND)
         </div>
         <div style={{display:"flex",flexWrap:"wrap",gap:"6px 16px",marginBottom:16}}>
           {VERTS.map(v=>(
