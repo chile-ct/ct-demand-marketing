@@ -188,7 +188,8 @@ const MONTHS   = ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-0
 const ML       = {"2026-01":"T1/26", "2026-02":"T2/26", "2026-03":"T3/26", "2026-04":"T4/26", "2026-05":"T5/26", "2026-06":"T6/26", "2026-07":"T7/26*"};
 const ML_FULL  = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 2026","2026-04":"Apr 2026"};
 const VERTS    = ["PTY","JOB","VEH","GDS"];
-const ALL_MONTHS = [...MONTHS,"2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"];
+const COMPLETE_MONTHS = MONTHS.filter(m=>!ML[m]?.includes("*")); // full months only (no partial *)
+const ALL_MONTHS = [...new Set([...MONTHS,"2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"])];
 const ALL_ML = {...ML,"2026-07":"T7/26","2026-08":"T8/26","2026-09":"T9/26","2026-10":"T10/26","2026-11":"T11/26","2026-12":"T12/26"};
 const ALL_ML_S = Object.fromEntries(ALL_MONTHS.map(m=>[m,`T${parseInt(m.slice(5))}`]));
 
@@ -13657,25 +13658,25 @@ function GrowthSection({costData}) {
             return Math.round(spend/mv);
           };
           const lnDs = (key) => VERTS.map(v=>({
-            label:v, data:ALL_MONTHS.map((m,i)=>i<MONTHS.length?cp(v,m,key):null),
+            label:v, data:COMPLETE_MONTHS.map(m=>cp(v,m,key)),
             borderColor:VC[v], backgroundColor:VC[v]+"22", tension:0.3, pointRadius:4, fill:false,
           }));
           const spendBarDs = VERTS.map(v=>({
             label:v, data:ALL_MONTHS.map(m=>costData[v]?.[m]||0),
-            backgroundColor:ALL_MONTHS.map((_,i)=>VC[v]+(i<MONTHS.length?"dd":"44")),
+            backgroundColor:ALL_MONTHS.map(m=>VC[v]+(COMPLETE_MONTHS.includes(m)?"dd":"44")),
           }));
-          const note = 'Growth (Paid + CRM) · T1-T5 actual only';
+          const actualNote = `${ALL_ML_S[COMPLETE_MONTHS[0]]}~${ALL_ML_S[COMPLETE_MONTHS.at(-1)]} actual`;
           const crDs = [
             ...VERTS.map(v=>({
               label:v,
-              data:MONTHS.map(m=>{
+              data:COMPLETE_MONTHS.map(m=>{
                 const dau=gpMetric(v,m,"dau"), dwl=gpMetric(v,m,"dwl");
                 return dau ? parseFloat((dwl/dau*100).toFixed(1)) : null;
               }),
               borderColor:VC[v], backgroundColor:VC[v]+"22", tension:0.3, pointRadius:4, fill:false,
             })),
             {label:"Total",borderColor:"#374151",backgroundColor:"#37415122",borderWidth:2,borderDash:[5,3],tension:0.3,pointRadius:4,fill:false,
-              data:MONTHS.map(m=>{
+              data:COMPLETE_MONTHS.map(m=>{
                 const dau=VERTS.reduce((s,v)=>s+gpMetric(v,m,"dau"),0);
                 const dwl=VERTS.reduce((s,v)=>s+gpMetric(v,m,"dwl"),0);
                 return dau ? parseFloat((dwl/dau*100).toFixed(1)) : null;
@@ -13685,13 +13686,13 @@ function GrowthSection({costData}) {
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
               <div style={{background:"#fff",borderRadius:12,padding:"16px 18px",boxShadow:"0 1px 4px rgba(0,0,0,.07)",minWidth:0,overflow:"hidden"}}>
                 <div style={{fontWeight:600,fontSize:13,marginBottom:4,color:"#374151"}}>Monthly Spend by Vertical (VND)</div>
-                <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>■ Darker = Actual (T1-T5) · ■ Lighter = Forecast (T6-T12)</div>
+                <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>■ Darker = Actual ({actualNote}) · ■ Lighter = Forecast</div>
                 <BarChartWithTotals labels={ALL_MONTHS.map(m=>ALL_ML_S[m])} datasets={spendBarDs} height={260} hideLegend/>
               </div>
               <div style={{background:"#fff",borderRadius:12,padding:"16px 18px",boxShadow:"0 1px 4px rgba(0,0,0,.07)",minWidth:0,overflow:"hidden"}}>
                 <div style={{fontWeight:600,fontSize:13,marginBottom:4,color:"#374151"}}>% CR to Lead (DwL / DAU)</div>
-                <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>Growth (Paid + CRM) · % · T1-T5 actual</div>
-                <LineChart labels={MONTHS.map(m=>ALL_ML_S[m])} datasets={crDs} height={260} hideLegend/>
+                <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>Growth (Paid + CRM) · % · {actualNote}</div>
+                <LineChart labels={COMPLETE_MONTHS.map(m=>ALL_ML_S[m])} datasets={crDs} height={260} hideLegend/>
               </div>
             </div>
             {(()=>{
@@ -13705,29 +13706,19 @@ function GrowthSection({costData}) {
                 return Math.round(spend/mv);
               };
               const lnDsWithTotal = (key) => [
-                ...lnDs(key).map(d=>({...d, data:MONTHS.map((m,i)=>d.data[i])})),
-                {label:"Total",borderColor:"#374151",backgroundColor:"#37415122",borderWidth:2,borderDash:[5,3],tension:0.3,pointRadius:4,fill:false,data:MONTHS.map(m=>cpTotal(m,key))},
+                ...lnDs(key),
+                {label:"Total",borderColor:"#374151",backgroundColor:"#37415122",borderWidth:2,borderDash:[5,3],tension:0.3,pointRadius:4,fill:false,data:COMPLETE_MONTHS.map(m=>cpTotal(m,key))},
               ];
-              const lastActualM = MONTHS.filter(m=>{
-                const s=VERTS.reduce((t,v)=>t+(costData[v]?.[m]||0),0);
-                return s>0 && s%1000000!==0;
-              }).slice(-1)[0];
-              const forecastStartM = lastActualM ? MONTHS[MONTHS.indexOf(lastActualM)+1] : null;
               return (
-                <>
-                {forecastStartM&&<div style={{fontSize:11,color:"#b45309",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:6,padding:"6px 12px",marginBottom:10,lineHeight:1.7}}>
-                  ⚠️ <b>Chi phí từ {ALL_ML_S[forecastStartM]} trở đi</b> là số <b>forecast (kế hoạch)</b> từ Sheets, chưa phải actual spend — Cost per DAU/DwL/Lead giai đoạn này phản ánh dự toán chi phí ÷ actual traffic, không phải chi phí thực tế.
-                </div>}
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:14,marginBottom:20}}>
                   {[{key:"dau",label:"Cost per DAU",color:"#6366f1"},{key:"dwl",label:"Cost per DwL",color:"#f59e0b"},{key:"lead",label:"Cost per Lead",color:"#10b981"}].map(({key,label,color})=>(
                     <div key={key} style={{background:"#fff",borderRadius:12,padding:"16px 18px",boxShadow:"0 1px 4px rgba(0,0,0,.07)",minWidth:0,overflow:"hidden"}}>
                       <div style={{fontWeight:600,fontSize:13,marginBottom:2,color:"#374151"}}>{label}</div>
-                      <div style={{fontSize:10,color:"#9ca3af",marginBottom:10}}>₫ · {note} · ╌╌ Total{forecastStartM?` · từ ${ALL_ML_S[forecastStartM]}+ = forecast`:""}</div>
-                      <LineChart labels={MONTHS.map(m=>ALL_ML_S[m])} datasets={lnDsWithTotal(key)} height={200} hideLegend/>
+                      <div style={{fontSize:10,color:"#9ca3af",marginBottom:10}}>₫ · Growth (Paid + CRM) · {actualNote} · ╌╌ Total</div>
+                      <LineChart labels={COMPLETE_MONTHS.map(m=>ALL_ML_S[m])} datasets={lnDsWithTotal(key)} height={200} hideLegend/>
                     </div>
                   ))}
                 </div>
-                </>
               );
             })()}
           </>);
