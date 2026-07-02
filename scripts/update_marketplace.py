@@ -147,6 +147,53 @@ ORDER BY 1, 2, 3
 """)
 print(f"  Detail rows: {len(detail_rows)}")
 
+# ── 3b-patch. Fix June 1 DAU from mtm_chotot_vertical_channel ───────────────
+# daumaulead_mkt_rp has near-zero DAU on 2026-06-01 (pipeline issue, not backfilled).
+# mtm_chotot_vertical_channel has correct DAU for that day.
+# Only DAU is patched; DwL and Lead stay from original source.
+BAD_DATE, BAD_MONTH = '2026-06-01', '2026-06'
+if BAD_MONTH in months:
+    print(f"  Patching {BAD_DATE} DAU from mtm_chotot_vertical_channel...")
+
+    bad_dau_rows = q(f"""
+    SELECT vertical,
+      CASE channel WHEN 'Referral' THEN '(Other)' WHEN 'Social' THEN '(Other)' ELSE channel END AS channel,
+      SUM(dau) AS daily_dau
+    FROM `chotot-dwh.ct_product_analytics.daumaulead_mkt_rp`
+    WHERE date = '{BAD_DATE}' AND vertical IN ('pty','jobs','veh','gds') AND platform IS NOT NULL
+    GROUP BY 1, 2
+    """)
+    bad_map = {(BQ_V.get(r['vertical'],''), r['channel']): int(r['daily_dau'] or 0) for r in bad_dau_rows}
+
+    good_dau_rows = q(f"""
+    SELECT vertical,
+      CASE channel
+        WHEN 'digital'       THEN 'Growth (Paid)'
+        WHEN 'growth_outapp' THEN 'Growth (CRM)'
+        WHEN 'seo'           THEN 'Organic Search'
+        WHEN 'direct'        THEN 'Direct'
+        ELSE 'Others'
+      END AS channel,
+      SUM(dau) AS daily_dau
+    FROM `chotot-dwh.ct_digital.mtm_chotot_vertical_channel`
+    WHERE date = '{BAD_DATE}' AND vertical IN ('pty','jobs','veh','gds')
+      AND channel IN ('digital','growth_outapp','seo','direct','others')
+    GROUP BY 1, 2
+    """)
+    good_map = {(BQ_V.get(r['vertical'],''), r['channel']): int(r['daily_dau'] or 0) for r in good_dau_rows}
+
+    june_days = calendar.monthrange(int(BAD_MONTH[:4]), int(BAD_MONTH[5:]))[1]
+    patched = 0
+    for r in detail_rows:
+        if r['m'] != BAD_MONTH: continue
+        key = (BQ_V.get(str(r.get('vertical','')).lower(),''), str(r.get('channel','')))
+        bad, good = bad_map.get(key, 0), good_map.get(key, 0)
+        if good > 0 and bad < 5000:  # only patch anomalous days (normal daily DAU >> 5000)
+            orig = int(r['dau'] or 0)
+            r['dau'] = max(0, round((orig * june_days - bad + good) / june_days))
+            patched += 1
+    print(f"  Patched {patched} rows for {BAD_MONTH}")
+
 # ── 3c. Campaign data (BQ) ───────────────────────────────────────────────────
 print("Querying campaign data...")
 camp_rows = q(f"""
