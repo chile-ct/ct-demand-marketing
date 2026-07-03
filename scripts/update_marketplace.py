@@ -131,6 +131,7 @@ FROM (
     CASE channel
       WHEN 'Referral' THEN '(Other)'
       WHEN 'Social'   THEN '(Other)'
+      WHEN 'Others'   THEN '(Other)'
       ELSE channel
     END                      AS channel,
     SUM(dau)                 AS daily_dau,
