@@ -931,158 +931,18 @@ function chMonthMau(ch, m) {
 // ─── SECTIONS ────────────────────────────────────────────────────────────────
 
 function ExecSummary() {
-  const PERIOD_OPTS = [
-    {key:"avg", label:"Avg Monthly"},
-    ...MONTHS.map(m=>({key:m, label:ML[m]})),
-  ];
-  const [period, setPeriod] = useState("avg");
-
-  // Use official actuals (ACT) not partial BQ channel data
-  const totals = useMemo(()=>{
-    if (period==="avg") {
-      return {
-        dau:  Math.round(MONTHS.reduce((a,m)=>a+ACT[m].dau,0)/MONTHS.length),
-        dwl:  Math.round(MONTHS.reduce((a,m)=>a+ACT[m].dwl,0)/MONTHS.length),
-        lead: Math.round(MONTHS.reduce((a,m)=>a+ACT[m].lead,0)/MONTHS.length),
-      };
-    }
-    return ACT[period];
-  },[period]);
-
-  const kpiVal = useMemo(()=>{
-    if (period==="avg") {
-      return {
-        dau:  Math.round(MONTHS.reduce((a,m)=>a+KPI[m].dau,0)/MONTHS.length),
-        dwl:  Math.round(MONTHS.reduce((a,m)=>a+KPI[m].dwl,0)/MONTHS.length),
-        lead: Math.round(MONTHS.reduce((a,m)=>a+KPI[m].lead,0)/MONTHS.length),
-      };
-    }
-    return KPI[period];
-  },[period]);
-
-  const prevM   = period==="avg"?"2026-03": MONTHS[MONTHS.indexOf(period)-1]||null;
-  const prevTot = prevM ? ACT[prevM] : null;
-
-  // Auto commentary per period
-  const commentary = useMemo(()=>{
-    const m = period==="avg"?"2026-04":period;
-    const tot = ACT[m];
-    const k = KPI[m];
-    const prev = MONTHS[MONTHS.indexOf(m)-1];
-    const prevT = prev?ACT[prev]:null;
-    const topLead = [...VERTS].sort((a,b)=>vertMonthSum(b,m).lead-vertMonthSum(a,m).lead)[0];
-    const topDau  = [...VERTS].sort((a,b)=>vertMonthSum(b,m).dau-vertMonthSum(a,m).dau)[0];
-    const dauChg  = prevT?delta(tot.dau,prevT.dau):null;
-    const convRate= tot.dau?(tot.dwl/tot.dau*100).toFixed(1):"—";
-    return {
-      highlights: [
-        `<b>${topDau}</b> dẫn đầu DAU (${fmtK(vertMonthSum(topDau,m).dau)}) — ${pct(vertMonthSum(topDau,m).dau, tot.dau)}% tổng platform.`,
-        `<b>${topLead}</b> dẫn đầu Lead (${fmtK(vertMonthSum(topLead,m).lead)}).`,
-        dauChg!==null?`DAU ${dauChg>=0?"tăng":"giảm"} <b>${Math.abs(dauChg)}%</b> so với tháng trước.`:"",
-      ].filter(Boolean),
-      lowlights: [
-        pct(tot.dau,k.dau)<85?`DAU chỉ đạt <b>${pct(tot.dau,k.dau)}%</b> KPI — thiếu ${fmtK(k.dau-tot.dau)}.`:"",
-        pct(tot.lead,k.lead)<85?`Total Lead đạt <b>${pct(tot.lead,k.lead)}%</b> KPI — thiếu ${fmtK(k.lead-tot.lead)}.`:"",
-        `Conversion rate DAU→Lead: <b>${convRate}%</b> ${convRate<13?"— thấp hơn mức kỳ vọng 13%":""}.`,
-      ].filter(Boolean),
-      recs: [
-        pct(tot.dau,k.dau)<85?"Tăng budget paid search và display để bù gap DAU.":"DAU đang on-track, duy trì mix hiện tại.",
-        pct(tot.lead,k.lead)<75?"Xem xét cải thiện ad detail page và contact flow để tăng lead conversion.":"",
-        `Tập trung ${[...VERTS].sort((a,b)=>pct(vertMonthSum(a,m).lead,vertMonthSum(a,m).dau)-pct(vertMonthSum(b,m).lead,vertMonthSum(b,m).dau))[0]} — conversion rate thấp nhất, nhiều room cải thiện nhất.`,
-      ].filter(Boolean),
-    };
-  },[period]);
-
-  const SC = {green:"#059669",orange:"#d97706",red:"#dc2626",blue:"#6366f1"};
-
+  const [selVert, setSelVert] = React.useState('PTY');
+  const getVertVal = (v,m,key) => {
+    if(key==="mau")     return vertMonthMau(v,m).mau;
+    if(key==="mauLead") return vertMonthMau(v,m).mauLead;
+    if(key==="dauMau")  { const d=(VERT_ACT[v]&&VERT_ACT[v][m]&&VERT_ACT[v][m].dau)||0; const mu=vertMonthMau(v,m).mau; return mu?parseFloat((d/mu*100).toFixed(1)):0; }
+    return (VERT_ACT[v]&&VERT_ACT[v][m]&&VERT_ACT[v][m][key])||0;
+  };
   return (
     <section id="exec">
       <div className="section-title">Executive Summary</div>
 
-      {/* Period chips */}
-      <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
-        {PERIOD_OPTS.map(o=>(
-          <button key={o.key} onClick={()=>setPeriod(o.key)} style={{
-            padding:"5px 14px",borderRadius:999,border:"none",cursor:"pointer",
-            fontSize:12,fontWeight:600,transition:"all .15s",
-            background:period===o.key?"#1e1b4b":"#fff",
-            color:period===o.key?"#fff":"#6b7280",
-            boxShadow:"0 1px 3px rgba(0,0,0,.1)",
-          }}>{o.label}</button>
-        ))}
-      </div>
-
-      {/* KPI Progress Cards — DAU/Lead group */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:12,marginBottom:12}}>
-        {DEMAND_METRICS.map(met=>{
-          const act = totals[met.key];
-          const tgt = kpiVal[met.key];
-          const p = pct(act,tgt);
-          const pC = p>=100?"#059669":p>=85?"#d97706":"#dc2626";
-          const prevVal = prevTot?.[met.key];
-          const mom = prevVal?delta(act,prevVal):null;
-          return (
-            <div key={met.key} style={{...card,borderTop:`3px solid ${met.color}`,padding:"14px 18px"}}>
-              <div style={{fontSize:11,color:"#9ca3af",marginBottom:2,fontWeight:500}}>{met.label}</div>
-              <div style={{fontSize:22,fontWeight:800,color:"#111",marginBottom:5}}>{fmtK(act)}</div>
-              <div style={{height:5,borderRadius:99,background:"#f0f0f0",marginBottom:6}}>
-                <div style={{height:"100%",borderRadius:99,background:pC,width:Math.min(p||0,100)+"%"}}/>
-              </div>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:11}}>
-                <span style={{color:"#9ca3af"}}>KPI: {fmtK(tgt)}</span>
-                <span style={{fontWeight:700,color:pC}}>{p}%</span>
-              </div>
-              {mom!==null&&<div style={{fontSize:11,marginTop:4,color:mom>=0?"#059669":"#dc2626",fontWeight:600}}>{mom>=0?"▲":"▼"} {Math.abs(mom)}% MoM</div>}
-            </div>
-          );
-        })}
-      </div>
-      {/* KPI Progress Cards — MAU group */}
-      {(()=>{
-        const avgMau     = Math.round(MONTHS.reduce((a,m)=>a+ACT_MAU[m].mau,0)/4);
-        const avgMauKpi  = Math.round(MONTHS.reduce((a,m)=>a+KPI_MAU[m].mau,0)/4);
-        const avgMauLead = Math.round(MONTHS.reduce((a,m)=>a+KPI_MAU[m].mauLead,0)/4);
-        const avgDauMauKpi = parseFloat((MONTHS.reduce((a,m)=>a+KPI_MAU[m].dauMau,0)/4).toFixed(1));
-        const avgDauTotal  = MONTHS.reduce((a,m)=>a+vertSum(m).dau,0)/4;
-        const pMau       = period==="avg" ? avgMau     : (ACT[period]?.mau||0);
-        const pMauKpi    = period==="avg" ? avgMauKpi  : (KPI_MAU[period]?.mau||0);
-        const pMauLd     = period==="avg" ? avgMauLead : (ACT[period]?.mauLead||0);
-        const pMauLdKpi  = period==="avg" ? avgMauLead : (KPI_MAU[period]?.mauLead||0);
-        const pDauMauAct = period==="avg"
-          ? parseFloat((MONTHS.reduce((a,m)=>a+ACT[m].dauMau,0)/4).toFixed(1))
-          : (ACT[period]?.dauMau||0);
-        const pDauMauKpi = period==="avg" ? avgDauMauKpi : (KPI_MAU[period]?.dauMau||0);
-        const mauCards = [
-          {label:"MAU",         color:"#8b5cf6", act:pMau,       tgt:pMauKpi},
-          {label:"MAU w/ Lead", color:"#ec4899", act:pMauLd,     tgt:pMauLdKpi},
-          {label:"DAU/MAU",     color:"#14b8a6", act:pDauMauAct, tgt:pDauMauKpi, isRatio:true},
-        ];
-        return (
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:12,marginBottom:20}}>
-        {mauCards.map(({label,color,act,tgt,isRatio})=>{
-          const p = isRatio?(act&&tgt?Math.round(act/tgt*100):null):pct(act,tgt);
-          const pC = p>=100?"#059669":p>=85?"#d97706":"#dc2626";
-          return (
-            <div key={label} style={{...card,borderTop:`3px solid ${color}`,padding:"14px 18px"}}>
-              <div style={{fontSize:11,color:"#9ca3af",marginBottom:2,fontWeight:500}}>{label}</div>
-              <div style={{fontSize:22,fontWeight:800,color:"#111",marginBottom:5}}>
-                {act!=null?fmtK(act)+(isRatio?"%":""):"—"}
-              </div>
-              <div style={{height:5,borderRadius:99,background:"#f0f0f0",marginBottom:6}}>
-                <div style={{height:"100%",borderRadius:99,background:pC,width:Math.min(p||0,100)+"%"}}/>
-              </div>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:11}}>
-                <span style={{color:"#9ca3af"}}>KPI: {tgt!=null?fmtK(tgt)+(isRatio?"%":""):"—"}</span>
-                <span style={{fontWeight:700,color:pC}}>{p}%</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-        );
-      })()}
-
-      {/* KPI vs Actual table — above commentary */}
+      {/* KPI vs Actual table */}
       <div style={{...card,overflowX:"auto",marginBottom:20}}>
         <div style={{fontWeight:600,fontSize:13,marginBottom:12,color:"#374151"}}>
           🎯 KPI vs Actual — Toàn Platform
@@ -1148,6 +1008,46 @@ function ExecSummary() {
                 })}
               </tr>
             ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Actual by Vertical */}
+      <div style={{...card,overflowX:"auto",marginTop:16}}>
+        <div style={{fontWeight:700,fontSize:13,color:"#374151",marginBottom:10}}>📈 Actual by Vertical</div>
+        <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
+          {VERTS.map(v=>(
+            <button key={v} onClick={()=>setSelVert(v)} style={{
+              padding:"5px 16px",borderRadius:999,border:"none",cursor:"pointer",
+              fontSize:12,fontWeight:700,transition:"all .15s",
+              background:selVert===v?VC[v]:"#f3f4f6",
+              color:selVert===v?"#fff":"#6b7280",
+            }}>{v}</button>
+          ))}
+        </div>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+          <thead>
+            <tr style={{background:"#f8f9ff"}}>
+              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",textAlign:"left",minWidth:110}}>Metric</th>
+              {MONTHS.map(m=><th key={m} style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap",color:VC[selVert]}}>{ML[m]}</th>)}
+              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",color:"#6b7280"}}>Avg/Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {METRICS.map(met=>{
+              const isRatio=met.key==="dauMau";
+              const isLead=met.key==="lead";
+              const vals=MONTHS.map(m=>getVertVal(selVert,m,met.key));
+              const nz=vals.filter(v=>v>0).length||1;
+              const summary=isLead?vals.reduce((a,x)=>a+x,0):isRatio?parseFloat((vals.filter(v=>v>0).reduce((a,x)=>a+x,0)/nz).toFixed(1)):Math.round(vals.reduce((a,x)=>a+x,0)/nz);
+              return (
+                <tr key={met.key} style={{borderTop:"1px solid #f0f0f0"}}>
+                  <td style={{padding:"5px 8px",fontSize:12,fontWeight:600,color:met.color,textAlign:"left"}}>{met.label}</td>
+                  {vals.map((v,i)=><td key={i} style={{padding:"5px 8px",fontSize:12,textAlign:"right",color:v?"#111":"#ddd"}}>{v?(isRatio?v+"%":fmtN(v)):"—"}</td>)}
+                  <td style={{padding:"5px 8px",fontSize:12,textAlign:"right",fontWeight:600,color:"#374151",borderLeft:"1px solid #f0f0f0"}}>{summary?(isRatio?summary+"%":fmtN(summary)):"—"}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -1384,6 +1284,20 @@ function VerticalSection() {
                       </tr>
                     ];
                   })}
+                  {(()=>{
+                    const actVals=MONTHS.map(m=>(met==="mau"?ACT[m]?.mau:met==="mauLead"?ACT[m]?.mauLead:ACT[m]?.[met])??0);
+                    const unattrib=MONTHS.map((m,i)=>actVals[i]-(allNVals[i]+allRVals[i]));
+                    if(!unattrib.some(v=>v!==0)) return null;
+                    const nzU=unattrib.filter(v=>v>0).length||1;
+                    const uSum=isAvg?Math.round(unattrib.reduce((a,x)=>a+x,0)/nzU):unattrib.reduce((a,x)=>a+x,0);
+                    return (
+                      <tr style={{background:"#fffbf0",borderTop:"1px solid #f5f5f5"}}>
+                        <td colSpan={2} style={{...TD2,textAlign:"left",fontWeight:500,color:"#9ca3af",paddingLeft:8,fontStyle:"italic"}}>Unattributed *</td>
+                        {unattrib.map((v,i)=><td key={i} style={{...TD2,color:v>0?"#9ca3af":"#f59e0b",fontStyle:"italic"}}>{v!==0?(v>0?fmtN(v):"(−"+fmtN(Math.abs(v))+")"):"—"}</td>)}
+                        <td style={{...TD2,color:"#9ca3af",fontStyle:"italic",borderLeft:"1px solid #f0f0f0"}}>{uSum>=0?fmtN(uSum):"(−"+fmtN(Math.abs(uSum))+")"}</td>
+                      </tr>
+                    );
+                  })()}
                   <tr style={{borderTop:"2px solid #e5e7eb",background:"#f8f9ff"}}>
                     <td rowSpan={2} style={{...TD2,textAlign:"left",fontWeight:700,color:"#374151",paddingLeft:8,verticalAlign:"middle"}}>Total</td>
                     <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#6366f1",fontWeight:600}}>New</td>
@@ -1395,6 +1309,18 @@ function VerticalSection() {
                     {allRVals.map((x,i)=><td key={i} style={{...TD2,fontWeight:600,color:"#059669"}}>{x?fmtN(x):"—"}</td>)}
                     <td style={{...TD2,fontWeight:700,color:"#059669",borderLeft:"1px solid #f0f0f0"}}>{fmtN(isAvg?Math.round(allRVals.reduce((a,b)=>a+b,0)/nz(allRVals)):allRVals.reduce((a,b)=>a+b,0))}</td>
                   </tr>
+                  {(()=>{
+                    const actVals=MONTHS.map(m=>(met==="mau"?ACT[m]?.mau:met==="mauLead"?ACT[m]?.mauLead:ACT[m]?.[met])??0);
+                    const nzA=actVals.filter(v=>v>0).length||1;
+                    const aSum=isAvg?Math.round(actVals.reduce((a,x)=>a+x,0)/nzA):actVals.reduce((a,x)=>a+x,0);
+                    return (
+                      <tr style={{background:"#f0f4ff",borderTop:"2px solid #6366f1"}}>
+                        <td colSpan={2} style={{...TD2,textAlign:"left",fontWeight:700,color:"#1e1b4b",paddingLeft:8}}>Total (chotot_mtm)</td>
+                        {actVals.map((v,i)=><td key={i} style={{...TD2,fontWeight:700,color:"#1e1b4b"}}>{v?fmtN(v):"—"}</td>)}
+                        <td style={{...TD2,fontWeight:700,color:"#1e1b4b",borderLeft:"1px solid #c7d2fe"}}>{fmtN(aSum)}</td>
+                      </tr>
+                    );
+                  })()}
                 </tbody>
               </table>
             </>);
@@ -1418,7 +1344,6 @@ function ChannelSection() {
   const getVal = (ch,m) => {
     if(met==="mau")     return chMonthMau(ch,m).mau;
     if(met==="mauLead") return chMonthMau(ch,m).mauLead;
-    if(met==="dau"||met==="dwl"||met==="lead") return scaledCh(ch,m,met);
     return chMonthSum(ch,m)[met]??0;
   };
 
@@ -1434,6 +1359,9 @@ function ChannelSection() {
   const fmtCell = v => v ? fmtK(v) : "—";
   const isLead = met==="lead";
   const chTotals = MONTHS.map(m=>CHANNELS.reduce((s,ch)=>s+getVal(ch,m),0));
+  // Authoritative totals from chotot_mtm; Unattributed = gap vs raw channel sum
+  const actTotals = MONTHS.map(m => isMauMet ? (met==="mau"?ACT[m]?.mau:ACT[m]?.mauLead)??0 : ACT[m]?.[met]??0);
+  const unattribVals = MONTHS.map((m,i) => Math.max(0, actTotals[i] - chTotals[i]));
   const nonZero = vals => vals.filter(v=>v>0).length||1;
   const summary = vals => isLead ? vals.reduce((a,x)=>a+x,0) : Math.round(vals.reduce((a,x)=>a+x,0)/nonZero(vals));
   const lastIdx = MONTHS.length-1;
@@ -1506,20 +1434,29 @@ function ChannelSection() {
                 </tr>
               );
             })}
+            {(!isMauMet && unattribVals.some(v=>v>0)) && (
+              <tr style={{borderTop:"1px solid #f5f5f5",background:"#fffbf0"}}>
+                <td style={{...TD,textAlign:"left",fontWeight:500,color:"#9ca3af",paddingLeft:8,fontStyle:"italic"}}>Unattributed *</td>
+                {unattribVals.map((v,i)=><td key={i} style={{...TD,color:"#9ca3af",fontStyle:"italic"}}>{v>0?fmtN(v):"—"}</td>)}
+                <td style={{...TD,color:"#9ca3af",borderLeft:"1px solid #f0f0f0",fontStyle:"italic"}}>{fmtN(summary(unattribVals))}</td>
+                <td style={{...TD,color:"#9ca3af"}}>—</td>
+              </tr>
+            )}
             {(()=>{
-              const tMom=delta(chTotals[lastIdx],chTotals[lastIdx-1]);
+              const tMom=delta(actTotals[lastIdx],actTotals[lastIdx-1]);
               const tMomC=tMom===null?"#9ca3af":tMom>0?"#059669":"#dc2626";
               return (
                 <tr style={{background:"#f8f9ff",borderTop:"2px solid #e5e7eb",fontWeight:700}}>
-                  <td style={{...TD,textAlign:"left",paddingLeft:8,color:"#374151"}}>Total All Channels</td>
-                  {chTotals.map((v,i)=><td key={i} style={{...TD,color:"#374151"}}>{fmtN(v)}</td>)}
-                  <td style={{...TD,color:"#374151",borderLeft:"1px solid #e5e7eb"}}>{fmtN(summary(chTotals))}</td>
+                  <td style={{...TD,textAlign:"left",paddingLeft:8,color:"#374151"}}>Total (chotot_mtm)</td>
+                  {actTotals.map((v,i)=><td key={i} style={{...TD,color:"#374151"}}>{fmtN(v)}</td>)}
+                  <td style={{...TD,color:"#374151",borderLeft:"1px solid #e5e7eb"}}>{fmtN(summary(actTotals))}</td>
                   <td style={{...TD,color:tMomC}}>{tMom!==null?sign(tMom)+"%":"—"}</td>
                 </tr>
               );
             })()}
           </tbody>
         </table>
+        {!isMauMet && <div style={{fontSize:11,color:"#9ca3af",marginTop:6,fontStyle:"italic"}}>* Unattributed = Total chotot_mtm − Σ channel (daumaulead_mkt_rp). Channel cells dùng số raw từ daumaulead_mkt_rp.</div>}
       </div>
       {/* User Type table - metric-aware */}
       <div style={{...card,overflowX:"auto",marginTop:12}}>
@@ -1574,6 +1511,20 @@ function ChannelSection() {
                     </tr>
                   ];
                 })}
+                {(()=>{
+                  const actVals2=MONTHS.map(m=>(met==="mau"?ACT[m]?.mau:met==="mauLead"?ACT[m]?.mauLead:ACT[m]?.[met])??0);
+                  const unattrib2=MONTHS.map((m,i)=>actVals2[i]-(allNVals2[i]+allRVals2[i]));
+                  if(!unattrib2.some(v=>v!==0)) return null;
+                  const nzU2=unattrib2.filter(v=>v>0).length||1;
+                  const uSum2=isAvg2?Math.round(unattrib2.reduce((a,x)=>a+x,0)/nzU2):unattrib2.reduce((a,x)=>a+x,0);
+                  return (
+                    <tr style={{background:"#fffbf0",borderTop:"1px solid #f5f5f5"}}>
+                      <td colSpan={2} style={{...TD2,textAlign:"left",fontWeight:500,color:"#9ca3af",paddingLeft:8,fontStyle:"italic"}}>Unattributed *</td>
+                      {unattrib2.map((v,i)=><td key={i} style={{...TD2,color:v>0?"#9ca3af":"#f59e0b",fontStyle:"italic"}}>{v!==0?(v>0?fmtN(v):"(−"+fmtN(Math.abs(v))+")"):"—"}</td>)}
+                      <td style={{...TD2,color:"#9ca3af",fontStyle:"italic",borderLeft:"1px solid #f0f0f0"}}>{uSum2>=0?fmtN(uSum2):"(−"+fmtN(Math.abs(uSum2))+")"}</td>
+                    </tr>
+                  );
+                })()}
                 <tr style={{borderTop:"2px solid #e5e7eb",background:"#f8f9ff"}}>
                   <td rowSpan={2} style={{...TD2,textAlign:"left",fontWeight:700,color:"#374151",paddingLeft:8,verticalAlign:"middle"}}>Total</td>
                   <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#6366f1",fontWeight:600}}>New</td>
@@ -1585,6 +1536,18 @@ function ChannelSection() {
                   {allRVals2.map((x,i)=><td key={i} style={{...TD2,fontWeight:600,color:"#059669"}}>{x?fmtN(x):"—"}</td>)}
                   <td style={{...TD2,fontWeight:700,color:"#059669",borderLeft:"1px solid #f0f0f0"}}>{fmtN(isAvg2?Math.round(allRVals2.reduce((a,b)=>a+b,0)/nz2(allRVals2)):allRVals2.reduce((a,b)=>a+b,0))}</td>
                 </tr>
+                {(()=>{
+                  const actVals2=MONTHS.map(m=>(met==="mau"?ACT[m]?.mau:met==="mauLead"?ACT[m]?.mauLead:ACT[m]?.[met])??0);
+                  const nzA2=actVals2.filter(v=>v>0).length||1;
+                  const aSum2=isAvg2?Math.round(actVals2.reduce((a,x)=>a+x,0)/nzA2):actVals2.reduce((a,x)=>a+x,0);
+                  return (
+                    <tr style={{background:"#f0f4ff",borderTop:"2px solid #6366f1"}}>
+                      <td colSpan={2} style={{...TD2,textAlign:"left",fontWeight:700,color:"#1e1b4b",paddingLeft:8}}>Total (chotot_mtm)</td>
+                      {actVals2.map((v,i)=><td key={i} style={{...TD2,fontWeight:700,color:"#1e1b4b"}}>{v?fmtN(v):"—"}</td>)}
+                      <td style={{...TD2,fontWeight:700,color:"#1e1b4b",borderLeft:"1px solid #c7d2fe"}}>{fmtN(aSum2)}</td>
+                    </tr>
+                  );
+                })()}
               </tbody>
             </table>
           </>);
@@ -14097,7 +14060,7 @@ function GrowthSection({costData}) {
   const getData = (ch, v, m, key) => {
     const row = DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m);
     if(key==="mau"||key==="mauLead"||key==="dauMau") {
-      const chDau = scaledChVert(ch,v,m,'dau');
+      const chDau = row?.dau??0;
       const vertDau = vertMonthSum(v,m).dau;
       const share = vertDau ? chDau/vertDau : 0;
       if(key==="mau")     return Math.round(vertMonthMau(v,m).mau     * share);
@@ -14105,7 +14068,6 @@ function GrowthSection({costData}) {
       const mu = Math.round(vertMonthMau(v,m).mau * share);
       return mu ? parseFloat((chDau/mu*100).toFixed(1)) : 0;
     }
-    if(key==="dau"||key==="dwl"||key==="lead") return scaledChVert(ch,v,m,key);
     return row?.[key]??0;
   };
   const daysIn = m => { const [y,mo]=m.split('-').map(Number); return new Date(y,mo,0).getDate(); };
@@ -14410,8 +14372,9 @@ function DetailSection() {
   const [metKey, setMetKey] = useState("dau");
   const metObj = METRICS.find(x=>x.key===metKey);
   const getDetailVal = (ch, v, m, key) => {
+    const row = DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m);
     if(key==="mau"||key==="mauLead"||key==="dauMau") {
-      const chDau = scaledChVert(ch,v,m,'dau');
+      const chDau = row?.dau??0;
       const vertDau = vertMonthSum(v,m).dau;
       const share = vertDau ? chDau/vertDau : 0;
       if(key==="mau")     return Math.round(vertMonthMau(v,m).mau     * share);
@@ -14419,8 +14382,6 @@ function DetailSection() {
       const mu = Math.round(vertMonthMau(v,m).mau * share);
       return mu ? parseFloat((chDau/mu*100).toFixed(1)) : 0;
     }
-    if(key==="dau"||key==="dwl"||key==="lead") return scaledChVert(ch,v,m,key);
-    const row = DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m);
     return row?.[key]??0;
   };
   return (
@@ -14428,7 +14389,7 @@ function DetailSection() {
       <div className="section-title">Detail Table — By Vertical × Channel</div>
       <div style={{fontSize:11,color:"#6b7280",background:"#f8fafc",border:"1px solid #e5e7eb",borderRadius:6,padding:"7px 12px",marginBottom:10,lineHeight:1.7}}>
         <b style={{color:"#374151"}}>Nguồn dữ liệu:</b>{" "}
-        <span style={{color:"#059669"}}>✅ DAU, DAU w/ Lead, Total Lead</span> — từ <code>chotot_mtm.dashboard__dau_vertical_monthly</code>, phân bổ về channel theo tỷ lệ từ <code>daumaulead_mkt_rp</code>. <span style={{color:"#059669"}}>✅ MAU, MAU w/ Lead</span> — từ <code>chotot_mtm.dashboard__dau_vertical_monthly</code> &amp; <code>dashboard__dauwlead__vertical_monthly</code>, phân bổ về channel theo tỷ lệ DAU.
+        <span style={{color:"#059669"}}>✅ DAU, DAU w/ Lead, Total Lead per channel</span> — từ <code>ct_product_analytics.daumaulead_mkt_rp</code> (raw). <b>Total row</b> dùng <code>chotot_mtm</code> (authoritative). <span style={{color:"#059669"}}>✅ MAU, MAU w/ Lead</span> — từ <code>chotot_mtm</code>, phân bổ về channel theo tỷ lệ DAU raw.
       </div>
       <MetricTab opts={METRICS} sel={metKey} onChange={setMetKey}/>
       {VERTS.map(vert=>(
@@ -14494,6 +14455,22 @@ function DetailSection() {
                     </tr>
                   );
                 })}
+                {(metKey==="dau"||metKey==="dwl"||metKey==="lead")&&(()=>{
+                  const rawSums=MONTHS.map(m=>CHANNELS.reduce((s,ch)=>s+(DATA.find(x=>x.v===vert&&x.ch===ch&&x.m===m)?.[metKey]??0),0));
+                  const vertTotals=MONTHS.map(m=>VERT_ACT[vert]?.[m]?.[metKey]??0);
+                  const unattrib=MONTHS.map((m,i)=>vertTotals[i]-rawSums[i]);
+                  if(!unattrib.some(v=>v!==0)) return null;
+                  const nz=unattrib.filter(v=>v>0).length||1;
+                  const uSum=metKey==="lead"?unattrib.reduce((a,x)=>a+x,0):Math.round(unattrib.reduce((a,x)=>a+x,0)/nz);
+                  return (
+                    <tr style={{background:"#fffbf0",borderTop:"1px solid #f5f5f5"}}>
+                      <td style={{...TD,textAlign:"left",fontWeight:500,color:"#9ca3af",paddingLeft:8,fontStyle:"italic"}}>Unattributed *</td>
+                      {unattrib.map((v,i)=><td key={i} style={{...TD,color:v>0?"#9ca3af":v<0?"#f59e0b":"#ddd",fontStyle:"italic"}}>{v!==0?(v>0?fmtN(v):"(−"+fmtN(Math.abs(v))+")"):"—"}</td>)}
+                      <td style={{...TD,color:"#9ca3af",borderLeft:"1px solid #f0f0f0",fontStyle:"italic"}}>{uSum>=0?fmtN(uSum):"(−"+fmtN(Math.abs(uSum))+")"}</td>
+                      <td style={{...TD,color:"#9ca3af"}}>—</td>
+                    </tr>
+                  );
+                })()}
                 {(()=>{
                   const mTotals=MONTHS.map(m=>{
                     if(metKey==="mau")     return vertMonthMau(vert,m).mau;
