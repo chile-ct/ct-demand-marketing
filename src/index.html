@@ -1017,7 +1017,7 @@ function ExecSummary() {
 
       {/* Actual by Platform */}
       <div style={{...card,overflowX:"auto",marginTop:16}}>
-        <div style={{fontWeight:700,fontSize:13,color:"#374151",marginBottom:10}}>🏠 Actual by Platform</div>
+        <div style={{fontWeight:700,fontSize:13,color:"#374151",marginBottom:10}}>🏠 Actual of total platform</div>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
           <thead>
             <tr style={{background:"#f8f9ff"}}>
@@ -14158,7 +14158,7 @@ const CAMPAIGN_DATA = [
 function GrowthSection({costData}) {
   const [met, setMet] = useState("dau");
   const [costTab, setCostTab] = useState("dwl");
-  const [unitVert, setUnitVert] = useState("PTY"); // which vertical in unit economy table
+  const [unitVert, setUnitVert] = useState("All"); // which vertical in unit economy table
   const metObj = METRICS.find(x=>x.key===met);
   const GROWTH_CHS = ["Growth (Paid)","Growth (CRM)"];
   const GROWTH_COLORS = {"Growth (Paid)":"#8b5cf6","Growth (CRM)":"#f59e0b"};
@@ -14221,26 +14221,29 @@ function GrowthSection({costData}) {
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
           <div style={{fontWeight:700,fontSize:13,color:"#374151"}}>{metObj.label} by Channel</div>
           <div style={{display:"flex",gap:4}}>
-            {VERTS.map(v=>(
+            {['All',...VERTS].map(v=>(
               <button key={v} onClick={()=>setUnitVert(v)} style={{
                 padding:"3px 11px",borderRadius:6,fontSize:12,fontWeight:600,cursor:"pointer",border:"none",
-                background:unitVert===v?VC[v]:"#f3f4f6", color:unitVert===v?"#fff":VC[v],
+                background:unitVert===v?(v==="All"?"#374151":VC[v]):"#f3f4f6",
+                color:unitVert===v?"#fff":(v==="All"?"#374151":VC[v]),
               }}>{v}</button>
             ))}
           </div>
           <span style={{marginLeft:"auto"}}>
             <ExportBtns
               onCSV={()=>{
+                const gv=(ch,m)=>unitVert==="All"?VERTS.reduce((s,v)=>s+getData(ch,v,m,met),0):getData(ch,unitVert,m,met);
                 const hdr=["Channel",...MONTHS.map(m=>ML[m]),"MoM "+ML[MONTHS[MONTHS.length-1]]];
-                const rows=GROWTH_CHS.map(ch=>{const vals=MONTHS.map(m=>getData(ch,unitVert,m,met));const li=vals.length-1;const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;return[ch,...vals.map(v=>v||""),mom!==null?sign(mom)+"%":""];});
-                const totVals=MONTHS.map(m=>GROWTH_CHS.reduce((s,ch)=>s+getData(ch,unitVert,m,met),0));const li=totVals.length-1;const mom=totVals[li]&&totVals[li-1]?delta(totVals[li],totVals[li-1]):null;
+                const rows=GROWTH_CHS.map(ch=>{const vals=MONTHS.map(m=>gv(ch,m));const li=vals.length-1;const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;return[ch,...vals.map(v=>v||""),mom!==null?sign(mom)+"%":""];});
+                const totVals=MONTHS.map(m=>GROWTH_CHS.reduce((s,ch)=>s+gv(ch,m),0));const li=totVals.length-1;const mom=totVals[li]&&totVals[li-1]?delta(totVals[li],totVals[li-1]):null;
                 rows.push(["Total Growth",...totVals,mom!==null?sign(mom)+"%":""]);
                 dlCSV(`growth_${met}_${unitVert}.csv`,hdr,rows);
               }}
               onXLSX={()=>{
+                const gv=(ch,m)=>unitVert==="All"?VERTS.reduce((s,v)=>s+getData(ch,v,m,met),0):getData(ch,unitVert,m,met);
                 const hdr=["Channel",...MONTHS.map(m=>ML[m]),"MoM "+ML[MONTHS[MONTHS.length-1]]];
-                const rows=GROWTH_CHS.map(ch=>{const vals=MONTHS.map(m=>getData(ch,unitVert,m,met));const li=vals.length-1;const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;return[ch,...vals,mom!==null?sign(mom)+"%":""];});
-                const totVals=MONTHS.map(m=>GROWTH_CHS.reduce((s,ch)=>s+getData(ch,unitVert,m,met),0));const li=totVals.length-1;const mom=totVals[li]&&totVals[li-1]?delta(totVals[li],totVals[li-1]):null;
+                const rows=GROWTH_CHS.map(ch=>{const vals=MONTHS.map(m=>gv(ch,m));const li=vals.length-1;const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;return[ch,...vals,mom!==null?sign(mom)+"%":""];});
+                const totVals=MONTHS.map(m=>GROWTH_CHS.reduce((s,ch)=>s+gv(ch,m),0));const li=totVals.length-1;const mom=totVals[li]&&totVals[li-1]?delta(totVals[li],totVals[li-1]):null;
                 rows.push(["Total Growth",...totVals,mom!==null?sign(mom)+"%":""]);
                 dlXLSX(`growth_${met}_${unitVert}.xlsx`,unitVert,hdr,rows);
               }}
@@ -14258,12 +14261,13 @@ function GrowthSection({costData}) {
             </thead>
             <tbody>
               {GROWTH_CHS.map(ch=>{
-                const vals=MONTHS.map(m=>getData(ch,unitVert,m,met));
+                const getValG=(ch,m)=>unitVert==="All"?VERTS.reduce((s,v)=>s+getData(ch,v,m,met),0):getData(ch,unitVert,m,met);
+                const vals=MONTHS.map(m=>getValG(ch,m));
                 const li=vals.length-1;
                 const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;
                 const mc=mom===null?"#9ca3af":mom>0?"#059669":"#dc2626";
                 // Vertical total for % calculation
-                const vertTot = m => VERT_ACT[unitVert]?.[m]?.[met]??0;
+                const vertTot = m => unitVert==="All"?(isMauMet?(met==="mau"?ACT[m]?.mau:ACT[m]?.mauLead)??0:ACT[m]?.[met]??0):(VERT_ACT[unitVert]?.[m]?.[met]??0);
                 return vals.some(v=>v>0) ? (
                   <tr key={ch} style={{borderTop:"1px solid #f5f5f5"}}>
                     <td style={{...TD,textAlign:"left",fontWeight:500,color:GROWTH_COLORS[ch]}}>{ch}</td>
@@ -14282,11 +14286,12 @@ function GrowthSection({costData}) {
                 ) : null;
               })}
               {(()=>{
-                const totVals=MONTHS.map(m=>GROWTH_CHS.reduce((s,ch)=>s+getData(ch,unitVert,m,met),0));
+                const getValG2=(ch,m)=>unitVert==="All"?VERTS.reduce((s,v)=>s+getData(ch,v,m,met),0):getData(ch,unitVert,m,met);
+                const totVals=MONTHS.map(m=>GROWTH_CHS.reduce((s,ch)=>s+getValG2(ch,m),0));
                 const li=totVals.length-1;
                 const mom=totVals[li]&&totVals[li-1]?delta(totVals[li],totVals[li-1]):null;
                 const mc=mom===null?"#9ca3af":mom>0?"#059669":"#dc2626";
-                const vertTot=m=>VERT_ACT[unitVert]?.[m]?.[met]??0;
+                const vertTot=m=>unitVert==="All"?(isMauMet?(met==="mau"?ACT[m]?.mau:ACT[m]?.mauLead)??0:ACT[m]?.[met]??0):(VERT_ACT[unitVert]?.[m]?.[met]??0);
                 return totVals.some(v=>v>0)?(
                   <tr style={{borderTop:"2px solid #e5e7eb",background:"#f8f9ff",fontWeight:700}}>
                     <td style={{...TD,textAlign:"left",paddingLeft:8,color:"#374151"}}>Total Growth</td>
@@ -14497,6 +14502,7 @@ function DetailSection() {
       <div style={{fontSize:11,color:"#6b7280",background:"#f8fafc",border:"1px solid #e5e7eb",borderRadius:6,padding:"7px 12px",marginBottom:10,lineHeight:1.7}}>
         <b style={{color:"#374151"}}>Nguồn dữ liệu:</b>{" "}
         <span style={{color:"#059669"}}>✅ DAU, DAU w/ Lead, Total Lead per channel</span> — từ <code>ct_product_analytics.daumaulead_mkt_rp</code> (raw). <b>Total row</b> dùng <code>chotot_mtm</code> (authoritative). <span style={{color:"#059669"}}>✅ MAU, MAU w/ Lead</span> — từ <code>chotot_mtm</code>, phân bổ về channel theo tỷ lệ DAU raw.
+        {" "}<span style={{color:"#f59e0b"}}>⚠️ <b>Số âm (Overcount †)</b> = Σ channel &gt; VERT_ACT. Nguyên nhân: <code>daumaulead_mkt_rp</code> đếm 1 user ở MỖI channel mà họ đã dùng trong tháng — nếu user vào qua Direct VÀ Growth (Paid), họ bị đếm 2 lần. Đây không phải lỗi data mà là giới hạn của multi-touch attribution.</span>
       </div>
       <MetricTab opts={METRICS} sel={metKey} onChange={setMetKey}/>
       {VERTS.map(vert=>(
@@ -14571,7 +14577,7 @@ function DetailSection() {
                   const uSum=metKey==="lead"?unattrib.reduce((a,x)=>a+x,0):Math.round(unattrib.reduce((a,x)=>a+x,0)/nz);
                   return (
                     <tr style={{background:"#fffbf0",borderTop:"1px solid #f5f5f5"}}>
-                      <td style={{...TD,textAlign:"left",fontWeight:500,color:"#9ca3af",paddingLeft:8,fontStyle:"italic"}}>Unattributed *</td>
+                      <td style={{...TD,textAlign:"left",fontWeight:500,color:"#9ca3af",paddingLeft:8,fontStyle:"italic"}}>Overcount † / Unattrib *</td>
                       {unattrib.map((v,i)=><td key={i} style={{...TD,color:v>0?"#9ca3af":v<0?"#f59e0b":"#ddd",fontStyle:"italic"}}>{v!==0?(v>0?fmtN(v):"(−"+fmtN(Math.abs(v))+")"):"—"}</td>)}
                       <td style={{...TD,color:"#9ca3af",borderLeft:"1px solid #f0f0f0",fontStyle:"italic"}}>{uSum>=0?fmtN(uSum):"(−"+fmtN(Math.abs(uSum))+")"}</td>
                       <td style={{...TD,color:"#9ca3af"}}>—</td>
