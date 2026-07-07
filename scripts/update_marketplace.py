@@ -128,7 +128,9 @@ SELECT
   ROUND(AVG(daily_dwl), 0)          AS dwl,
   SUM(daily_lead)                   AS lead,
   ROUND(AVG(daily_new_mau_lead), 0) AS new_mau_lead,
-  ROUND(AVG(daily_ret_mau_lead), 0) AS ret_mau_lead
+  ROUND(AVG(daily_ret_mau_lead), 0) AS ret_mau_lead,
+  ROUND(AVG(daily_mau), 0)          AS mau_ch,
+  ROUND(AVG(daily_mau_lead), 0)     AS mau_lead_ch
 FROM (
   SELECT
     date, vertical,
@@ -144,7 +146,9 @@ FROM (
     SUM(dau_w_lead)          AS daily_dwl,
     SUM(lead_daily)          AS daily_lead,
     SUM(new_mau_w_lead)      AS daily_new_mau_lead,
-    SUM(return_mau_w_lead)   AS daily_ret_mau_lead
+    SUM(return_mau_w_lead)   AS daily_ret_mau_lead,
+    SUM(mau)                 AS daily_mau,
+    SUM(mau_w_lead)          AS daily_mau_lead
   FROM `chotot-dwh.ct_product_analytics.daumaulead_mkt_rp`
   WHERE date BETWEEN '{start}' AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
     AND vertical IN ('pty','jobs','veh','gds')
@@ -306,7 +310,9 @@ def js_detail_data(detail_rows, camp_rows):
         lead = int(r['lead'])         if r['lead']         is not None else 0
         nm   = int(r['new_mau_lead']) if r['new_mau_lead'] is not None else 0
         rm   = int(r['ret_mau_lead']) if r['ret_mau_lead'] is not None else 0
-        lines.append(f'  {{v:"{v}",ch:{_json.dumps(ch)},m:"{r["m"]}",dau:{dau},nd:{nd},rd:{rd},dwl:{dwl},lead:{lead},nm:{nm},rm:{rm}}},')
+        mc   = int(r['mau_ch'])       if r['mau_ch']       is not None else 0
+        ml   = int(r['mau_lead_ch'])  if r['mau_lead_ch']  is not None else 0
+        lines.append(f'  {{v:"{v}",ch:{_json.dumps(ch)},m:"{r["m"]}",dau:{dau},nd:{nd},rd:{rd},dwl:{dwl},lead:{lead},nm:{nm},rm:{rm},mc:{mc},ml:{ml}}},')
     lines.append('];')
     return '\n'.join(lines)
 
