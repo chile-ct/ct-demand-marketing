@@ -8,6 +8,7 @@
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -115,7 +116,7 @@ const RAW = [
   {v:"PTY",ch:"Organic Search",m:"2026-04",dau:14229,dwl:1789,lead:212077},
   {v:"VEH",ch:"(Other)",m:"2026-04",dau:4042,dwl:690,lead:175640},
   {v:"VEH",ch:"Direct",m:"2026-04",dau:51520,dwl:4868,lead:771743},
-  {v:"VEH",ch:"Growth (CRM)",m:"2026-04",dau:3874,dwl:569,lead:110463},
+  {v:"VEH",ch:"Growth (CRM)",m:"2026-04",dau:3873,dwl:569,lead:110463},
   {v:"VEH",ch:"Growth (Paid)",m:"2026-04",dau:16868,dwl:1023,lead:289010},
   {v:"VEH",ch:"Organic Search",m:"2026-04",dau:30212,dwl:1586,lead:133274},
   {v:"GDS",ch:"(Other)",m:"2026-05",dau:9819,dwl:2557,lead:203249},
@@ -488,6 +489,31 @@ const pct   = (a,b) => b ? Math.round(a/b*100) : null;
 const delta = (a,b) => b ? Math.round((a-b)/b*100) : null;
 const sign  = n => n>0?"+"+n:n;
 
+// ─── EXPORT UTILITIES ────────────────────────────────────────────────────────
+function dlCSV(filename, headers, rows) {
+  const esc = v => `"${String(v??'').replace(/"/g,'""')}"`;
+  const txt = [headers.map(esc).join(','), ...rows.map(r=>r.map(esc).join(','))].join('\r\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,﻿' + encodeURIComponent(txt);
+  a.download = filename; a.click();
+}
+function dlXLSX(filename, sheetName, headers, rows) {
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, filename);
+}
+function ExportBtns({onCSV, onXLSX}) {
+  const btn = {fontSize:10,fontWeight:600,padding:'2px 8px',borderRadius:4,border:'1px solid #e5e7eb',
+    background:'#f9fafb',cursor:'pointer',color:'#6b7280',lineHeight:'18px'};
+  return (
+    <span style={{display:'inline-flex',gap:4,alignItems:'center',flexShrink:0}}>
+      <button style={btn} onClick={onCSV}>CSV</button>
+      <button style={btn} onClick={onXLSX}>Excel</button>
+    </span>
+  );
+}
+
 function vertSum(month) {
   const sub = DATA.filter(r=>r.m===month);
   return {
@@ -507,6 +533,14 @@ function vertMonthSum(v, m) {
 function chMonthSum(ch, m) {
   const sub = DATA.filter(r=>r.ch===ch&&r.m===m);
   return {dau:sub.reduce((a,x)=>a+x.dau,0), dwl:sub.reduce((a,x)=>a+x.dwl,0), lead:sub.reduce((a,x)=>a+x.lead,0)};
+}
+function chMonthUserType(ch, m) {
+  const sub = DATA.filter(r=>r.ch===ch&&r.m===m);
+  return {new_dau: sub.reduce((s,r)=>s+(r.nd||0),0), ret_dau: sub.reduce((s,r)=>s+(r.rd||0),0)};
+}
+function vertMonthUserType(v, m) {
+  const sub = DATA.filter(r=>r.v===v&&r.m===m);
+  return {new_dau: sub.reduce((s,r)=>s+(r.nd||0),0), ret_dau: sub.reduce((s,r)=>s+(r.rd||0),0)};
 }
 
 // ─── AUTO COMMENTARY ─────────────────────────────────────────────────────────
@@ -557,7 +591,7 @@ function genChannelCommentary(metric) {
 }
 
 // ─── CHART WRAPPERS ──────────────────────────────────────────────────────────
-function LineChart({labels,datasets,height=240,maxTicks,hideLegend=false}) {
+function LineChart({labels,datasets,height=240,maxTicks,hideLegend=false,showAvg=false,onExport=null}) {
   const ref=useRef(null), ch=useRef(null);
   useEffect(()=>{
     if(ch.current) ch.current.destroy();
@@ -577,6 +611,10 @@ function LineChart({labels,datasets,height=240,maxTicks,hideLegend=false}) {
     });
     return ()=>ch.current?.destroy();
   },[labels,datasets,maxTicks]);
+  const avgBadges = showAvg ? datasets.map(d=>{
+    const vals=(d.data||[]).filter(v=>v!=null&&v>0);
+    return {label:d.label,color:d.borderColor||'#6366f1',avg:vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):null};
+  }) : [];
   return (
     <div>
       {!hideLegend && (
@@ -588,6 +626,16 @@ function LineChart({labels,datasets,height=240,maxTicks,hideLegend=false}) {
               {d.label}
             </div>
           ))}
+        </div>
+      )}
+      {(showAvg||onExport) && (
+        <div style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:6,marginBottom:4,flexWrap:'wrap'}}>
+          {avgBadges.map((b,i)=>b.avg?(
+            <span key={i} style={{fontSize:10,fontWeight:600,color:b.color,background:b.color+'18',padding:'2px 7px',borderRadius:99,whiteSpace:'nowrap'}}>
+              ⌀ {b.label}: {fmtK(b.avg)}
+            </span>
+          ):null)}
+          {onExport&&<ExportBtns onCSV={()=>onExport('csv')} onXLSX={()=>onExport('xlsx')}/>}
         </div>
       )}
       <div style={{position:"relative",height}}><canvas ref={ref}/></div>
@@ -614,7 +662,25 @@ function BarChart({labels,datasets,height=220,stacked=false}) {
     });
     return ()=>ch.current?.destroy();
   },[labels,datasets,stacked]);
-  return <div style={{position:"relative",height}}><canvas ref={ref}/></div>;
+  const avgBadges2 = showAvg ? barDatasets.map(d=>{
+    const vals=(d.data||[]).filter(v=>v!=null&&v>0);
+    return {label:d.label,color:d.backgroundColor||'#6366f1',avg:vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):null};
+  }) : [];
+  return (
+    <div>
+      {(showAvg||onExport) && (
+        <div style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:6,marginBottom:4,flexWrap:'wrap'}}>
+          {avgBadges2.map((b,i)=>b.avg?(
+            <span key={i} style={{fontSize:10,fontWeight:600,color:b.color,background:b.color+'18',padding:'2px 7px',borderRadius:99,whiteSpace:'nowrap'}}>
+              ⌀ {b.label}: {fmtK(b.avg)}
+            </span>
+          ):null)}
+          {onExport&&<ExportBtns onCSV={()=>onExport('csv')} onXLSX={()=>onExport('xlsx')}/>}
+        </div>
+      )}
+      <div style={{position:"relative",height}}><canvas ref={ref}/></div>
+    </div>
+  );
 }
 
 function BarChartWithTotals({labels,datasets,height=220,hideLegend=false}) {
@@ -674,7 +740,7 @@ function BarChartWithTotals({labels,datasets,height=220,hideLegend=false}) {
 }
 
 // Mixed: stacked bars (verticals) + KPI line overlay
-function StackedBarLineChart({labels,barDatasets,lineDataset,height=300}) {
+function StackedBarLineChart({labels,barDatasets,lineDataset,height=300,showAvg=false,onExport=null}) {
   const ref=useRef(null), ch=useRef(null);
   useEffect(()=>{
     if(ch.current) ch.current.destroy();
@@ -1082,8 +1148,18 @@ function TrendSection({id, title, getBarVal, getKpiVal, getLineLabel, groupList,
           ? <LineChart labels={labels} datasets={[...barDatasets, {
               ...lineDataset, type:undefined, borderColor:"#1e1b4b",
               borderDash:[7,4], pointStyle:"rectRot", fill:false,
-            }]} height={300}/>
-          : <StackedBarLineChart labels={labels} barDatasets={barDatasets} lineDataset={lineDataset} height={300}/>
+            }]} height={300} showAvg
+            onExport={type=>{
+              const hdrs=['Group',...labels,'Avg'];
+              const rows=barDatasets.map(d=>{const vals=(d.data||[]).filter(v=>v!=null&&v>0);return [d.label,...d.data,vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):0];});
+              if(type==='csv') dlCSV(`trend_${met}.csv`,hdrs,rows); else dlXLSX(`trend_${met}.xlsx`,metObj?.label||'Data',hdrs,rows);
+            }}/>
+          : <StackedBarLineChart labels={labels} barDatasets={barDatasets} lineDataset={lineDataset} height={300} showAvg
+            onExport={type=>{
+              const hdrs=['Group',...labels,'Avg'];
+              const rows=barDatasets.map(d=>{const vals=(d.data||[]).filter(v=>v!=null&&v>0);return [d.label,...d.data,vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):0];});
+              if(type==='csv') dlCSV(`trend_${met}.csv`,hdrs,rows); else dlXLSX(`trend_${met}.xlsx`,metObj?.label||'Data',hdrs,rows);
+            }}/>
         }
         <Commentary bullets={commentary}/>
       </div>
@@ -1174,11 +1250,80 @@ function VerticalSection() {
               <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>
                 {metObj.label} · ── Actual · ╌╌ KPI
               </div>
-              <LineChart labels={labels} datasets={[actDs, fc0Ds, fc1Ds]} height={200}/>
+              <LineChart labels={labels} datasets={[actDs, fc0Ds, fc1Ds]} height={200} showAvg/>
             </div>
           );
         })}
       </div>
+      {/* User type table per vertical */}
+      {(met==="dau"||met==="dwl"||met==="lead"||met==="mau"||met==="mauLead")&&(
+        <div style={{...card,overflowX:"auto",marginTop:16}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+            <div style={{fontWeight:700,fontSize:13,color:"#374151"}}>DAU: New vs Returning — Theo Vertical</div>
+            <ExportBtns
+              onCSV={()=>{
+                const hdrs=['Vertical','User Type',...MONTHS.map(m=>ML[m]),'Avg'];
+                const rows=[];
+                VERTS.forEach(v=>{
+                  const nVals=MONTHS.map(m=>vertMonthUserType(v,m).new_dau);
+                  const rVals=MONTHS.map(m=>vertMonthUserType(v,m).ret_dau);
+                  const nz=vs=>vs.filter(x=>x>0).length||1;
+                  rows.push([v,'New',...nVals,Math.round(nVals.reduce((a,b)=>a+b,0)/nz(nVals))]);
+                  rows.push([v,'Returning',...rVals,Math.round(rVals.reduce((a,b)=>a+b,0)/nz(rVals))]);
+                });
+                dlCSV('vertical_usertype_dau.csv',hdrs,rows);
+              }}
+              onXLSX={()=>{
+                const hdrs=['Vertical','User Type',...MONTHS.map(m=>ML[m]),'Avg'];
+                const rows=[];
+                VERTS.forEach(v=>{
+                  const nVals=MONTHS.map(m=>vertMonthUserType(v,m).new_dau);
+                  const rVals=MONTHS.map(m=>vertMonthUserType(v,m).ret_dau);
+                  const nz=vs=>vs.filter(x=>x>0).length||1;
+                  rows.push([v,'New',...nVals,Math.round(nVals.reduce((a,b)=>a+b,0)/nz(nVals))]);
+                  rows.push([v,'Returning',...rVals,Math.round(rVals.reduce((a,b)=>a+b,0)/nz(rVals))]);
+                });
+                dlXLSX('vertical_usertype_dau.xlsx','DAU New vs Returning',hdrs,rows);
+              }}
+            />
+          </div>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+            <thead>
+              <tr style={{background:"#f8f9ff"}}>
+                <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",textAlign:"left",minWidth:70}}>Vertical</th>
+                <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",minWidth:80}}>User Type</th>
+                {MONTHS.map(m=><th key={m} style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"}}>{ML[m]}</th>)}
+                <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",color:"#6b7280"}}>Avg</th>
+              </tr>
+            </thead>
+            <tbody>
+              {VERTS.map(v=>{
+                const nVals=MONTHS.map(m=>vertMonthUserType(v,m).new_dau);
+                const rVals=MONTHS.map(m=>vertMonthUserType(v,m).ret_dau);
+                const hasData=nVals.some(x=>x>0)||rVals.some(x=>x>0);
+                if(!hasData) return null;
+                const nz=vs=>vs.filter(x=>x>0).length||1;
+                const avgN=Math.round(nVals.reduce((a,b)=>a+b,0)/nz(nVals));
+                const avgR=Math.round(rVals.reduce((a,b)=>a+b,0)/nz(rVals));
+                const TD2={padding:"5px 8px",fontSize:12,textAlign:"right",borderBottom:"1px solid #f0f0f0"};
+                return [
+                  <tr key={v+'-n'} style={{borderTop:"1px solid #f5f5f5"}}>
+                    <td rowSpan={2} style={{...TD2,textAlign:"left",fontWeight:700,color:VC[v],paddingLeft:8,verticalAlign:"middle"}}>{v}</td>
+                    <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#6366f1",fontWeight:500}}>New</td>
+                    {nVals.map((x,i)=><td key={i} style={{...TD2,color:x?"#6366f1":"#ddd"}}>{x?fmtN(x):"—"}</td>)}
+                    <td style={{...TD2,fontWeight:600,color:"#6366f1",borderLeft:"1px solid #f0f0f0"}}>{fmtN(avgN)}</td>
+                  </tr>,
+                  <tr key={v+'-r'}>
+                    <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#059669",fontWeight:500}}>Returning</td>
+                    {rVals.map((x,i)=><td key={i} style={{...TD2,color:x?"#059669":"#ddd"}}>{x?fmtN(x):"—"}</td>)}
+                    <td style={{...TD2,fontWeight:600,color:"#059669",borderLeft:"1px solid #f0f0f0"}}>{fmtN(avgR)}</td>
+                  </tr>
+                ];
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }
@@ -1225,11 +1370,40 @@ function ChannelSection() {
           {metObj.label} by Channel
         </div>
         <div style={{fontSize:12,color:"#9ca3af",marginBottom:14}}>{ML[MONTHS[0]]}~{ML[MONTHS[MONTHS.length-1]]} · line per channel</div>
-        <LineChart labels={MONTHS.map(m=>ML[m])} datasets={datasets} height={300}/>
+        <LineChart labels={MONTHS.map(m=>ML[m])} datasets={datasets} height={300} showAvg hideLegend={false}
+          onExport={type=>{
+            const hdrs=['Channel',...MONTHS.map(m=>ML[m]),'Avg/Total','MoM'];
+            const rows=CHANNELS.map(ch=>{
+              const vals=MONTHS.map(m=>getVal(ch,m));
+              const s=summary(vals);
+              const mom=delta(vals[lastIdx],vals[lastIdx-1]);
+              return [ch,...vals,s,mom!=null?sign(mom)+'%':'—'];
+            });
+            rows.push(['Total All Channels',...chTotals,summary(chTotals),delta(chTotals[lastIdx],chTotals[lastIdx-1])!=null?sign(delta(chTotals[lastIdx],chTotals[lastIdx-1]))+'%':'—']);
+            if(type==='csv') dlCSV(`channel_${met}.csv`,hdrs,rows);
+            else dlXLSX(`channel_${met}.xlsx`,`${metObj.label}`,hdrs,rows);
+          }}
+        />
       </div>
       {isMauMet&&<div style={{fontSize:11,color:"#d97706",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:6,padding:"7px 12px",marginBottom:10,lineHeight:1.7}}>⚠️ MAU / MAU w/ Lead được <b>ước tính</b> (tỷ lệ DAU channel × MAU vertical total) — không đo trực tiếp per channel.</div>}
       <div style={{...card,overflowX:"auto"}}>
-        <div style={{fontWeight:700,fontSize:13,marginBottom:10,color:"#374151"}}>Chi tiết — Theo Channel (All Verticals) — {metObj.label}</div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+          <div style={{fontWeight:700,fontSize:13,color:"#374151"}}>Chi tiết — Theo Channel (All Verticals) — {metObj.label}</div>
+          <ExportBtns
+            onCSV={()=>{
+              const hdrs=['Channel',...MONTHS.map(m=>ML[m]),'Avg/Total','MoM'];
+              const rows=CHANNELS.map(ch=>{const vals=MONTHS.map(m=>getVal(ch,m));const s=summary(vals);const mom=delta(vals[lastIdx],vals[lastIdx-1]);return [ch,...vals,s,mom!=null?sign(mom)+'%':'—'];}).filter(r=>r[1]||r[2]);
+              rows.push(['Total All Channels',...chTotals,summary(chTotals),'']);
+              dlCSV(`channel_detail_${met}.csv`,hdrs,rows);
+            }}
+            onXLSX={()=>{
+              const hdrs=['Channel',...MONTHS.map(m=>ML[m]),'Avg/Total','MoM'];
+              const rows=CHANNELS.map(ch=>{const vals=MONTHS.map(m=>getVal(ch,m));const s=summary(vals);const mom=delta(vals[lastIdx],vals[lastIdx-1]);return [ch,...vals,s,mom!=null?sign(mom)+'%':'—'];}).filter(r=>r[1]||r[2]);
+              rows.push(['Total All Channels',...chTotals,summary(chTotals),'']);
+              dlXLSX(`channel_detail_${met}.xlsx`,`${metObj.label}`,hdrs,rows);
+            }}
+          />
+        </div>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
           <thead>
             <tr style={{background:"#f8f9ff"}}>
@@ -1267,6 +1441,73 @@ function ChannelSection() {
                 </tr>
               );
             })()}
+          </tbody>
+        </table>
+      </div>
+      {/* User Type table - shown for all metrics (data is always DAU new/returning) */}
+      <div style={{...card,overflowX:"auto",marginTop:12}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+          <div style={{fontWeight:700,fontSize:13,color:"#374151"}}>DAU: New vs Returning — Theo Channel (All Verticals)</div>
+          <ExportBtns
+            onCSV={()=>{
+              const hdrs=['Channel','User Type',...MONTHS.map(m=>ML[m]),'Avg'];
+              const rows=[];
+              CHANNELS.forEach(ch=>{
+                const newVals=MONTHS.map(m=>chMonthUserType(ch,m).new_dau);
+                const retVals=MONTHS.map(m=>chMonthUserType(ch,m).ret_dau);
+                const nz=v=>v.filter(x=>x>0).length||1;
+                rows.push([ch,'New',...newVals,Math.round(newVals.reduce((a,b)=>a+b,0)/nz(newVals))]);
+                rows.push([ch,'Returning',...retVals,Math.round(retVals.reduce((a,b)=>a+b,0)/nz(retVals))]);
+              });
+              dlCSV('channel_usertype_dau.csv',hdrs,rows);
+            }}
+            onXLSX={()=>{
+              const hdrs=['Channel','User Type',...MONTHS.map(m=>ML[m]),'Avg'];
+              const rows=[];
+              CHANNELS.forEach(ch=>{
+                const newVals=MONTHS.map(m=>chMonthUserType(ch,m).new_dau);
+                const retVals=MONTHS.map(m=>chMonthUserType(ch,m).ret_dau);
+                const nz=v=>v.filter(x=>x>0).length||1;
+                rows.push([ch,'New',...newVals,Math.round(newVals.reduce((a,b)=>a+b,0)/nz(newVals))]);
+                rows.push([ch,'Returning',...retVals,Math.round(retVals.reduce((a,b)=>a+b,0)/nz(retVals))]);
+              });
+              dlXLSX('channel_usertype_dau.xlsx','DAU New vs Returning',hdrs,rows);
+            }}
+          />
+        </div>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+          <thead>
+            <tr style={{background:"#f8f9ff"}}>
+              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",textAlign:"left",minWidth:130}}>Channel</th>
+              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",minWidth:80}}>User Type</th>
+              {MONTHS.map(m=><th key={m} style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"}}>{ML[m]}</th>)}
+              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",color:"#6b7280"}}>Avg</th>
+            </tr>
+          </thead>
+          <tbody>
+            {CHANNELS.map(ch=>{
+              const newVals=MONTHS.map(m=>chMonthUserType(ch,m).new_dau);
+              const retVals=MONTHS.map(m=>chMonthUserType(ch,m).ret_dau);
+              const hasData=newVals.some(v=>v>0)||retVals.some(v=>v>0);
+              if(!hasData) return null;
+              const nz=v=>v.filter(x=>x>0).length||1;
+              const avgNew=Math.round(newVals.reduce((a,b)=>a+b,0)/nz(newVals));
+              const avgRet=Math.round(retVals.reduce((a,b)=>a+b,0)/nz(retVals));
+              const TD2={padding:"5px 8px",fontSize:12,textAlign:"right",borderBottom:"1px solid #f0f0f0"};
+              return [
+                <tr key={ch+'-new'} style={{borderTop:"1px solid #f5f5f5"}}>
+                  <td rowSpan={2} style={{...TD2,textAlign:"left",fontWeight:500,color:"#374151",paddingLeft:8,verticalAlign:"middle"}}>{ch}</td>
+                  <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#6366f1",fontWeight:500}}>New</td>
+                  {newVals.map((v,i)=><td key={i} style={{...TD2,color:v?"#6366f1":"#ddd"}}>{v?fmtN(v):"—"}</td>)}
+                  <td style={{...TD2,fontWeight:600,color:"#6366f1",borderLeft:"1px solid #f0f0f0"}}>{fmtN(avgNew)}</td>
+                </tr>,
+                <tr key={ch+'-ret'}>
+                  <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#059669",fontWeight:500}}>Returning</td>
+                  {retVals.map((v,i)=><td key={i} style={{...TD2,color:v?"#059669":"#ddd"}}>{v?fmtN(v):"—"}</td>)}
+                  <td style={{...TD2,fontWeight:600,color:"#059669",borderLeft:"1px solid #f0f0f0"}}>{fmtN(avgRet)}</td>
+                </tr>
+              ];
+            })}
           </tbody>
         </table>
       </div>
@@ -13777,7 +14018,7 @@ function GrowthSection({costData}) {
             <div key={ch} style={{background:"#fff",borderRadius:12,padding:"18px 20px",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
               <div style={{fontWeight:600,marginBottom:4,color:GROWTH_COLORS[ch],fontSize:13}}>{ch}</div>
               <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>{metObj.label} by Vertical</div>
-              <LineChart labels={labels} datasets={lineDs} height={220}/>
+              <LineChart labels={labels} datasets={lineDs} height={220} showAvg/>
             </div>
           );
         })}
@@ -13794,6 +14035,30 @@ function GrowthSection({costData}) {
               }}>{v}</button>
             ))}
           </div>
+          <span style={{marginLeft:"auto"}}>
+            <ExportBtns
+              onCSV={()=>{
+                const hdr=["Channel",...MONTHS.map(m=>ML[m]),"MoM "+ML[MONTHS[MONTHS.length-1]]];
+                const rows=GROWTH_CHS.map(ch=>{
+                  const vals=MONTHS.map(m=>getData(ch,unitVert,m,met));
+                  const li=vals.length-1;
+                  const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;
+                  return[ch,...vals.map(v=>v||""),mom!==null?sign(mom)+"%":""];
+                });
+                dlCSV(`growth_${met}_${unitVert}.csv`,hdr,rows);
+              }}
+              onXLSX={()=>{
+                const hdr=["Channel",...MONTHS.map(m=>ML[m]),"MoM "+ML[MONTHS[MONTHS.length-1]]];
+                const rows=GROWTH_CHS.map(ch=>{
+                  const vals=MONTHS.map(m=>getData(ch,unitVert,m,met));
+                  const li=vals.length-1;
+                  const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;
+                  return[ch,...vals,mom!==null?sign(mom)+"%":""];
+                });
+                dlXLSX(`growth_${met}_${unitVert}.xlsx`,unitVert,hdr,rows);
+              }}
+            />
+          </span>
         </div>
         <div style={{overflowX:"auto"}}>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
@@ -14001,6 +14266,42 @@ function DetailSection() {
           <div style={{fontWeight:700,fontSize:13,marginBottom:10,color:VC[vert],display:"flex",alignItems:"center",gap:8}}>
             <span style={{width:10,height:10,borderRadius:99,background:VC[vert],display:"inline-block"}}/>
             {vert} — {metObj.label}
+            <span style={{marginLeft:"auto"}}>
+              <ExportBtns
+                onCSV={()=>{
+                  const hdr=["Channel",...MONTHS.map(m=>ML[m]),metKey==="lead"?"Total":"Avg/Mo","MoM"];
+                  const rows=CHANNELS.flatMap(ch=>{
+                    const isMauMet=["mau","mauLead","dauMau"].includes(metKey);
+                    const vals=MONTHS.map(m=>{
+                      if(isMauMet){const mv=vertMonthMau(vert,m);const cd=DATA.find(x=>x.v===vert&&x.ch===ch&&x.m===m)?.dau||0;const vd=vertMonthSum(vert,m).dau;const sh=vd?cd/vd:0;if(metKey==="mau")return Math.round(mv.mau*sh);if(metKey==="mauLead")return Math.round(mv.mauLead*sh);if(metKey==="dauMau")return parseFloat((cd/(mv.mau*sh||1)*100).toFixed(1));return 0;}
+                      return DATA.find(x=>x.v===vert&&x.ch===ch&&x.m===m)?.[metKey]??0;
+                    });
+                    const nz=vals.filter(v=>v>0).length||1;
+                    const sm=metKey==="lead"?vals.reduce((a,x)=>a+x,0):Math.round(vals.reduce((a,x)=>a+x,0)/nz);
+                    if(!sm) return [];
+                    const li=vals.length-1;const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;
+                    return[[ch,...vals,sm,mom!==null?sign(mom)+"%":""]];
+                  });
+                  dlCSV(`detail_${metKey}_${vert}.csv`,hdr,rows);
+                }}
+                onXLSX={()=>{
+                  const hdr=["Channel",...MONTHS.map(m=>ML[m]),metKey==="lead"?"Total":"Avg/Mo","MoM"];
+                  const rows=CHANNELS.flatMap(ch=>{
+                    const isMauMet=["mau","mauLead","dauMau"].includes(metKey);
+                    const vals=MONTHS.map(m=>{
+                      if(isMauMet){const mv=vertMonthMau(vert,m);const cd=DATA.find(x=>x.v===vert&&x.ch===ch&&x.m===m)?.dau||0;const vd=vertMonthSum(vert,m).dau;const sh=vd?cd/vd:0;if(metKey==="mau")return Math.round(mv.mau*sh);if(metKey==="mauLead")return Math.round(mv.mauLead*sh);if(metKey==="dauMau")return parseFloat((cd/(mv.mau*sh||1)*100).toFixed(1));return 0;}
+                      return DATA.find(x=>x.v===vert&&x.ch===ch&&x.m===m)?.[metKey]??0;
+                    });
+                    const nz=vals.filter(v=>v>0).length||1;
+                    const sm=metKey==="lead"?vals.reduce((a,x)=>a+x,0):Math.round(vals.reduce((a,x)=>a+x,0)/nz);
+                    if(!sm) return [];
+                    const li=vals.length-1;const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;
+                    return[[ch,...vals,sm,mom!==null?sign(mom)+"%":""]];
+                  });
+                  dlXLSX(`detail_${metKey}_${vert}.xlsx`,vert,hdr,rows);
+                }}
+              />
+            </span>
           </div>
           <div style={{overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
@@ -14508,8 +14809,22 @@ function CampaignSection() {
             <FilterChip active={selCh==='Paid'} onClick={()=>setFilter(setSelCh)('Paid')} color="#6366f1">Growth (Paid)</FilterChip>
             <FilterChip active={selCh==='CRM'} onClick={()=>setFilter(setSelCh)('CRM')} color="#0ea5e9">Growth (CRM)</FilterChip>
           </div>
-          <span style={{marginLeft:"auto",fontSize:10,color:"#9ca3af"}}>
-            {filtered.length} campaigns · sorted by {sortCol==='dau'?'DAU':sortCol==='dwl'?'DwL':'Lead'} {sortAsc?'↑':'↓'}
+          <span style={{marginLeft:"auto",display:"inline-flex",alignItems:"center",gap:8}}>
+            <ExportBtns
+              onCSV={()=>{
+                const hdr=["Campaign","Vertical","Channel","DAU","DwL","Lead"];
+                const rows=filtered.map(r=>[r.campaign,getVert(r),chLabel(r.ch),r.dau,r.dwl,r.lead]);
+                dlCSV(`campaigns_${selM}_${selV}_${selCh}.csv`,hdr,rows);
+              }}
+              onXLSX={()=>{
+                const hdr=["Campaign","Vertical","Channel","DAU","DwL","Lead"];
+                const rows=filtered.map(r=>[r.campaign,getVert(r),chLabel(r.ch),r.dau,r.dwl,r.lead]);
+                dlXLSX(`campaigns_${selM}_${selV}_${selCh}.xlsx`,"Campaigns",hdr,rows);
+              }}
+            />
+            <span style={{fontSize:10,color:"#9ca3af"}}>
+              {filtered.length} campaigns · sorted by {sortCol==='dau'?'DAU':sortCol==='dwl'?'DwL':'Lead'} {sortAsc?'↑':'↓'}
+            </span>
           </span>
         </div>
 
