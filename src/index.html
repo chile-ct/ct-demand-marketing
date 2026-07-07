@@ -931,12 +931,15 @@ function chMonthMau(ch, m) {
 // ─── SECTIONS ────────────────────────────────────────────────────────────────
 
 function ExecSummary() {
-  const [selVert, setSelVert] = React.useState('PTY');
-  const getVertVal = (v,m,key) => {
-    if(key==="mau")     return vertMonthMau(v,m).mau;
-    if(key==="mauLead") return vertMonthMau(v,m).mauLead;
-    if(key==="dauMau")  { const d=(VERT_ACT[v]&&VERT_ACT[v][m]&&VERT_ACT[v][m].dau)||0; const mu=vertMonthMau(v,m).mau; return mu?parseFloat((d/mu*100).toFixed(1)):0; }
-    return (VERT_ACT[v]&&VERT_ACT[v][m]&&VERT_ACT[v][m][key])||0;
+  const getPlatUT = (m,key) => ({
+    nv: VERTS.reduce((s,v)=>s+vertMonthMetricUT(v,m,key).nv,0),
+    rv: VERTS.reduce((s,v)=>s+vertMonthMetricUT(v,m,key).rv,0),
+  });
+  const getActVal = (m,key) => {
+    if(key==="mau")    return ACT[m]?.mau??0;
+    if(key==="mauLead")return ACT[m]?.mauLead??0;
+    if(key==="dauMau") { const d=ACT[m]?.dau??0,mu=ACT[m]?.mau??0; return mu?parseFloat((d/mu*100).toFixed(1)):0; }
+    return ACT[m]?.[key]??0;
   };
   return (
     <section id="exec">
@@ -1012,41 +1015,68 @@ function ExecSummary() {
         </table>
       </div>
 
-      {/* Actual by Vertical */}
+      {/* Actual by Platform */}
       <div style={{...card,overflowX:"auto",marginTop:16}}>
-        <div style={{fontWeight:700,fontSize:13,color:"#374151",marginBottom:10}}>📈 Actual by Vertical</div>
-        <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
-          {VERTS.map(v=>(
-            <button key={v} onClick={()=>setSelVert(v)} style={{
-              padding:"5px 16px",borderRadius:999,border:"none",cursor:"pointer",
-              fontSize:12,fontWeight:700,transition:"all .15s",
-              background:selVert===v?VC[v]:"#f3f4f6",
-              color:selVert===v?"#fff":"#6b7280",
-            }}>{v}</button>
-          ))}
-        </div>
+        <div style={{fontWeight:700,fontSize:13,color:"#374151",marginBottom:10}}>🏠 Actual by Platform</div>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
           <thead>
             <tr style={{background:"#f8f9ff"}}>
               <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",textAlign:"left",minWidth:110}}>Metric</th>
-              {MONTHS.map(m=><th key={m} style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap",color:VC[selVert]}}>{ML[m]}</th>)}
+              {MONTHS.map(m=><th key={m} style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"}}>{ML[m]}</th>)}
               <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",color:"#6b7280"}}>Avg/Total</th>
             </tr>
           </thead>
           <tbody>
             {METRICS.map(met=>{
-              const isRatio=met.key==="dauMau";
-              const isLead=met.key==="lead";
-              const vals=MONTHS.map(m=>getVertVal(selVert,m,met.key));
+              const isRatio=met.key==="dauMau",isLead=met.key==="lead";
+              const vals=MONTHS.map(m=>getActVal(m,met.key));
               const nz=vals.filter(v=>v>0).length||1;
-              const summary=isLead?vals.reduce((a,x)=>a+x,0):isRatio?parseFloat((vals.filter(v=>v>0).reduce((a,x)=>a+x,0)/nz).toFixed(1)):Math.round(vals.reduce((a,x)=>a+x,0)/nz);
+              const smr=isLead?vals.reduce((a,x)=>a+x,0):isRatio?parseFloat((vals.filter(v=>v>0).reduce((a,x)=>a+x,0)/nz).toFixed(1)):Math.round(vals.reduce((a,x)=>a+x,0)/nz);
               return (
                 <tr key={met.key} style={{borderTop:"1px solid #f0f0f0"}}>
                   <td style={{padding:"5px 8px",fontSize:12,fontWeight:600,color:met.color,textAlign:"left"}}>{met.label}</td>
                   {vals.map((v,i)=><td key={i} style={{padding:"5px 8px",fontSize:12,textAlign:"right",color:v?"#111":"#ddd"}}>{v?(isRatio?v+"%":fmtN(v)):"—"}</td>)}
-                  <td style={{padding:"5px 8px",fontSize:12,textAlign:"right",fontWeight:600,color:"#374151",borderLeft:"1px solid #f0f0f0"}}>{summary?(isRatio?summary+"%":fmtN(summary)):"—"}</td>
+                  <td style={{padding:"5px 8px",fontSize:12,textAlign:"right",fontWeight:600,color:"#374151",borderLeft:"1px solid #f0f0f0"}}>{smr?(isRatio?smr+"%":fmtN(smr)):"—"}</td>
                 </tr>
               );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Actual by User Type */}
+      <div style={{...card,overflowX:"auto",marginTop:16}}>
+        <div style={{fontWeight:700,fontSize:13,color:"#374151",marginBottom:10}}>👥 Actual by User Type (New vs Returning)</div>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+          <thead>
+            <tr style={{background:"#f8f9ff"}}>
+              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",textAlign:"left",minWidth:110}}>Metric</th>
+              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",minWidth:80}}>User Type</th>
+              {MONTHS.map(m=><th key={m} style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"}}>{ML[m]}</th>)}
+              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",color:"#6b7280"}}>Avg/Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {METRICS.filter(m=>m.key!=="dauMau").map(met=>{
+              const isLead=met.key==="lead";
+              const nvVals=MONTHS.map(m=>getPlatUT(m,met.key).nv);
+              const rvVals=MONTHS.map(m=>getPlatUT(m,met.key).rv);
+              const nzF=vs=>vs.filter(x=>x>0).length||1;
+              const smrN=isLead?nvVals.reduce((a,x)=>a+x,0):Math.round(nvVals.reduce((a,x)=>a+x,0)/nzF(nvVals));
+              const smrR=isLead?rvVals.reduce((a,x)=>a+x,0):Math.round(rvVals.reduce((a,x)=>a+x,0)/nzF(rvVals));
+              return [
+                <tr key={met.key+'-n'} style={{borderTop:"1px solid #f0f0f0"}}>
+                  <td rowSpan={2} style={{padding:"5px 8px",fontSize:12,fontWeight:600,color:met.color,textAlign:"left",verticalAlign:"middle"}}>{met.label}</td>
+                  <td style={{padding:"5px 8px",fontSize:12,color:"#6366f1",fontWeight:500}}>New</td>
+                  {nvVals.map((v,i)=><td key={i} style={{padding:"5px 8px",fontSize:12,textAlign:"right",color:v?"#6366f1":"#ddd"}}>{v?fmtN(v):"—"}</td>)}
+                  <td style={{padding:"5px 8px",fontSize:12,textAlign:"right",fontWeight:600,color:"#6366f1",borderLeft:"1px solid #f0f0f0"}}>{fmtN(smrN)}</td>
+                </tr>,
+                <tr key={met.key+'-r'}>
+                  <td style={{padding:"5px 8px",fontSize:12,color:"#059669",fontWeight:500}}>Returning</td>
+                  {rvVals.map((v,i)=><td key={i} style={{padding:"5px 8px",fontSize:12,textAlign:"right",color:v?"#059669":"#ddd"}}>{v?fmtN(v):"—"}</td>)}
+                  <td style={{padding:"5px 8px",fontSize:12,textAlign:"right",fontWeight:600,color:"#059669",borderLeft:"1px solid #f0f0f0"}}>{fmtN(smrR)}</td>
+                </tr>
+              ];
             })}
           </tbody>
         </table>
@@ -1137,8 +1167,21 @@ function TrendSection({id, title, getBarVal, getKpiVal, getLineLabel, groupList,
 
 function VerticalSection() {
   const [met, setMet] = useState("dau");
+  const [selVertAV, setSelVertAV] = React.useState('All');
   const metObj = METRICS.find(x=>x.key===met)||METRICS[0];
   const isRatio = met==="dauMau";
+  const getVertValAV = (v,m,key) => {
+    if(key==="mau")    return vertMonthMau(v,m).mau;
+    if(key==="mauLead")return vertMonthMau(v,m).mauLead;
+    if(key==="dauMau") { const d=VERT_ACT[v]?.[m]?.dau??0,mu=vertMonthMau(v,m).mau; return mu?parseFloat((d/mu*100).toFixed(1)):0; }
+    return VERT_ACT[v]?.[m]?.[key]??0;
+  };
+  const getActValAV = (m,key) => {
+    if(key==="mau")    return ACT[m]?.mau??0;
+    if(key==="mauLead")return ACT[m]?.mauLead??0;
+    if(key==="dauMau") { const d=ACT[m]?.dau??0,mu=ACT[m]?.mau??0; return mu?parseFloat((d/mu*100).toFixed(1)):0; }
+    return ACT[m]?.[key]??0;
+  };
   const labels = MONTHS.map(m=>ML[m]);
 
   const getAct = (v,m) => {
@@ -1230,6 +1273,45 @@ function VerticalSection() {
           );
         })}
       </div>
+      {/* Actual by Vertical */}
+      <div style={{...card,overflowX:"auto",marginTop:16}}>
+        <div style={{fontWeight:700,fontSize:13,color:"#374151",marginBottom:10}}>📈 Actual by Vertical</div>
+        <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
+          {['All',...VERTS].map(v=>(
+            <button key={v} onClick={()=>setSelVertAV(v)} style={{
+              padding:"5px 16px",borderRadius:999,border:"none",cursor:"pointer",
+              fontSize:12,fontWeight:700,transition:"all .15s",
+              background:selVertAV===v?(v==="All"?"#374151":VC[v]):"#f3f4f6",
+              color:selVertAV===v?"#fff":"#6b7280",
+            }}>{v==="All"?"All":v}</button>
+          ))}
+        </div>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+          <thead>
+            <tr style={{background:"#f8f9ff"}}>
+              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",textAlign:"left",minWidth:110}}>Metric</th>
+              {MONTHS.map(m=><th key={m} style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap",color:selVertAV==="All"?"#374151":VC[selVertAV]}}>{ML[m]}</th>)}
+              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",color:"#6b7280"}}>Avg/Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {METRICS.map(m=>{
+              const isRatioM=m.key==="dauMau",isLeadM=m.key==="lead";
+              const vals=MONTHS.map(mo=>selVertAV==="All"?getActValAV(mo,m.key):getVertValAV(selVertAV,mo,m.key));
+              const nzM=vals.filter(v=>v>0).length||1;
+              const smr=isLeadM?vals.reduce((a,x)=>a+x,0):isRatioM?parseFloat((vals.filter(v=>v>0).reduce((a,x)=>a+x,0)/nzM).toFixed(1)):Math.round(vals.reduce((a,x)=>a+x,0)/nzM);
+              return (
+                <tr key={m.key} style={{borderTop:"1px solid #f0f0f0"}}>
+                  <td style={{padding:"5px 8px",fontSize:12,fontWeight:600,color:m.color,textAlign:"left"}}>{m.label}</td>
+                  {vals.map((v,i)=><td key={i} style={{padding:"5px 8px",fontSize:12,textAlign:"right",color:v?"#111":"#ddd"}}>{v?(isRatioM?v+"%":fmtN(v)):"—"}</td>)}
+                  <td style={{padding:"5px 8px",fontSize:12,textAlign:"right",fontWeight:600,color:"#374151",borderLeft:"1px solid #f0f0f0"}}>{smr?(isRatioM?smr+"%":fmtN(smr)):"—"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
       {/* User type table per vertical */}
       {met!=="dauMau"&&(
         <div style={{...card,overflowX:"auto",marginTop:16}}>
@@ -1333,6 +1415,7 @@ function VerticalSection() {
 
 function ChannelSection() {
   const [met, setMet] = useState("dau");
+  const [selVertCh, setSelVertCh] = React.useState('All');
   const CH_METRICS = [
     ...METRICS.slice(0,3), // DAU, DwL, Lead
     {key:"mau",    label:"MAU",         color:"#8b5cf6"},
@@ -1342,6 +1425,14 @@ function ChannelSection() {
   const isMauMet = met==="mau"||met==="mauLead";
 
   const getVal = (ch,m) => {
+    if(selVertCh!=="All") {
+      const row=DATA.find(x=>x.v===selVertCh&&x.ch===ch&&x.m===m);
+      if(met==="mau"||met==="mauLead") {
+        const chDau=row?.dau??0,vertDau=vertMonthSum(selVertCh,m).dau,share=vertDau?chDau/vertDau:0;
+        return met==="mau"?Math.round(vertMonthMau(selVertCh,m).mau*share):Math.round(vertMonthMau(selVertCh,m).mauLead*share);
+      }
+      return row?.[met]??0;
+    }
     if(met==="mau")     return chMonthMau(ch,m).mau;
     if(met==="mauLead") return chMonthMau(ch,m).mauLead;
     return chMonthSum(ch,m)[met]??0;
@@ -1359,8 +1450,15 @@ function ChannelSection() {
   const fmtCell = v => v ? fmtK(v) : "—";
   const isLead = met==="lead";
   const chTotals = MONTHS.map(m=>CHANNELS.reduce((s,ch)=>s+getVal(ch,m),0));
-  // Authoritative totals from chotot_mtm; Unattributed = gap vs raw channel sum
-  const actTotals = MONTHS.map(m => isMauMet ? (met==="mau"?ACT[m]?.mau:ACT[m]?.mauLead)??0 : ACT[m]?.[met]??0);
+  // Authoritative totals from chotot_mtm (or VERT_ACT when a vertical is selected)
+  const actTotals = MONTHS.map(m => {
+    if(selVertCh!=="All") {
+      if(met==="mau")    return vertMonthMau(selVertCh,m).mau;
+      if(met==="mauLead")return vertMonthMau(selVertCh,m).mauLead;
+      return VERT_ACT[selVertCh]?.[m]?.[met]??0;
+    }
+    return isMauMet?(met==="mau"?ACT[m]?.mau:ACT[m]?.mauLead)??0:ACT[m]?.[met]??0;
+  });
   const unattribVals = MONTHS.map((m,i) => Math.max(0, actTotals[i] - chTotals[i]));
   const nonZero = vals => vals.filter(v=>v>0).length||1;
   const summary = vals => isLead ? vals.reduce((a,x)=>a+x,0) : Math.round(vals.reduce((a,x)=>a+x,0)/nonZero(vals));
@@ -1393,7 +1491,16 @@ function ChannelSection() {
       </div>
       <div style={{...card,overflowX:"auto"}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
-          <div style={{fontWeight:700,fontSize:13,color:"#374151"}}>Chi tiết — Theo Channel (All Verticals) — {metObj.label}</div>
+          <div style={{fontWeight:700,fontSize:13,color:"#374151"}}>Chi tiết — Theo Channel{selVertCh==="All"?" (All Verticals)":" ("+selVertCh+")"} — {metObj.label}</div>
+          <div style={{display:"flex",gap:5,marginTop:8,marginBottom:0,flexWrap:"wrap"}}>
+            {['All',...VERTS].map(v=>(
+              <button key={v} onClick={()=>setSelVertCh(v)} style={{
+                padding:"3px 12px",borderRadius:999,border:"none",cursor:"pointer",fontSize:11,fontWeight:700,
+                background:selVertCh===v?(v==="All"?"#374151":VC[v]):"#f3f4f6",
+                color:selVertCh===v?"#fff":"#6b7280",transition:"all .15s",
+              }}>{v==="All"?"All":v}</button>
+            ))}
+          </div>
           <ExportBtns
             onCSV={()=>{
               const hdrs=['Channel',...MONTHS.map(m=>ML[m]),'Avg/Total','MoM'];
