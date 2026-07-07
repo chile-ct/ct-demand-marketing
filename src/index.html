@@ -568,37 +568,61 @@ function vertMonthUserType(v, m) {
   const sub = DATA.filter(r=>r.v===v&&r.m===m);
   return {new_dau: sub.reduce((s,r)=>s+(r.nd||0),0), ret_dau: sub.reduce((s,r)=>s+(r.rd||0),0)};
 }
-// Metric-aware new/returning — all sourced directly from BQ (no estimation)
+// Return nd/rd ratio from DATA for (ch?, v?, m), falling back to prev month if no data
+function _ndrd(v, ch, m) {
+  const pred = r => (!v||r.v===v) && (!ch||r.ch===ch) && r.m===m;
+  const sub = DATA.filter(pred);
+  let nd = sub.reduce((s,r)=>s+(r.nd||0),0), rd = sub.reduce((s,r)=>s+(r.rd||0),0);
+  if (nd+rd > 0) return {nd, rd, refM:m};
+  const mIdx = MONTHS.indexOf(m);
+  if (mIdx > 0) {
+    const pm = MONTHS[mIdx-1];
+    const ps = DATA.filter(r=>(!v||r.v===v)&&(!ch||r.ch===ch)&&r.m===pm);
+    nd = ps.reduce((s,r)=>s+(r.nd||0),0); rd = ps.reduce((s,r)=>s+(r.rd||0),0);
+    return {nd, rd, refM:pm};
+  }
+  return {nd:0, rd:0, refM:m};
+}
 function chMonthMetricUT(ch, m, metKey) {
   const sub = DATA.filter(r=>r.ch===ch&&r.m===m);
-  if (metKey==='dau')     return {nv: sub.reduce((s,r)=>s+(r.nd||0),0), rv: sub.reduce((s,r)=>s+(r.rd||0),0)};
-  if (metKey==='mauLead') return {nv: sub.reduce((s,r)=>s+(r.nm||0),0), rv: sub.reduce((s,r)=>s+(r.rm||0),0)};
-  if (metKey==='mau') {
-    // BQ has mau per channel (mc field) but no new_mau — split via DAU new/ret ratio
-    const nd = sub.reduce((s,r)=>s+(r.nd||0),0), rd = sub.reduce((s,r)=>s+(r.rd||0),0);
-    const total = nd+rd; if (!total) return {nv:0,rv:0};
-    const mauVal = sub.reduce((s,r)=>s+(r.mc||0),0);
-    return {nv:Math.round(mauVal*nd/total), rv:Math.round(mauVal*rd/total)};
-  }
-  const nd = sub.reduce((s,r)=>s+(r.nd||0),0), rd = sub.reduce((s,r)=>s+(r.rd||0),0);
+  const hasData = sub.reduce((s,r)=>s+r.dau,0)>0;
+  const {nd, rd, refM} = _ndrd(null, ch, m);
   const total = nd+rd; if (!total) return {nv:0,rv:0};
-  const metVal = sub.reduce((s,r)=>s+(r[metKey]||0),0);
+  // Channel share: use refM's DAU proportions (fallback month if T7 has no data)
+  const totalRefDau = CHANNELS.reduce((s,c)=>s+chMonthSum(c,refM).dau,0);
+  const chRefDau = DATA.filter(r=>r.ch===ch&&r.m===refM).reduce((s,r)=>s+r.dau,0);
+  const share = totalRefDau ? chRefDau/totalRefDau : 0;
+  if (metKey==='dau') {
+    if (hasData) return {nv:nd, rv:rd};
+    const dauVal = Math.round(ACT[m].dau * share);
+    return {nv:Math.round(dauVal*nd/total), rv:Math.round(dauVal*rd/total)};
+  }
+  if (metKey==='mau' || metKey==='mauLead') {
+    const metVal = Math.round((metKey==='mau'?ACT[m].mau:ACT[m].mauLead) * share);
+    return {nv:Math.round(metVal*nd/total), rv:Math.round(metVal*rd/total)};
+  }
+  if (hasData) {
+    const metVal = sub.reduce((s,r)=>s+(r[metKey]||0),0);
+    return {nv:Math.round(metVal*nd/total), rv:Math.round(metVal*rd/total)};
+  }
+  const metVal = Math.round((ACT[m]?.[metKey]??0) * share);
   return {nv:Math.round(metVal*nd/total), rv:Math.round(metVal*rd/total)};
 }
 function vertMonthMetricUT(v, m, metKey) {
   const sub = DATA.filter(r=>r.v===v&&r.m===m);
-  if (metKey==='dau')     return {nv: sub.reduce((s,r)=>s+(r.nd||0),0), rv: sub.reduce((s,r)=>s+(r.rd||0),0)};
-  if (metKey==='mauLead') return {nv: sub.reduce((s,r)=>s+(r.nm||0),0), rv: sub.reduce((s,r)=>s+(r.rm||0),0)};
-  if (metKey==='mau') {
-    // BQ has mau per channel (mc) — sum channels for this vertical; split via DAU ratio
-    const nd = sub.reduce((s,r)=>s+(r.nd||0),0), rd = sub.reduce((s,r)=>s+(r.rd||0),0);
-    const total = nd+rd; if (!total) return {nv:0,rv:0};
-    const mauVal = sub.reduce((s,r)=>s+(r.mc||0),0);
-    return {nv:Math.round(mauVal*nd/total), rv:Math.round(mauVal*rd/total)};
-  }
-  const nd = sub.reduce((s,r)=>s+(r.nd||0),0), rd = sub.reduce((s,r)=>s+(r.rd||0),0);
+  const hasData = sub.reduce((s,r)=>s+r.dau,0)>0;
+  const {nd, rd} = _ndrd(v, null, m);
   const total = nd+rd; if (!total) return {nv:0,rv:0};
-  const metVal = sub.reduce((s,r)=>s+(r[metKey]||0),0);
+  if (metKey==='dau') {
+    if (hasData) return {nv:nd, rv:rd};
+    const dauVal = VERT_ACT[v]?.[m]?.dau??0;
+    return {nv:Math.round(dauVal*nd/total), rv:Math.round(dauVal*rd/total)};
+  }
+  if (metKey==='mau' || metKey==='mauLead') {
+    const metVal = metKey==='mau' ? vertMonthMau(v,m).mau : vertMonthMau(v,m).mauLead;
+    return {nv:Math.round(metVal*nd/total), rv:Math.round(metVal*rd/total)};
+  }
+  const metVal = hasData ? sub.reduce((s,r)=>s+(r[metKey]||0),0) : (VERT_ACT[v]?.[m]?.[metKey]??0);
   return {nv:Math.round(metVal*nd/total), rv:Math.round(metVal*rd/total)};
 }
 
@@ -882,10 +906,11 @@ function vertMonthMau(v, m) {
 }
 
 function chMonthMau(ch, m) {
-  const sub = DATA.filter(r=>r.ch===ch&&r.m===m);
-  const mau     = sub.reduce((s,r)=>s+(r.mc||0),0);
-  const mauLead = sub.reduce((s,r)=>s+(r.ml||0),0);
-  const cDau    = sub.reduce((s,r)=>s+r.dau,0);
+  const totalChDau = CHANNELS.reduce((s,c)=>s+chMonthSum(c,m).dau,0);
+  const cDau = chMonthSum(ch,m).dau;
+  const share = totalChDau ? cDau/totalChDau : 0;
+  const mau     = Math.round(ACT[m].mau     * share);
+  const mauLead = Math.round(ACT[m].mauLead * share);
   const dauMau  = mau ? parseFloat((cDau/mau*100).toFixed(1)) : 0;
   return {mau, mauLead, dauMau};
 }
@@ -14057,9 +14082,15 @@ function GrowthSection({costData}) {
   // Get data per vertical per channel per month
   const getData = (ch, v, m, key) => {
     const row = DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m);
-    if(key==="mau")     return row?.mc??0;
-    if(key==="mauLead") return row?.ml??0;
-    if(key==="dauMau")  { const d=row?.dau??0; const mu=row?.mc??0; return mu?parseFloat((d/mu*100).toFixed(1)):0; }
+    if(key==="mau"||key==="mauLead"||key==="dauMau") {
+      const chDau = row?.dau??0;
+      const vertDau = vertMonthSum(v,m).dau;
+      const share = vertDau ? chDau/vertDau : 0;
+      if(key==="mau")     return Math.round(vertMonthMau(v,m).mau     * share);
+      if(key==="mauLead") return Math.round(vertMonthMau(v,m).mauLead * share);
+      const mu = Math.round(vertMonthMau(v,m).mau * share);
+      return mu ? parseFloat((chDau/mu*100).toFixed(1)) : 0;
+    }
     return row?.[key]??0;
   };
   const daysIn = m => { const [y,mo]=m.split('-').map(Number); return new Date(y,mo,0).getDate(); };
@@ -14080,7 +14111,21 @@ function GrowthSection({costData}) {
           }));
           return (
             <div key={ch} style={{background:"#fff",borderRadius:12,padding:"18px 20px",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
-              <div style={{fontWeight:600,marginBottom:4,color:GROWTH_COLORS[ch],fontSize:13}}>{ch}</div>
+              <div style={{display:"flex",alignItems:"center",marginBottom:4}}>
+                <div style={{fontWeight:600,color:GROWTH_COLORS[ch],fontSize:13,flex:1}}>{ch}</div>
+                <ExportBtns
+                  onCSV={()=>{
+                    const hdr=['Vertical',...MONTHS.map(m=>ML[m]),'MoM'];
+                    const rows=VERTS.map(v=>{const vals=MONTHS.map(m=>getData(ch,v,m,met));const li=vals.length-1;const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;return[v,...vals,mom!==null?sign(mom)+'%':'—'];});
+                    dlCSV(`growth_chart_${ch.replace(/\W+/g,'_')}_${met}.csv`,hdr,rows);
+                  }}
+                  onXLSX={()=>{
+                    const hdr=['Vertical',...MONTHS.map(m=>ML[m]),'MoM'];
+                    const rows=VERTS.map(v=>{const vals=MONTHS.map(m=>getData(ch,v,m,met));const li=vals.length-1;const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;return[v,...vals,mom!==null?sign(mom)+'%':'—'];});
+                    dlXLSX(`growth_chart_${ch.replace(/\W+/g,'_')}_${met}.xlsx`,ch,hdr,rows);
+                  }}
+                />
+              </div>
               <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>{metObj.label} by Vertical</div>
               <LineChart labels={labels} datasets={lineDs} height={220}/>
             </div>
@@ -14103,22 +14148,16 @@ function GrowthSection({costData}) {
             <ExportBtns
               onCSV={()=>{
                 const hdr=["Channel",...MONTHS.map(m=>ML[m]),"MoM "+ML[MONTHS[MONTHS.length-1]]];
-                const rows=GROWTH_CHS.map(ch=>{
-                  const vals=MONTHS.map(m=>getData(ch,unitVert,m,met));
-                  const li=vals.length-1;
-                  const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;
-                  return[ch,...vals.map(v=>v||""),mom!==null?sign(mom)+"%":""];
-                });
+                const rows=GROWTH_CHS.map(ch=>{const vals=MONTHS.map(m=>getData(ch,unitVert,m,met));const li=vals.length-1;const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;return[ch,...vals.map(v=>v||""),mom!==null?sign(mom)+"%":""];});
+                const totVals=MONTHS.map(m=>GROWTH_CHS.reduce((s,ch)=>s+getData(ch,unitVert,m,met),0));const li=totVals.length-1;const mom=totVals[li]&&totVals[li-1]?delta(totVals[li],totVals[li-1]):null;
+                rows.push(["Total Growth",...totVals,mom!==null?sign(mom)+"%":""]);
                 dlCSV(`growth_${met}_${unitVert}.csv`,hdr,rows);
               }}
               onXLSX={()=>{
                 const hdr=["Channel",...MONTHS.map(m=>ML[m]),"MoM "+ML[MONTHS[MONTHS.length-1]]];
-                const rows=GROWTH_CHS.map(ch=>{
-                  const vals=MONTHS.map(m=>getData(ch,unitVert,m,met));
-                  const li=vals.length-1;
-                  const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;
-                  return[ch,...vals,mom!==null?sign(mom)+"%":""];
-                });
+                const rows=GROWTH_CHS.map(ch=>{const vals=MONTHS.map(m=>getData(ch,unitVert,m,met));const li=vals.length-1;const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;return[ch,...vals,mom!==null?sign(mom)+"%":""];});
+                const totVals=MONTHS.map(m=>GROWTH_CHS.reduce((s,ch)=>s+getData(ch,unitVert,m,met),0));const li=totVals.length-1;const mom=totVals[li]&&totVals[li-1]?delta(totVals[li],totVals[li-1]):null;
+                rows.push(["Total Growth",...totVals,mom!==null?sign(mom)+"%":""]);
                 dlXLSX(`growth_${met}_${unitVert}.xlsx`,unitVert,hdr,rows);
               }}
             />
@@ -14158,6 +14197,20 @@ function GrowthSection({costData}) {
                   </tr>
                 ) : null;
               })}
+              {(()=>{
+                const totVals=MONTHS.map(m=>GROWTH_CHS.reduce((s,ch)=>s+getData(ch,unitVert,m,met),0));
+                const li=totVals.length-1;
+                const mom=totVals[li]&&totVals[li-1]?delta(totVals[li],totVals[li-1]):null;
+                const mc=mom===null?"#9ca3af":mom>0?"#059669":"#dc2626";
+                const vertTot=m=>VERT_ACT[unitVert]?.[m]?.[met]??0;
+                return totVals.some(v=>v>0)?(
+                  <tr style={{borderTop:"2px solid #e5e7eb",background:"#f8f9ff",fontWeight:700}}>
+                    <td style={{...TD,textAlign:"left",paddingLeft:8,color:"#374151"}}>Total Growth</td>
+                    {totVals.map((v,i)=>{const vt=vertTot(MONTHS[i]);const pct=vt&&v?Math.round(v/vt*100):null;return(<td key={i} style={{...TD,color:v?"#374151":"#ddd"}}>{v?fmtN(v):"—"}{pct!==null&&<span style={{fontSize:10,color:"#9ca3af",marginLeft:3}}>({pct}%)</span>}</td>);})}
+                    <td style={{...TD,fontWeight:700,color:mc}}>{mom!==null?sign(mom)+"%":"—"}</td>
+                  </tr>
+                ):null;
+              })()}
             </tbody>
           </table>
         </div>
@@ -14219,12 +14272,24 @@ function GrowthSection({costData}) {
           return (<>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
               <div style={{background:"#fff",borderRadius:12,padding:"16px 18px",boxShadow:"0 1px 4px rgba(0,0,0,.07)",minWidth:0,overflow:"hidden"}}>
-                <div style={{fontWeight:600,fontSize:13,marginBottom:4,color:"#374151"}}>Monthly Spend by Vertical (VND)</div>
+                <div style={{display:"flex",alignItems:"center",marginBottom:4}}>
+                  <div style={{fontWeight:600,fontSize:13,color:"#374151",flex:1}}>Monthly Spend by Vertical (VND)</div>
+                  <ExportBtns
+                    onCSV={()=>{const hdr=['Month',...VERTS,'Total'];const rows=ALL_MONTHS.map(m=>{const vs=VERTS.map(v=>costData[v]?.[m]||0);return[ALL_ML_S[m],...vs,vs.reduce((a,x)=>a+x,0)];});dlCSV('cost_spend.csv',hdr,rows);}}
+                    onXLSX={()=>{const hdr=['Month',...VERTS,'Total'];const rows=ALL_MONTHS.map(m=>{const vs=VERTS.map(v=>costData[v]?.[m]||0);return[ALL_ML_S[m],...vs,vs.reduce((a,x)=>a+x,0)];});dlXLSX('cost_spend.xlsx','Spend',hdr,rows);}}
+                  />
+                </div>
                 <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>■ Darker = Actual ({actualNote}) · ■ Lighter = Forecast</div>
                 <BarChartWithTotals labels={ALL_MONTHS.map(m=>ALL_ML_S[m])} datasets={spendBarDs} height={260} hideLegend/>
               </div>
               <div style={{background:"#fff",borderRadius:12,padding:"16px 18px",boxShadow:"0 1px 4px rgba(0,0,0,.07)",minWidth:0,overflow:"hidden"}}>
-                <div style={{fontWeight:600,fontSize:13,marginBottom:4,color:"#374151"}}>% CR to Lead (DwL / DAU)</div>
+                <div style={{display:"flex",alignItems:"center",marginBottom:4}}>
+                  <div style={{fontWeight:600,fontSize:13,color:"#374151",flex:1}}>% CR to Lead (DwL / DAU)</div>
+                  <ExportBtns
+                    onCSV={()=>{const hdr=['Month',...VERTS.map(v=>v),'Total'];const rows=COMPLETE_MONTHS.map(m=>{const vs=VERTS.map(v=>{const dau=gpMetric(v,m,"dau"),dwl=gpMetric(v,m,"dwl");return dau?parseFloat((dwl/dau*100).toFixed(1)):null;});const tdau=VERTS.reduce((s,v)=>s+gpMetric(v,m,"dau"),0),tdwl=VERTS.reduce((s,v)=>s+gpMetric(v,m,"dwl"),0);return[ALL_ML_S[m],...vs,tdau?parseFloat((tdwl/tdau*100).toFixed(1)):null];});dlCSV('cost_cr_lead.csv',hdr,rows);}}
+                    onXLSX={()=>{const hdr=['Month',...VERTS.map(v=>v),'Total'];const rows=COMPLETE_MONTHS.map(m=>{const vs=VERTS.map(v=>{const dau=gpMetric(v,m,"dau"),dwl=gpMetric(v,m,"dwl");return dau?parseFloat((dwl/dau*100).toFixed(1)):null;});const tdau=VERTS.reduce((s,v)=>s+gpMetric(v,m,"dau"),0),tdwl=VERTS.reduce((s,v)=>s+gpMetric(v,m,"dwl"),0);return[ALL_ML_S[m],...vs,tdau?parseFloat((tdwl/tdau*100).toFixed(1)):null];});dlXLSX('cost_cr_lead.xlsx','CR to Lead',hdr,rows);}}
+                  />
+                </div>
                 <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>Growth (Paid + CRM) · % · {actualNote}</div>
                 <LineChart labels={COMPLETE_MONTHS.map(m=>ALL_ML_S[m])} datasets={crDs} height={260} hideLegend/>
               </div>
@@ -14247,7 +14312,13 @@ function GrowthSection({costData}) {
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:14,marginBottom:20}}>
                   {[{key:"dau",label:"Cost per DAU",color:"#6366f1"},{key:"dwl",label:"Cost per DwL",color:"#f59e0b"},{key:"lead",label:"Cost per Lead",color:"#10b981"}].map(({key,label,color})=>(
                     <div key={key} style={{background:"#fff",borderRadius:12,padding:"16px 18px",boxShadow:"0 1px 4px rgba(0,0,0,.07)",minWidth:0,overflow:"hidden"}}>
-                      <div style={{fontWeight:600,fontSize:13,marginBottom:2,color:"#374151"}}>{label}</div>
+                      <div style={{display:"flex",alignItems:"center",marginBottom:2}}>
+                        <div style={{fontWeight:600,fontSize:13,color:"#374151",flex:1}}>{label}</div>
+                        <ExportBtns
+                          onCSV={()=>{const hdr=['Month',...VERTS,'Total'];const rows=COMPLETE_MONTHS.map(m=>[ALL_ML_S[m],...VERTS.map(v=>cp(v,m,key)??''),cpTotal(m,key)??'']);dlCSV(`cost_${key}.csv`,hdr,rows);}}
+                          onXLSX={()=>{const hdr=['Month',...VERTS,'Total'];const rows=COMPLETE_MONTHS.map(m=>[ALL_ML_S[m],...VERTS.map(v=>cp(v,m,key)??''),cpTotal(m,key)??'']);dlXLSX(`cost_${key}.xlsx`,label,hdr,rows);}}
+                        />
+                      </div>
                       <div style={{fontSize:10,color:"#9ca3af",marginBottom:10}}>₫ · Growth (Paid + CRM) · {actualNote} · ╌╌ Total</div>
                       <LineChart labels={COMPLETE_MONTHS.map(m=>ALL_ML_S[m])} datasets={lnDsWithTotal(key)} height={200} hideLegend/>
                     </div>
@@ -14265,9 +14336,16 @@ function GrowthSection({costData}) {
             const spendV = m => isT ? VERTS.reduce((s,v)=>s+(costData[v]?.[m]||0),0) : costData[vert]?.[m]||0;
             const volV   = (m,k) => isT ? VERTS.reduce((s,v)=>s+gpMetric(v,m,k),0) : gpMetric(vert,m,k);
             const cpuV   = (m,k) => { const v2=volV(m,k),s=spendV(m); if(!v2||!s) return null; const mv=(k==="dau"||k==="dwl")?v2*daysIn(m):v2; return Math.round(s/mv); };
+            const label  = isT?"Total":vert;
             return (
               <div style={{background:"#fff",borderRadius:12,padding:"14px 16px",boxShadow:"0 1px 4px rgba(0,0,0,.07)",borderTop:`3px solid ${color}`}}>
-                <div style={{fontWeight:700,color,marginBottom:8,fontSize:13}}>{isT?"Total":vert}</div>
+                <div style={{display:"flex",alignItems:"center",marginBottom:8}}>
+                  <div style={{fontWeight:700,color,fontSize:13,flex:1}}>{label}</div>
+                  <ExportBtns
+                    onCSV={()=>{const hdr=['Month','Spend','₫/DAU·day','₫/DwL·day','₫/Lead'];const rows=MONTHS.map(m=>[ALL_ML_S[m],spendV(m)||'',cpuV(m,'dau')??'',cpuV(m,'dwl')??'',cpuV(m,'lead')??'']);dlCSV(`unit_economy_${label.replace(/\W+/g,'_')}.csv`,hdr,rows);}}
+                    onXLSX={()=>{const hdr=['Month','Spend','₫/DAU·day','₫/DwL·day','₫/Lead'];const rows=MONTHS.map(m=>[ALL_ML_S[m],spendV(m)||'',cpuV(m,'dau')??'',cpuV(m,'dwl')??'',cpuV(m,'lead')??'']);dlXLSX(`unit_economy_${label.replace(/\W+/g,'_')}.xlsx`,label,hdr,rows);}}
+                  />
+                </div>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                   <thead>
                     <tr style={{borderBottom:"1px solid #f0f0f0"}}>
@@ -14318,9 +14396,15 @@ function DetailSection() {
   const metObj = METRICS.find(x=>x.key===metKey);
   const getDetailVal = (ch, v, m, key) => {
     const row = DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m);
-    if(key==="mau")     return row?.mc??0;
-    if(key==="mauLead") return row?.ml??0;
-    if(key==="dauMau")  { const d=row?.dau??0; const mu=row?.mc??0; return mu?parseFloat((d/mu*100).toFixed(1)):0; }
+    if(key==="mau"||key==="mauLead"||key==="dauMau") {
+      const chDau = row?.dau??0;
+      const vertDau = vertMonthSum(v,m).dau;
+      const share = vertDau ? chDau/vertDau : 0;
+      if(key==="mau")     return Math.round(vertMonthMau(v,m).mau     * share);
+      if(key==="mauLead") return Math.round(vertMonthMau(v,m).mauLead * share);
+      const mu = Math.round(vertMonthMau(v,m).mau * share);
+      return mu ? parseFloat((chDau/mu*100).toFixed(1)) : 0;
+    }
     return row?.[key]??0;
   };
   return (
@@ -14328,7 +14412,7 @@ function DetailSection() {
       <div className="section-title">Detail Table — By Vertical × Channel</div>
       <div style={{fontSize:11,color:"#6b7280",background:"#f8fafc",border:"1px solid #e5e7eb",borderRadius:6,padding:"7px 12px",marginBottom:10,lineHeight:1.7}}>
         <b style={{color:"#374151"}}>Nguồn dữ liệu:</b>{" "}
-        <span style={{color:"#059669"}}>✅ DAU, DAU w/ Lead, Total Lead, MAU, MAU w/ Lead</span> — lấy trực tiếp từ <code>ct_product_analytics.daumaulead_mkt_rp</code> (SUM theo platform/ngày → AVG theo tháng).
+        <span style={{color:"#059669"}}>✅ DAU, DAU w/ Lead, Total Lead</span> — từ <code>ct_product_analytics.daumaulead_mkt_rp</code>. <span style={{color:"#059669"}}>✅ MAU, MAU w/ Lead</span> — từ <code>chotot_mtm.dashboard__dau_vertical_monthly</code> &amp; <code>dashboard__dauwlead__vertical_monthly</code>, phân bổ về channel theo tỷ lệ DAU.
       </div>
       <MetricTab opts={METRICS} sel={metKey} onChange={setMetKey}/>
       {VERTS.map(vert=>(
@@ -14396,9 +14480,9 @@ function DetailSection() {
                 })}
                 {(()=>{
                   const mTotals=MONTHS.map(m=>{
-                    if(metKey==="mau")     return CHANNELS.reduce((s,ch)=>s+(DATA.find(x=>x.v===vert&&x.ch===ch&&x.m===m)?.mc??0),0);
-                    if(metKey==="mauLead") return CHANNELS.reduce((s,ch)=>s+(DATA.find(x=>x.v===vert&&x.ch===ch&&x.m===m)?.ml??0),0);
-                    if(metKey==="dauMau")  { const d=VERT_ACT[vert]?.[m]?.dau??0; const mu=CHANNELS.reduce((s,ch)=>s+(DATA.find(x=>x.v===vert&&x.ch===ch&&x.m===m)?.mc??0),0); return mu?parseFloat((d/mu*100).toFixed(1)):0; }
+                    if(metKey==="mau")     return vertMonthMau(vert,m).mau;
+                    if(metKey==="mauLead") return vertMonthMau(vert,m).mauLead;
+                    if(metKey==="dauMau")  { const d=VERT_ACT[vert]?.[m]?.dau??0; const mu=vertMonthMau(vert,m).mau; return mu?parseFloat((d/mu*100).toFixed(1)):0; }
                     return VERT_ACT[vert]?.[m]?.[metKey]??0;
                   });
                   const summary=metKey==="lead"?mTotals.reduce((a,x)=>a+x,0):Math.round(mTotals.filter(x=>x>0).reduce((a,x)=>a+x,0)/(mTotals.filter(x=>x>0).length||1));
