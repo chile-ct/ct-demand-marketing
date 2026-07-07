@@ -14316,6 +14316,13 @@ function GrowthSection({costData}) {
 function DetailSection() {
   const [metKey, setMetKey] = useState("dau");
   const metObj = METRICS.find(x=>x.key===metKey);
+  const getDetailVal = (ch, v, m, key) => {
+    const row = DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m);
+    if(key==="mau")     return row?.mc??0;
+    if(key==="mauLead") return row?.ml??0;
+    if(key==="dauMau")  { const d=row?.dau??0; const mu=row?.mc??0; return mu?parseFloat((d/mu*100).toFixed(1)):0; }
+    return row?.[key]??0;
+  };
   return (
     <section id="detail">
       <div className="section-title">Detail Table — By Vertical × Channel</div>
@@ -14333,7 +14340,7 @@ function DetailSection() {
               <ExportBtns
                 onCSV={()=>{
                   const hdr=["Channel",...MONTHS.map(m=>ML[m]),metKey==="lead"?"Total":"Avg/Mo","MoM"];
-                  const getV=(ch,m)=>getData(ch,vert,m,metKey);
+                  const getV=(ch,m)=>getDetailVal(ch,vert,m,metKey);
                   const rows=CHANNELS.flatMap(ch=>{
                     const vals=MONTHS.map(m=>getV(ch,m));
                     const nz=vals.filter(v=>v>0).length||1;
@@ -14346,7 +14353,7 @@ function DetailSection() {
                 }}
                 onXLSX={()=>{
                   const hdr=["Channel",...MONTHS.map(m=>ML[m]),metKey==="lead"?"Total":"Avg/Mo","MoM"];
-                  const getV=(ch,m)=>getData(ch,vert,m,metKey);
+                  const getV=(ch,m)=>getDetailVal(ch,vert,m,metKey);
                   const rows=CHANNELS.flatMap(ch=>{
                     const vals=MONTHS.map(m=>getV(ch,m));
                     const nz=vals.filter(v=>v>0).length||1;
@@ -14372,7 +14379,7 @@ function DetailSection() {
               </thead>
               <tbody>
                 {CHANNELS.map(ch=>{
-                  const vals = MONTHS.map(m=>getData(ch,vert,m,metKey));
+                  const vals = MONTHS.map(m=>getDetailVal(ch,vert,m,metKey));
                   const nonZero=vals.filter(v=>v>0).length||1;
                   const summary=metKey==="lead"?vals.reduce((a,x)=>a+x,0):Math.round(vals.reduce((a,x)=>a+x,0)/nonZero);
                   if(!summary) return null;
