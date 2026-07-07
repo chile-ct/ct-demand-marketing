@@ -42,4 +42,5 @@ let output = src
 
 fs.mkdirSync('dist', { recursive: true });
 fs.writeFileSync('dist/index.html', output);
-console.log('✅ dist/index.html written —', Math.round(output.length/1024), 'KB');
+fs.writeFileSync('index.html', output);
+console.log('✅ dist/index.html + index.html written —', Math.round(output.length/1024), 'KB');
