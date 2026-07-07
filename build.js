@@ -40,21 +40,13 @@ let output = src
   // Replace babel script with compiled plain JS
   .replace(full, '<script>\n' + compiled + '\n</script>');
 
-// Cache-busting: redirect to ?_v=<ts> unless URL already has exact ts.
-// This ensures cached old pages (with old ts) always redirect to the new versioned URL,
-// which the browser hasn't cached yet → fetches fresh from server.
-const buildTs = Date.now();
-const cacheBuster = `<script>
-(function(){
-  var ts='${buildTs}';
-  var href=location.href;
-  if(href.indexOf('_v='+ts)<0){
-    var base=href.replace(/([?&]_v=[^&#]*)/,'');
-    location.replace(base+(base.indexOf('?')>=0?'&':'?')+'_v='+ts);
-  }
-})();
+// Register Service Worker so HTML is always fetched fresh (no ?_v= URL pollution).
+const swScript = `<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/ct-demand-marketing/sw.js',{updateViaCache:'none'});
+}
 </script>`;
-output = output.replace('</head>', cacheBuster + '\n</head>');
+output = output.replace('</head>', swScript + '\n</head>');
 
 fs.mkdirSync('dist', { recursive: true });
 fs.writeFileSync('dist/index.html', output);

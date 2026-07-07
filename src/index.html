@@ -14267,7 +14267,7 @@ function GrowthSection({costData}) {
                 const mom=vals[li]&&vals[li-1]?delta(vals[li],vals[li-1]):null;
                 const mc=mom===null?"#9ca3af":mom>0?"#059669":"#dc2626";
                 // Vertical total for % calculation
-                const vertTot = m => unitVert==="All"?(isMauMet?(met==="mau"?ACT[m]?.mau:ACT[m]?.mauLead)??0:ACT[m]?.[met]??0):(VERT_ACT[unitVert]?.[m]?.[met]??0);
+                const vertTot = m => unitVert==="All"?((met==="mau"?ACT[m]?.mau:met==="mauLead"?ACT[m]?.mauLead:ACT[m]?.[met])??0):(VERT_ACT[unitVert]?.[m]?.[met]??0);
                 return vals.some(v=>v>0) ? (
                   <tr key={ch} style={{borderTop:"1px solid #f5f5f5"}}>
                     <td style={{...TD,textAlign:"left",fontWeight:500,color:GROWTH_COLORS[ch]}}>{ch}</td>
@@ -14291,7 +14291,7 @@ function GrowthSection({costData}) {
                 const li=totVals.length-1;
                 const mom=totVals[li]&&totVals[li-1]?delta(totVals[li],totVals[li-1]):null;
                 const mc=mom===null?"#9ca3af":mom>0?"#059669":"#dc2626";
-                const vertTot=m=>unitVert==="All"?(isMauMet?(met==="mau"?ACT[m]?.mau:ACT[m]?.mauLead)??0:ACT[m]?.[met]??0):(VERT_ACT[unitVert]?.[m]?.[met]??0);
+                const vertTot=m=>unitVert==="All"?((met==="mau"?ACT[m]?.mau:met==="mauLead"?ACT[m]?.mauLead:ACT[m]?.[met])??0):(VERT_ACT[unitVert]?.[m]?.[met]??0);
                 return totVals.some(v=>v>0)?(
                   <tr style={{borderTop:"2px solid #e5e7eb",background:"#f8f9ff",fontWeight:700}}>
                     <td style={{...TD,textAlign:"left",paddingLeft:8,color:"#374151"}}>Total Growth</td>
