@@ -122,11 +122,13 @@ SELECT
   FORMAT_DATE('%Y-%m', date) AS m,
   vertical,
   channel,
-  ROUND(AVG(daily_dau), 0)     AS dau,
-  ROUND(AVG(daily_new_dau), 0) AS new_dau,
-  ROUND(AVG(daily_ret_dau), 0) AS ret_dau,
-  ROUND(AVG(daily_dwl), 0)     AS dwl,
-  SUM(daily_lead)              AS lead
+  ROUND(AVG(daily_dau), 0)          AS dau,
+  ROUND(AVG(daily_new_dau), 0)      AS new_dau,
+  ROUND(AVG(daily_ret_dau), 0)      AS ret_dau,
+  ROUND(AVG(daily_dwl), 0)          AS dwl,
+  SUM(daily_lead)                   AS lead,
+  ROUND(AVG(daily_new_mau_lead), 0) AS new_mau_lead,
+  ROUND(AVG(daily_ret_mau_lead), 0) AS ret_mau_lead
 FROM (
   SELECT
     date, vertical,
@@ -140,7 +142,9 @@ FROM (
     SUM(new_dau)             AS daily_new_dau,
     SUM(return_dau)          AS daily_ret_dau,
     SUM(dau_w_lead)          AS daily_dwl,
-    SUM(lead_daily)          AS daily_lead
+    SUM(lead_daily)          AS daily_lead,
+    SUM(new_mau_w_lead)      AS daily_new_mau_lead,
+    SUM(return_mau_w_lead)   AS daily_ret_mau_lead
   FROM `chotot-dwh.ct_product_analytics.daumaulead_mkt_rp`
   WHERE date BETWEEN '{start}' AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
     AND vertical IN ('pty','jobs','veh','gds')
@@ -295,12 +299,14 @@ def js_detail_data(detail_rows, camp_rows):
         v = vert_map.get(str(r.get('vertical','')).lower())
         if not v: continue
         ch = str(r.get('channel',''))
-        dau  = int(r['dau'])     if r['dau']     is not None else 0
-        nd   = int(r['new_dau']) if r['new_dau'] is not None else 0
-        rd   = int(r['ret_dau']) if r['ret_dau'] is not None else 0
-        dwl  = int(r['dwl'])     if r['dwl']     is not None else 0
-        lead = int(r['lead'])    if r['lead']    is not None else 0
-        lines.append(f'  {{v:"{v}",ch:{_json.dumps(ch)},m:"{r["m"]}",dau:{dau},nd:{nd},rd:{rd},dwl:{dwl},lead:{lead}}},')
+        dau  = int(r['dau'])          if r['dau']          is not None else 0
+        nd   = int(r['new_dau'])      if r['new_dau']      is not None else 0
+        rd   = int(r['ret_dau'])      if r['ret_dau']      is not None else 0
+        dwl  = int(r['dwl'])          if r['dwl']          is not None else 0
+        lead = int(r['lead'])         if r['lead']         is not None else 0
+        nm   = int(r['new_mau_lead']) if r['new_mau_lead'] is not None else 0
+        rm   = int(r['ret_mau_lead']) if r['ret_mau_lead'] is not None else 0
+        lines.append(f'  {{v:"{v}",ch:{_json.dumps(ch)},m:"{r["m"]}",dau:{dau},nd:{nd},rd:{rd},dwl:{dwl},lead:{lead},nm:{nm},rm:{rm}}},')
     lines.append('];')
     return '\n'.join(lines)
 
