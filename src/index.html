@@ -564,6 +564,40 @@ function vertMonthUserType(v, m) {
   const sub = DATA.filter(r=>r.v===v&&r.m===m);
   return {new_dau: sub.reduce((s,r)=>s+(r.nd||0),0), ret_dau: sub.reduce((s,r)=>s+(r.rd||0),0)};
 }
+// Metric-aware new/returning: for non-DAU metrics, apply DAU new/ret ratio as proxy
+function chMonthMetricUT(ch, m, metKey) {
+  const sub = DATA.filter(r=>r.ch===ch&&r.m===m);
+  const nd = sub.reduce((s,r)=>s+(r.nd||0),0);
+  const rd = sub.reduce((s,r)=>s+(r.rd||0),0);
+  if (metKey==='dau') return {nv:nd, rv:rd};
+  const total = nd+rd;
+  if (!total) return {nv:0, rv:0};
+  let metVal;
+  if (metKey==='mau')     metVal = sub.reduce((s,r)=>{const v2=r.v;const m2=r.m;return s;},0);
+  else metVal = sub.reduce((s,r)=>s+(r[metKey]||0),0);
+  if (metKey==='mau'||metKey==='mauLead') {
+    const chAll = CHANNELS.reduce((s,c)=>{const s2=DATA.filter(x=>x.ch===c&&x.m===m);return s+s2.reduce((a,r)=>a+(r.nd||0)+(r.rd||0),0);},0);
+    const chDau = sub.reduce((s,r)=>s+r.dau,0);
+    const vertDau = sub.reduce((s,r)=>s+r.dau,0);
+    return {nv:0,rv:0}; // MAU not available per channel
+  }
+  return {nv:Math.round(metVal*nd/total), rv:Math.round(metVal*rd/total)};
+}
+function vertMonthMetricUT(v, m, metKey) {
+  const sub = DATA.filter(r=>r.v===v&&r.m===m);
+  const nd = sub.reduce((s,r)=>s+(r.nd||0),0);
+  const rd = sub.reduce((s,r)=>s+(r.rd||0),0);
+  if (metKey==='dau') return {nv:nd, rv:rd};
+  const total = nd+rd;
+  if (!total) return {nv:0, rv:0};
+  if (metKey==='mau'||metKey==='mauLead') {
+    const mauData = vertMonthMau(v,m);
+    const mauVal = metKey==='mau'?mauData.mau:mauData.mauLead;
+    return {nv:Math.round(mauVal*nd/total), rv:Math.round(mauVal*rd/total)};
+  }
+  const metVal = sub.reduce((s,r)=>s+(r[metKey]||0),0);
+  return {nv:Math.round(metVal*nd/total), rv:Math.round(metVal*rd/total)};
+}
 
 // ─── AUTO COMMENTARY ─────────────────────────────────────────────────────────
 function genVertCommentary(metric) {
@@ -1245,78 +1279,87 @@ function VerticalSection() {
               <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>
                 {metObj.label} · ── Actual · ╌╌ KPI
               </div>
-              <LineChart labels={labels} datasets={[actDs, fc0Ds, fc1Ds]} height={200}/>
+              <LineChart labels={labels} datasets={[actDs, fc0Ds, fc1Ds]} height={200}
+                onExport={fmt=>{
+                  const hdrs=['Month','Actual','KPI FC0','KPI FC1'];
+                  const rows=MONTHS.map(m=>[ML[m],getAct(v,m),getKpiFC0(v,m)??'',getKpiFC1(v,m)??'']);
+                  if(fmt==='csv') dlCSV(`${v}_${met}.csv`,hdrs,rows);
+                  else dlXLSX(`${v}_${met}.xlsx`,v,hdrs,rows);
+                }}
+              />
             </div>
           );
         })}
       </div>
       {/* User type table per vertical */}
-      {(true)&&(
+      {met!=="dauMau"&&(
         <div style={{...card,overflowX:"auto",marginTop:16}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
-            <div style={{fontWeight:700,fontSize:13,color:"#374151"}}>DAU: New vs Returning — Theo Vertical</div>
-            <ExportBtns
-              onCSV={()=>{
-                const hdrs=['Vertical','User Type',...MONTHS.map(m=>ML[m]),'Avg'];
-                const rows=[];
-                VERTS.forEach(v=>{
-                  const nVals=MONTHS.map(m=>vertMonthUserType(v,m).new_dau);
-                  const rVals=MONTHS.map(m=>vertMonthUserType(v,m).ret_dau);
-                  const nz=vs=>vs.filter(x=>x>0).length||1;
-                  rows.push([v,'New',...nVals,Math.round(nVals.reduce((a,b)=>a+b,0)/nz(nVals))]);
-                  rows.push([v,'Returning',...rVals,Math.round(rVals.reduce((a,b)=>a+b,0)/nz(rVals))]);
-                });
-                dlCSV('vertical_usertype_dau.csv',hdrs,rows);
-              }}
-              onXLSX={()=>{
-                const hdrs=['Vertical','User Type',...MONTHS.map(m=>ML[m]),'Avg'];
-                const rows=[];
-                VERTS.forEach(v=>{
-                  const nVals=MONTHS.map(m=>vertMonthUserType(v,m).new_dau);
-                  const rVals=MONTHS.map(m=>vertMonthUserType(v,m).ret_dau);
-                  const nz=vs=>vs.filter(x=>x>0).length||1;
-                  rows.push([v,'New',...nVals,Math.round(nVals.reduce((a,b)=>a+b,0)/nz(nVals))]);
-                  rows.push([v,'Returning',...rVals,Math.round(rVals.reduce((a,b)=>a+b,0)/nz(rVals))]);
-                });
-                dlXLSX('vertical_usertype_dau.xlsx','DAU New vs Returning',hdrs,rows);
-              }}
-            />
-          </div>
-          <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-            <thead>
-              <tr style={{background:"#f8f9ff"}}>
-                <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",textAlign:"left",minWidth:70}}>Vertical</th>
-                <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",minWidth:80}}>User Type</th>
-                {MONTHS.map(m=><th key={m} style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"}}>{ML[m]}</th>)}
-                <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",color:"#6b7280"}}>Avg</th>
-              </tr>
-            </thead>
-            <tbody>
-              {VERTS.map(v=>{
-                const nVals=MONTHS.map(m=>vertMonthUserType(v,m).new_dau);
-                const rVals=MONTHS.map(m=>vertMonthUserType(v,m).ret_dau);
-                const hasData=nVals.some(x=>x>0)||rVals.some(x=>x>0);
-                if(!hasData) return null;
-                const nz=vs=>vs.filter(x=>x>0).length||1;
-                const avgN=Math.round(nVals.reduce((a,b)=>a+b,0)/nz(nVals));
-                const avgR=Math.round(rVals.reduce((a,b)=>a+b,0)/nz(rVals));
-                const TD2={padding:"5px 8px",fontSize:12,textAlign:"right",borderBottom:"1px solid #f0f0f0"};
-                return [
-                  <tr key={v+'-n'} style={{borderTop:"1px solid #f5f5f5"}}>
-                    <td rowSpan={2} style={{...TD2,textAlign:"left",fontWeight:700,color:VC[v],paddingLeft:8,verticalAlign:"middle"}}>{v}</td>
-                    <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#6366f1",fontWeight:500}}>New</td>
-                    {nVals.map((x,i)=><td key={i} style={{...TD2,color:x?"#6366f1":"#ddd"}}>{x?fmtN(x):"—"}</td>)}
-                    <td style={{...TD2,fontWeight:600,color:"#6366f1",borderLeft:"1px solid #f0f0f0"}}>{fmtN(avgN)}</td>
-                  </tr>,
-                  <tr key={v+'-r'}>
-                    <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#059669",fontWeight:500}}>Returning</td>
-                    {rVals.map((x,i)=><td key={i} style={{...TD2,color:x?"#059669":"#ddd"}}>{x?fmtN(x):"—"}</td>)}
-                    <td style={{...TD2,fontWeight:600,color:"#059669",borderLeft:"1px solid #f0f0f0"}}>{fmtN(avgR)}</td>
+          {(()=>{
+            const isAvg = met!=="lead";
+            const getUT = (v,m) => vertMonthMetricUT(v,m,met);
+            const allNVals = MONTHS.map(m=>VERTS.reduce((s,v)=>s+getUT(v,m).nv,0));
+            const allRVals = MONTHS.map(m=>VERTS.reduce((s,v)=>s+getUT(v,m).rv,0));
+            const nz=vs=>vs.filter(x=>x>0).length||1;
+            const rowsForExport = [];
+            VERTS.forEach(v=>{
+              const nv=MONTHS.map(m=>getUT(v,m).nv), rv=MONTHS.map(m=>getUT(v,m).rv);
+              rowsForExport.push([v,'New',...nv,isAvg?Math.round(nv.reduce((a,b)=>a+b,0)/nz(nv)):nv.reduce((a,b)=>a+b,0)]);
+              rowsForExport.push([v,'Returning',...rv,isAvg?Math.round(rv.reduce((a,b)=>a+b,0)/nz(rv)):rv.reduce((a,b)=>a+b,0)]);
+            });
+            rowsForExport.push(['Total','New',...allNVals,isAvg?Math.round(allNVals.reduce((a,b)=>a+b,0)/nz(allNVals)):allNVals.reduce((a,b)=>a+b,0)]);
+            rowsForExport.push(['Total','Returning',...allRVals,isAvg?Math.round(allRVals.reduce((a,b)=>a+b,0)/nz(allRVals)):allRVals.reduce((a,b)=>a+b,0)]);
+            const hdrs=['Vertical','User Type',...MONTHS.map(m=>ML[m]),isAvg?'Avg':'Total'];
+            const TD2={padding:"5px 8px",fontSize:12,textAlign:"right",borderBottom:"1px solid #f0f0f0"};
+            return (<>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+                <div style={{fontWeight:700,fontSize:13,color:"#374151"}}>{metObj.label}: New vs Returning — Theo Vertical{(met==="mau"||met==="mauLead")&&<span style={{fontSize:10,color:"#9ca3af",fontWeight:400,marginLeft:6}}>(ước tính theo tỷ lệ DAU)</span>}</div>
+                <ExportBtns onCSV={()=>dlCSV(`vertical_ut_${met}.csv`,hdrs,rowsForExport)} onXLSX={()=>dlXLSX(`vertical_ut_${met}.xlsx`,metObj.label,hdrs,rowsForExport)}/>
+              </div>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                <thead>
+                  <tr style={{background:"#f8f9ff"}}>
+                    <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",textAlign:"left",minWidth:70}}>Vertical</th>
+                    <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",minWidth:80}}>User Type</th>
+                    {MONTHS.map(m=><th key={m} style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"}}>{ML[m]}</th>)}
+                    <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",color:"#6b7280"}}>{isAvg?'Avg':'Total'}</th>
                   </tr>
-                ];
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {VERTS.map(v=>{
+                    const nVals=MONTHS.map(m=>getUT(v,m).nv);
+                    const rVals=MONTHS.map(m=>getUT(v,m).rv);
+                    if(!nVals.some(x=>x>0)&&!rVals.some(x=>x>0)) return null;
+                    const avgN=isAvg?Math.round(nVals.reduce((a,b)=>a+b,0)/nz(nVals)):nVals.reduce((a,b)=>a+b,0);
+                    const avgR=isAvg?Math.round(rVals.reduce((a,b)=>a+b,0)/nz(rVals)):rVals.reduce((a,b)=>a+b,0);
+                    return [
+                      <tr key={v+'-n'} style={{borderTop:"1px solid #f5f5f5"}}>
+                        <td rowSpan={2} style={{...TD2,textAlign:"left",fontWeight:700,color:VC[v],paddingLeft:8,verticalAlign:"middle"}}>{v}</td>
+                        <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#6366f1",fontWeight:500}}>New</td>
+                        {nVals.map((x,i)=><td key={i} style={{...TD2,color:x?"#6366f1":"#ddd"}}>{x?fmtN(x):"—"}</td>)}
+                        <td style={{...TD2,fontWeight:600,color:"#6366f1",borderLeft:"1px solid #f0f0f0"}}>{fmtN(avgN)}</td>
+                      </tr>,
+                      <tr key={v+'-r'}>
+                        <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#059669",fontWeight:500}}>Returning</td>
+                        {rVals.map((x,i)=><td key={i} style={{...TD2,color:x?"#059669":"#ddd"}}>{x?fmtN(x):"—"}</td>)}
+                        <td style={{...TD2,fontWeight:600,color:"#059669",borderLeft:"1px solid #f0f0f0"}}>{fmtN(avgR)}</td>
+                      </tr>
+                    ];
+                  })}
+                  <tr style={{borderTop:"2px solid #e5e7eb",background:"#f8f9ff"}}>
+                    <td rowSpan={2} style={{...TD2,textAlign:"left",fontWeight:700,color:"#374151",paddingLeft:8,verticalAlign:"middle"}}>Total</td>
+                    <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#6366f1",fontWeight:600}}>New</td>
+                    {allNVals.map((x,i)=><td key={i} style={{...TD2,fontWeight:600,color:"#6366f1"}}>{x?fmtN(x):"—"}</td>)}
+                    <td style={{...TD2,fontWeight:700,color:"#6366f1",borderLeft:"1px solid #f0f0f0"}}>{fmtN(isAvg?Math.round(allNVals.reduce((a,b)=>a+b,0)/nz(allNVals)):allNVals.reduce((a,b)=>a+b,0))}</td>
+                  </tr>
+                  <tr>
+                    <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#059669",fontWeight:600}}>Returning</td>
+                    {allRVals.map((x,i)=><td key={i} style={{...TD2,fontWeight:600,color:"#059669"}}>{x?fmtN(x):"—"}</td>)}
+                    <td style={{...TD2,fontWeight:700,color:"#059669",borderLeft:"1px solid #f0f0f0"}}>{fmtN(isAvg?Math.round(allRVals.reduce((a,b)=>a+b,0)/nz(allRVals)):allRVals.reduce((a,b)=>a+b,0))}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </>);
+          })()}
         </div>
       )}
     </section>
@@ -1439,72 +1482,74 @@ function ChannelSection() {
           </tbody>
         </table>
       </div>
-      {/* User Type table - shown for all metrics (data is always DAU new/returning) */}
+      {/* User Type table - metric-aware */}
       <div style={{...card,overflowX:"auto",marginTop:12}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
-          <div style={{fontWeight:700,fontSize:13,color:"#374151"}}>DAU: New vs Returning — Theo Channel (All Verticals)</div>
-          <ExportBtns
-            onCSV={()=>{
-              const hdrs=['Channel','User Type',...MONTHS.map(m=>ML[m]),'Avg'];
-              const rows=[];
-              CHANNELS.forEach(ch=>{
-                const newVals=MONTHS.map(m=>chMonthUserType(ch,m).new_dau);
-                const retVals=MONTHS.map(m=>chMonthUserType(ch,m).ret_dau);
-                const nz=v=>v.filter(x=>x>0).length||1;
-                rows.push([ch,'New',...newVals,Math.round(newVals.reduce((a,b)=>a+b,0)/nz(newVals))]);
-                rows.push([ch,'Returning',...retVals,Math.round(retVals.reduce((a,b)=>a+b,0)/nz(retVals))]);
-              });
-              dlCSV('channel_usertype_dau.csv',hdrs,rows);
-            }}
-            onXLSX={()=>{
-              const hdrs=['Channel','User Type',...MONTHS.map(m=>ML[m]),'Avg'];
-              const rows=[];
-              CHANNELS.forEach(ch=>{
-                const newVals=MONTHS.map(m=>chMonthUserType(ch,m).new_dau);
-                const retVals=MONTHS.map(m=>chMonthUserType(ch,m).ret_dau);
-                const nz=v=>v.filter(x=>x>0).length||1;
-                rows.push([ch,'New',...newVals,Math.round(newVals.reduce((a,b)=>a+b,0)/nz(newVals))]);
-                rows.push([ch,'Returning',...retVals,Math.round(retVals.reduce((a,b)=>a+b,0)/nz(retVals))]);
-              });
-              dlXLSX('channel_usertype_dau.xlsx','DAU New vs Returning',hdrs,rows);
-            }}
-          />
-        </div>
-        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-          <thead>
-            <tr style={{background:"#f8f9ff"}}>
-              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",textAlign:"left",minWidth:130}}>Channel</th>
-              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",minWidth:80}}>User Type</th>
-              {MONTHS.map(m=><th key={m} style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"}}>{ML[m]}</th>)}
-              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",color:"#6b7280"}}>Avg</th>
-            </tr>
-          </thead>
-          <tbody>
-            {CHANNELS.map(ch=>{
-              const newVals=MONTHS.map(m=>chMonthUserType(ch,m).new_dau);
-              const retVals=MONTHS.map(m=>chMonthUserType(ch,m).ret_dau);
-              const hasData=newVals.some(v=>v>0)||retVals.some(v=>v>0);
-              if(!hasData) return null;
-              const nz=v=>v.filter(x=>x>0).length||1;
-              const avgNew=Math.round(newVals.reduce((a,b)=>a+b,0)/nz(newVals));
-              const avgRet=Math.round(retVals.reduce((a,b)=>a+b,0)/nz(retVals));
-              const TD2={padding:"5px 8px",fontSize:12,textAlign:"right",borderBottom:"1px solid #f0f0f0"};
-              return [
-                <tr key={ch+'-new'} style={{borderTop:"1px solid #f5f5f5"}}>
-                  <td rowSpan={2} style={{...TD2,textAlign:"left",fontWeight:500,color:"#374151",paddingLeft:8,verticalAlign:"middle"}}>{ch}</td>
-                  <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#6366f1",fontWeight:500}}>New</td>
-                  {newVals.map((v,i)=><td key={i} style={{...TD2,color:v?"#6366f1":"#ddd"}}>{v?fmtN(v):"—"}</td>)}
-                  <td style={{...TD2,fontWeight:600,color:"#6366f1",borderLeft:"1px solid #f0f0f0"}}>{fmtN(avgNew)}</td>
-                </tr>,
-                <tr key={ch+'-ret'}>
-                  <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#059669",fontWeight:500}}>Returning</td>
-                  {retVals.map((v,i)=><td key={i} style={{...TD2,color:v?"#059669":"#ddd"}}>{v?fmtN(v):"—"}</td>)}
-                  <td style={{...TD2,fontWeight:600,color:"#059669",borderLeft:"1px solid #f0f0f0"}}>{fmtN(avgRet)}</td>
+        {(()=>{
+          const isAvg2 = met!=="lead";
+          const getUT2 = (ch,m) => chMonthMetricUT(ch,m,met);
+          const allNVals2 = MONTHS.map(m=>CHANNELS.reduce((s,ch)=>s+getUT2(ch,m).nv,0));
+          const allRVals2 = MONTHS.map(m=>CHANNELS.reduce((s,ch)=>s+getUT2(ch,m).rv,0));
+          const nz2=vs=>vs.filter(x=>x>0).length||1;
+          const rowsExp2=[];
+          CHANNELS.forEach(ch=>{
+            const nv=MONTHS.map(m=>getUT2(ch,m).nv), rv=MONTHS.map(m=>getUT2(ch,m).rv);
+            rowsExp2.push([ch,'New',...nv,isAvg2?Math.round(nv.reduce((a,b)=>a+b,0)/nz2(nv)):nv.reduce((a,b)=>a+b,0)]);
+            rowsExp2.push([ch,'Returning',...rv,isAvg2?Math.round(rv.reduce((a,b)=>a+b,0)/nz2(rv)):rv.reduce((a,b)=>a+b,0)]);
+          });
+          rowsExp2.push(['Total','New',...allNVals2,isAvg2?Math.round(allNVals2.reduce((a,b)=>a+b,0)/nz2(allNVals2)):allNVals2.reduce((a,b)=>a+b,0)]);
+          rowsExp2.push(['Total','Returning',...allRVals2,isAvg2?Math.round(allRVals2.reduce((a,b)=>a+b,0)/nz2(allRVals2)):allRVals2.reduce((a,b)=>a+b,0)]);
+          const hdrs2=['Channel','User Type',...MONTHS.map(m=>ML[m]),isAvg2?'Avg':'Total'];
+          const TD2={padding:"5px 8px",fontSize:12,textAlign:"right",borderBottom:"1px solid #f0f0f0"};
+          return (<>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+              <div style={{fontWeight:700,fontSize:13,color:"#374151"}}>{metObj.label}: New vs Returning — Theo Channel (All Verticals){(met==="mau"||met==="mauLead")&&<span style={{fontSize:10,color:"#9ca3af",fontWeight:400,marginLeft:6}}>(ước tính theo tỷ lệ DAU)</span>}</div>
+              <ExportBtns onCSV={()=>dlCSV(`channel_ut_${met}.csv`,hdrs2,rowsExp2)} onXLSX={()=>dlXLSX(`channel_ut_${met}.xlsx`,metObj.label,hdrs2,rowsExp2)}/>
+            </div>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+              <thead>
+                <tr style={{background:"#f8f9ff"}}>
+                  <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",textAlign:"left",minWidth:130}}>Channel</th>
+                  <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",minWidth:80}}>User Type</th>
+                  {MONTHS.map(m=><th key={m} style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"}}>{ML[m]}</th>)}
+                  <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",color:"#6b7280"}}>{isAvg2?'Avg':'Total'}</th>
                 </tr>
-              ];
-            })}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {CHANNELS.map(ch=>{
+                  const nVals2=MONTHS.map(m=>getUT2(ch,m).nv);
+                  const rVals2=MONTHS.map(m=>getUT2(ch,m).rv);
+                  if(!nVals2.some(x=>x>0)&&!rVals2.some(x=>x>0)) return null;
+                  const avgN2=isAvg2?Math.round(nVals2.reduce((a,b)=>a+b,0)/nz2(nVals2)):nVals2.reduce((a,b)=>a+b,0);
+                  const avgR2=isAvg2?Math.round(rVals2.reduce((a,b)=>a+b,0)/nz2(rVals2)):rVals2.reduce((a,b)=>a+b,0);
+                  return [
+                    <tr key={ch+'-new'} style={{borderTop:"1px solid #f5f5f5"}}>
+                      <td rowSpan={2} style={{...TD2,textAlign:"left",fontWeight:500,color:"#374151",paddingLeft:8,verticalAlign:"middle"}}>{ch}</td>
+                      <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#6366f1",fontWeight:500}}>New</td>
+                      {nVals2.map((v,i)=><td key={i} style={{...TD2,color:v?"#6366f1":"#ddd"}}>{v?fmtN(v):"—"}</td>)}
+                      <td style={{...TD2,fontWeight:600,color:"#6366f1",borderLeft:"1px solid #f0f0f0"}}>{fmtN(avgN2)}</td>
+                    </tr>,
+                    <tr key={ch+'-ret'}>
+                      <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#059669",fontWeight:500}}>Returning</td>
+                      {rVals2.map((v,i)=><td key={i} style={{...TD2,color:v?"#059669":"#ddd"}}>{v?fmtN(v):"—"}</td>)}
+                      <td style={{...TD2,fontWeight:600,color:"#059669",borderLeft:"1px solid #f0f0f0"}}>{fmtN(avgR2)}</td>
+                    </tr>
+                  ];
+                })}
+                <tr style={{borderTop:"2px solid #e5e7eb",background:"#f8f9ff"}}>
+                  <td rowSpan={2} style={{...TD2,textAlign:"left",fontWeight:700,color:"#374151",paddingLeft:8,verticalAlign:"middle"}}>Total</td>
+                  <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#6366f1",fontWeight:600}}>New</td>
+                  {allNVals2.map((x,i)=><td key={i} style={{...TD2,fontWeight:600,color:"#6366f1"}}>{x?fmtN(x):"—"}</td>)}
+                  <td style={{...TD2,fontWeight:700,color:"#6366f1",borderLeft:"1px solid #f0f0f0"}}>{fmtN(isAvg2?Math.round(allNVals2.reduce((a,b)=>a+b,0)/nz2(allNVals2)):allNVals2.reduce((a,b)=>a+b,0))}</td>
+                </tr>
+                <tr>
+                  <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#059669",fontWeight:600}}>Returning</td>
+                  {allRVals2.map((x,i)=><td key={i} style={{...TD2,fontWeight:600,color:"#059669"}}>{x?fmtN(x):"—"}</td>)}
+                  <td style={{...TD2,fontWeight:700,color:"#059669",borderLeft:"1px solid #f0f0f0"}}>{fmtN(isAvg2?Math.round(allRVals2.reduce((a,b)=>a+b,0)/nz2(allRVals2)):allRVals2.reduce((a,b)=>a+b,0))}</td>
+                </tr>
+              </tbody>
+            </table>
+          </>);
+        })()}
       </div>
     </section>
   );
