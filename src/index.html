@@ -560,6 +560,19 @@ function chMonthSum(ch, m) {
   const sub = DATA.filter(r=>r.ch===ch&&r.m===m);
   return {dau:sub.reduce((a,x)=>a+x.dau,0), dwl:sub.reduce((a,x)=>a+x.dwl,0), lead:sub.reduce((a,x)=>a+x.lead,0)};
 }
+// Returns channel-level dau/dwl/lead scaled to VERT_ACT authoritative totals
+// channel share is estimated from raw DATA proportions within each vertical
+function scaledChVert(ch, v, m, key) {
+  const rawVert = DATA.filter(r=>r.v===v&&r.m===m).reduce((s,r)=>s+(r[key]||0),0);
+  const rawCh   = DATA.filter(r=>r.v===v&&r.ch===ch&&r.m===m).reduce((s,r)=>s+(r[key]||0),0);
+  const share = rawVert ? rawCh/rawVert : 0;
+  const auth = (VERT_ACT[v]?.[m]?.[key]) ?? 0;
+  return Math.round(auth * share);
+}
+// Sum scaledChVert across all verticals (for channel-level all-vertical tables)
+function scaledCh(ch, m, key) {
+  return VERTS.reduce((s,v) => s + scaledChVert(ch,v,m,key), 0);
+}
 function chMonthUserType(ch, m) {
   const sub = DATA.filter(r=>r.ch===ch&&r.m===m);
   return {new_dau: sub.reduce((s,r)=>s+(r.nd||0),0), ret_dau: sub.reduce((s,r)=>s+(r.rd||0),0)};
@@ -1405,6 +1418,7 @@ function ChannelSection() {
   const getVal = (ch,m) => {
     if(met==="mau")     return chMonthMau(ch,m).mau;
     if(met==="mauLead") return chMonthMau(ch,m).mauLead;
+    if(met==="dau"||met==="dwl"||met==="lead") return scaledCh(ch,m,met);
     return chMonthSum(ch,m)[met]??0;
   };
 
@@ -14083,7 +14097,7 @@ function GrowthSection({costData}) {
   const getData = (ch, v, m, key) => {
     const row = DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m);
     if(key==="mau"||key==="mauLead"||key==="dauMau") {
-      const chDau = row?.dau??0;
+      const chDau = scaledChVert(ch,v,m,'dau');
       const vertDau = vertMonthSum(v,m).dau;
       const share = vertDau ? chDau/vertDau : 0;
       if(key==="mau")     return Math.round(vertMonthMau(v,m).mau     * share);
@@ -14091,6 +14105,7 @@ function GrowthSection({costData}) {
       const mu = Math.round(vertMonthMau(v,m).mau * share);
       return mu ? parseFloat((chDau/mu*100).toFixed(1)) : 0;
     }
+    if(key==="dau"||key==="dwl"||key==="lead") return scaledChVert(ch,v,m,key);
     return row?.[key]??0;
   };
   const daysIn = m => { const [y,mo]=m.split('-').map(Number); return new Date(y,mo,0).getDate(); };
@@ -14395,9 +14410,8 @@ function DetailSection() {
   const [metKey, setMetKey] = useState("dau");
   const metObj = METRICS.find(x=>x.key===metKey);
   const getDetailVal = (ch, v, m, key) => {
-    const row = DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m);
     if(key==="mau"||key==="mauLead"||key==="dauMau") {
-      const chDau = row?.dau??0;
+      const chDau = scaledChVert(ch,v,m,'dau');
       const vertDau = vertMonthSum(v,m).dau;
       const share = vertDau ? chDau/vertDau : 0;
       if(key==="mau")     return Math.round(vertMonthMau(v,m).mau     * share);
@@ -14405,6 +14419,8 @@ function DetailSection() {
       const mu = Math.round(vertMonthMau(v,m).mau * share);
       return mu ? parseFloat((chDau/mu*100).toFixed(1)) : 0;
     }
+    if(key==="dau"||key==="dwl"||key==="lead") return scaledChVert(ch,v,m,key);
+    const row = DATA.find(x=>x.v===v&&x.ch===ch&&x.m===m);
     return row?.[key]??0;
   };
   return (
@@ -14412,7 +14428,7 @@ function DetailSection() {
       <div className="section-title">Detail Table — By Vertical × Channel</div>
       <div style={{fontSize:11,color:"#6b7280",background:"#f8fafc",border:"1px solid #e5e7eb",borderRadius:6,padding:"7px 12px",marginBottom:10,lineHeight:1.7}}>
         <b style={{color:"#374151"}}>Nguồn dữ liệu:</b>{" "}
-        <span style={{color:"#059669"}}>✅ DAU, DAU w/ Lead, Total Lead</span> — từ <code>ct_product_analytics.daumaulead_mkt_rp</code>. <span style={{color:"#059669"}}>✅ MAU, MAU w/ Lead</span> — từ <code>chotot_mtm.dashboard__dau_vertical_monthly</code> &amp; <code>dashboard__dauwlead__vertical_monthly</code>, phân bổ về channel theo tỷ lệ DAU.
+        <span style={{color:"#059669"}}>✅ DAU, DAU w/ Lead, Total Lead</span> — từ <code>chotot_mtm.dashboard__dau_vertical_monthly</code>, phân bổ về channel theo tỷ lệ từ <code>daumaulead_mkt_rp</code>. <span style={{color:"#059669"}}>✅ MAU, MAU w/ Lead</span> — từ <code>chotot_mtm.dashboard__dau_vertical_monthly</code> &amp; <code>dashboard__dauwlead__vertical_monthly</code>, phân bổ về channel theo tỷ lệ DAU.
       </div>
       <MetricTab opts={METRICS} sel={metKey} onChange={setMetKey}/>
       {VERTS.map(vert=>(
