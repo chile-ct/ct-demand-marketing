@@ -40,16 +40,17 @@ let output = src
   // Replace babel script with compiled plain JS
   .replace(full, '<script>\n' + compiled + '\n</script>');
 
-// Inject cache-busting: auto-redirect to ?v=<ts> when a new build is detected
+// Cache-busting: redirect to ?_v=<ts> unless URL already has exact ts.
+// This ensures cached old pages (with old ts) always redirect to the new versioned URL,
+// which the browser hasn't cached yet → fetches fresh from server.
 const buildTs = Date.now();
 const cacheBuster = `<script>
 (function(){
   var ts='${buildTs}';
-  var k='_dashboard_v';
-  if(localStorage.getItem(k)!==ts){
-    localStorage.setItem(k,ts);
-    if(location.search.indexOf('_v=')<0)
-      location.replace(location.pathname+'?_v='+ts);
+  var href=location.href;
+  if(href.indexOf('_v='+ts)<0){
+    var base=href.replace(/([?&]_v=[^&#]*)/,'');
+    location.replace(base+(base.indexOf('?')>=0?'&':'?')+'_v='+ts);
   }
 })();
 </script>`;
