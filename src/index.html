@@ -489,8 +489,8 @@ const RET_PF_COLORS    = {App:"#6366f1",Web:"#10b981"};
 const RET_LOGIN_COLORS = {"Login":"#6366f1","Non-login":"#9ca3af"};
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
-const fmtK  = n => n==null?"—": n>=1e9?parseFloat((n/1e9).toFixed(2))+"B": n>=1e6?parseFloat((n/1e6).toFixed(2))+"M": n>=1e3?parseFloat((n/1e3).toFixed(1))+"K": n.toLocaleString();
-const fmtN  = n => n?.toLocaleString("vi-VN")??"—";
+const fmtK  = n => n==null?"—": n>=1e9?parseFloat((n/1e9).toFixed(2))+"B": n>=1e6?parseFloat((n/1e6).toFixed(2))+"M": n>=1e3?parseFloat((n/1e3).toFixed(1))+"K": n.toLocaleString("en-US");
+const fmtN  = n => n==null?"—": (typeof n==="number"?n.toLocaleString("en-US"):"—");
 const pct   = (a,b) => b ? Math.round(a/b*100) : null;
 const delta = (a,b) => b ? Math.round((a-b)/b*100) : null;
 const sign  = n => n>0?"+"+n:n;
