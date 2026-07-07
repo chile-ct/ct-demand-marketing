@@ -40,6 +40,21 @@ let output = src
   // Replace babel script with compiled plain JS
   .replace(full, '<script>\n' + compiled + '\n</script>');
 
+// Inject cache-busting: auto-redirect to ?v=<ts> when a new build is detected
+const buildTs = Date.now();
+const cacheBuster = `<script>
+(function(){
+  var ts='${buildTs}';
+  var k='_dashboard_v';
+  if(localStorage.getItem(k)!==ts){
+    localStorage.setItem(k,ts);
+    if(location.search.indexOf('_v=')<0)
+      location.replace(location.pathname+'?_v='+ts);
+  }
+})();
+</script>`;
+output = output.replace('</head>', cacheBuster + '\n</head>');
+
 fs.mkdirSync('dist', { recursive: true });
 fs.writeFileSync('dist/index.html', output);
 fs.writeFileSync('index.html', output);

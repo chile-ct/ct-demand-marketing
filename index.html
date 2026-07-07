@@ -25,6 +25,17 @@ section{padding:28px 24px 0;scroll-margin-top:114px}
   display:flex;align-items:center;gap:8px}
 .section-title::before{content:'';display:block;width:4px;height:18px;background:#6366f1;border-radius:2px}
 </style>
+<script>
+(function(){
+  var ts='1783412186616';
+  var k='_dashboard_v';
+  if(localStorage.getItem(k)!==ts){
+    localStorage.setItem(k,ts);
+    if(location.search.indexOf('_v=')<0)
+      location.replace(location.pathname+'?_v='+ts);
+  }
+})();
+</script>
 </head>
 <body>
 
