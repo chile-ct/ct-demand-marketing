@@ -15288,6 +15288,14 @@ function CampaignSection() {
   return (
     <section id="campaign">
       <div className="section-title">📊 Campaign Breakdown — Growth Paid &amp; CRM</div>
+      <div style={{background:"#eff6ff",borderRadius:8,padding:"10px 14px",marginBottom:10,
+        fontSize:12,color:"#1e40af",border:"1px solid #bfdbfe",display:"flex",alignItems:"center",gap:8}}>
+        🔗 <span>Xem detail breakdown theo từng campaign:</span>
+        <a href="https://chile-ct.github.io/campaign-audit-dashboard/" target="_blank" rel="noopener"
+          style={{color:"#2563eb",fontWeight:600,textDecoration:"underline"}}>
+          Campaign Audit Dashboard ↗
+        </a>
+      </div>
       <div style={{background:"#fff9ed",borderRadius:8,padding:"10px 14px",marginBottom:10,
         fontSize:11,color:"#92400e",lineHeight:1.7,border:"1px solid #fde68a"}}>
         ⚠️ <b>Tại sao DAU ở đây thấp hơn bảng Detail Table?</b> Bảng này dùng <b>event-level attribution</b> — chỉ tính session có UTM/gclid đính kèm trực tiếp vào từng out-app/paid campaign. User click quảng cáo ngày 1, quay lại ngày 2 không có UTM → session ngày 2 không được gán vào campaign nào → không được đếm. Hai bảng nhìn cùng traffic nhưng theo góc độ khác nhau.
