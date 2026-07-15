@@ -1,0 +1,30 @@
+name: Build on Source Change
+
+on:
+  push:
+    paths:
+      - 'src/index.html'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install
+      - name: Build
+        run: node build.js
+      - name: Commit built files
+        run: |
+          git config user.name "dashboard-bot"
+          git config user.email "chile@chotot.vn"
+          git add index.html dist/index.html
+          git diff --staged --quiet && echo "No changes" || (
+            git commit -m "build: compile src/index.html [skip ci]"
+            git push
+          )
