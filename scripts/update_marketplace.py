@@ -6,15 +6,26 @@ Run: python3 scripts/update_marketplace.py
 """
 import re, os, datetime, subprocess, urllib.request, json
 from google.cloud import bigquery
+from google.oauth2 import service_account
 
 PROJECT   = "chotot-dwh"
 SRC_HTML  = os.path.join(os.path.dirname(__file__), '..', 'src', 'index.html')
 DIST_HTML = os.path.join(os.path.dirname(__file__), '..', 'dist', 'index.html')
 ROOT_HTML = os.path.join(os.path.dirname(__file__), '..', 'index.html')
-SHEETS_ID = "1D-2eQcfDMzy42wHUF4bpwCY4cWtrJNvp-kdv9R_iFUI"
-SHEET_TAB = "FC & Actual cost "
 
-client = bigquery.Client(project=PROJECT)
+# BQ client with Drive scope so Sheets-linked tables (kiet_gg_ad_cost) are accessible
+_SCOPES = [
+    'https://www.googleapis.com/auth/bigquery',
+    'https://www.googleapis.com/auth/drive.readonly',
+    'https://www.googleapis.com/auth/cloud-platform',
+]
+_creds_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+if _creds_path:
+    _creds = service_account.Credentials.from_service_account_file(_creds_path, scopes=_SCOPES)
+    client = bigquery.Client(project=PROJECT, credentials=_creds)
+else:
+    client = bigquery.Client(project=PROJECT)
+
 def q(sql): return [dict(r) for r in client.query(sql).result()]
 def fmt_m(v): return v.strftime('%Y-%m') if hasattr(v,'strftime') else str(v)[:7]
 
@@ -70,50 +81,61 @@ def build_act(vert_act):
 vert_act = build_vert_act()
 act = build_act(vert_act)
 
-# ── 3. Google Sheets cost data ──────────────────────────────────────────────
-def fetch_growth_cost():
+# ── 3. Actual Growth Paid cost from BQ (gg + meta, completed months only) ───
+def fetch_growth_cost_bq(start_date, end_date):
+    """Query actual spend from kiet_gg_ad_cost (GG) + meta_ads_campaign (Meta).
+    Returns {vertical: {month: cost_vnd}} for completed months only."""
     try:
-        gcloud = os.path.expanduser("~/google-cloud-sdk/bin/gcloud")
-        token = subprocess.run([gcloud,"auth","print-access-token","--account=chile@chotot.vn"],
-                               capture_output=True,text=True).stdout.strip()
-        if not token: return None
-        enc = SHEET_TAB.replace(' ','%20').replace('&','%26')
-        url = f"https://sheets.googleapis.com/v4/spreadsheets/{SHEETS_ID}/values/'{enc}'!A1:R500"
-        req = urllib.request.Request(url, headers={"Authorization":f"Bearer {token}"})
-        with urllib.request.urlopen(req, timeout=15) as r:
-            data = json.loads(r.read())
-        rows = data.get('values',[])
-        if not rows: return None
-        hdr0,hdr1 = rows[0],rows[1]
-        mm={'Jan':'2026-01','Feb':'2026-02','Mar':'2026-03','Apr':'2026-04',
-            'May':'2026-05','June':'2026-06','Jun':'2026-06','Jul':'2026-07',
-            'Aug':'2026-08','Sep':'2026-09','Oct':'2026-10','Nov':'2026-11','Dec':'2026-12'}
-        col_info={i:(mm[h],'actual' in str(hdr0[i] if i<len(hdr0) else '').lower())
-                  for i,h in enumerate(hdr1) if h in mm}
-        def pn(s):
-            try: return int(str(s).replace(',','').replace(' ','').replace('\xa0',''))
-            except: return 0
-        result={}
-        for r in rows[2:]:
-            row=r+['']*(max(col_info,default=0)+1-len(r))
-            v=str(row[0]).strip().upper()
-            if v not in ['PTY','JOB','VEH','GDS']: continue
-            activity=str(row[2]) if len(row)>2 else ''
-            if 'DwL' not in activity: continue  # only DwL campaign spend
-            for col,(mk,_) in col_info.items():
-                if col<len(row):
-                    n=pn(row[col])
-                    if n:
-                        result.setdefault(v,{}).setdefault(mk,{'total':0})
-                        result[v][mk]['total']+=n
-        print(f"  Sheets OK — {sum(len(d) for d in result.values())} entries")
+        rows = q(f"""
+        WITH gg_cost AS (
+          SELECT Day AS date,
+            SUM(CASE WHEN Account_Name IN ('Chotot_PTY_DAU_New','Chotot_pty_sgd')          THEN Cost ELSE 0 END) AS pty,
+            SUM(CASE WHEN Account_Name IN ('Chotot_JOB_VND','Chotot_job_sgd')              THEN Cost ELSE 0 END) AS job,
+            SUM(CASE WHEN Account_Name IN ('Chotot_VEH_DAU_New','Chotot_veh_sgd')          THEN Cost ELSE 0 END) AS veh,
+            SUM(CASE WHEN Account_Name IN ('Chotot_GDS_ELT_DAU_New','Chotot_gds_elt_sgd')  THEN Cost ELSE 0 END) AS gds
+          FROM `chotot-dwh.ct_digital.kiet_gg_ad_cost`
+          GROUP BY Day
+        ),
+        meta_cost AS (
+          SELECT date_start AS date,
+            SUM(CASE WHEN advertiser_name IN ('Chotot_PTY_DAU_New','Chotot_pty_sgd')         THEN spend*20377 ELSE 0 END) AS pty,
+            SUM(CASE WHEN advertiser_name IN ('Chotot_JOB_VND','Chotot_job_sgd')             THEN spend*20377 ELSE 0 END) AS job,
+            SUM(CASE WHEN advertiser_name IN ('Chotot_VEH_DAU_New','Chotot_veh_sgd')         THEN spend*20377 ELSE 0 END) AS veh,
+            SUM(CASE WHEN advertiser_name IN ('Chotot_GDS_ELT_DAU_New','Chotot_gds_elt_sgd') THEN spend*20377 ELSE 0 END) AS gds
+          FROM `chotot-dwh.chotot_marketing.meta_ads_campaign`
+          GROUP BY date_start
+        )
+        SELECT
+          FORMAT_DATE('%Y-%m', COALESCE(gg.date, meta.date)) AS month,
+          ROUND(SUM(COALESCE(gg.pty,0) + COALESCE(meta.pty,0)), 0) AS pty,
+          ROUND(SUM(COALESCE(gg.job,0) + COALESCE(meta.job,0)), 0) AS job,
+          ROUND(SUM(COALESCE(gg.veh,0) + COALESCE(meta.veh,0)), 0) AS veh,
+          ROUND(SUM(COALESCE(gg.gds,0) + COALESCE(meta.gds,0)), 0) AS gds
+        FROM gg_cost gg
+        FULL OUTER JOIN meta_cost meta ON gg.date = meta.date
+        WHERE COALESCE(gg.date, meta.date) BETWEEN '{start_date}' AND '{end_date}'
+        GROUP BY month
+        ORDER BY month
+        """)
+        result = {}
+        for r in rows:
+            m = r['month']
+            for v, col in [('PTY','pty'),('JOB','job'),('VEH','veh'),('GDS','gds')]:
+                val = int(r[col] or 0)
+                if val > 0:
+                    result.setdefault(v, {})[m] = val
+        print(f"  BQ cost OK — {sum(len(d) for d in result.values())} month-vertical entries")
         return result
     except Exception as e:
-        print(f"  Sheets failed: {e}")
-        return None
+        print(f"  BQ cost failed: {e}")
+        return {}
 
-print("Fetching Google Sheets cost data...")
-growth_cost = fetch_growth_cost()
+print("Querying actual Growth Paid cost from BQ...")
+# Only fetch completed months (exclude current partial month)
+today = datetime.date.today()
+last_complete = (today.replace(day=1) - datetime.timedelta(days=1))  # last day of prev month
+cost_actual = fetch_growth_cost_bq(f"{months[0]}-01", last_complete.strftime('%Y-%m-%d'))
+print(f"  Actual cost loaded for months up to {last_complete.strftime('%Y-%m')}")
 
 # ── 3b. Detail data (daumaulead_mkt_rp) ──────────────────────────────────────
 print("Querying detail channel data...")
@@ -269,13 +291,28 @@ def js_detail_data(detail_rows, camp_rows):
     lines.append('];')
     return '\n'.join(lines)
 
-def js_growth_cost(cost):
-    lines=['// Cost data — auto-updated from Google Sheets "FC & Actual cost"',
-           '// actual = accrued | forecast = planned (VND)','const GROWTH_COST = {']
+def js_growth_cost(actual, existing_html):
+    """Merge actual BQ cost into existing GROWTH_COST, keeping budget plan for future months."""
+    # Parse existing GROWTH_COST from HTML to preserve budget values
+    existing = {}
+    m = re.search(r'const GROWTH_COST = \{([\s\S]*?)^};', existing_html, re.MULTILINE)
+    if m:
+        for vert_m in re.finditer(r'(\w+):\{([\s\S]*?)\}', m.group(1)):
+            v = vert_m.group(1)
+            for entry in re.finditer(r'"([\d-]+)"\s*:\s*(\d+)', vert_m.group(2)):
+                existing.setdefault(v, {})[entry.group(1)] = int(entry.group(2))
+    # Overlay actual on top of existing
+    merged = {}
+    for v in ['PTY','JOB','VEH','GDS']:
+        merged[v] = dict(existing.get(v, {}))
+        for mk, val in actual.get(v, {}).items():
+            merged[v][mk] = val
+    lines = ['// Cost data — actual from BQ (gg+meta) for completed months; budget plan for future',
+             '// auto-updated by update_marketplace.py', 'const GROWTH_COST = {']
     for v in ['PTY','JOB','VEH','GDS']:
         lines.append(f'  {v}:{{')
-        for mk,d in sorted(cost.get(v,{}).items()):
-            lines.append(f'    "{mk}":{d["total"]},')
+        for mk in sorted(merged.get(v, {})):
+            lines.append(f'    "{mk}":{merged[v][mk]},')
         lines.append('  },')
     lines.append('};')
     return '\n'.join(lines)
@@ -293,9 +330,9 @@ html=re.sub(r'const ACT_MAU = \{[\s\S]*?^};',js_act_mau(),html,flags=re.MULTILIN
 # Remove old Object.assign overrides
 html=re.sub(r'\n?//\s*T\d+ partial[^\n]*\n(Object\.assign\(VERT_ACT\.[A-Z]+[^\n]*\n)*','\n',html)
 html=re.sub(r'Object\.assign\(VERT_ACT\.[A-Z]+[^\n]*\n','',html)
-if growth_cost:
-    html=re.sub(r'// Cost data[\s\S]*?const GROWTH_COST = \{[\s\S]*?^};',js_growth_cost(growth_cost),html,flags=re.MULTILINE)
-    print("  GROWTH_COST updated from Sheets")
+if cost_actual:
+    html=re.sub(r'// Cost data[\s\S]*?const GROWTH_COST = \{[\s\S]*?^};',js_growth_cost(cost_actual,html),html,flags=re.MULTILINE)
+    print(f"  GROWTH_COST updated — actual for completed months, budget kept for future")
 _detail_js = js_detail_data(detail_rows, camp_rows)
 html=re.sub(r'// Detail channel data[\s\S]*?const RAW = \[[\s\S]*?^];', lambda _: _detail_js, html, flags=re.MULTILINE)
 print("  RAW (detail) updated from daumaulead_mkt_rp (all channels, SUM platforms/day)")
