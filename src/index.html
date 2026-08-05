@@ -979,7 +979,7 @@ function ExecSummary() {
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
           <thead>
             <tr style={{background:"#f8f9ff"}}>
-              <th style={{...TH,position:"sticky",left:0,zIndex:3,background:"#f8f9ff"}}>Metric</th>
+              <th style={{...TH,position:"sticky",left:0,zIndex:3,background:"#f8f9ff",boxShadow:"2px 0 4px rgba(0,0,0,0.06)"}}>Metric</th>
               {MONTHS.map(m=>(
                 <th key={m} colSpan={3} style={{...TH,textAlign:"center",
                   borderLeft:"2px solid #e5e7eb",color:KPI[m].isActual?"#374151":"#6366f1"}}>
@@ -988,7 +988,7 @@ function ExecSummary() {
               ))}
             </tr>
             <tr style={{background:"#f8f9ff",fontSize:11}}>
-              <th style={{...TH,position:"sticky",left:0,zIndex:3,background:"#f8f9ff"}}/>
+              <th style={{...TH,position:"sticky",left:0,zIndex:3,background:"#f8f9ff",boxShadow:"2px 0 4px rgba(0,0,0,0.06)"}}/>
               {MONTHS.map(m=>(
                 <React.Fragment key={m}>
                   <th style={{...TH,borderLeft:"2px solid #e5e7eb",color:"#374151"}}>Actual</th>
@@ -1001,7 +1001,7 @@ function ExecSummary() {
           <tbody>
             {DEMAND_METRICS.map(met=>(
               <tr key={met.key} style={{borderTop:"1px solid #f0f0f0"}}>
-                <td style={{...TD,fontWeight:600,color:met.color,whiteSpace:"nowrap",position:"sticky",left:0,zIndex:1,background:"#fff"}}>{met.label}</td>
+                <td style={{...TD,fontWeight:600,color:met.color,whiteSpace:"nowrap",position:"sticky",left:0,zIndex:1,background:"#fff",boxShadow:"2px 0 4px rgba(0,0,0,0.06)"}}>{met.label}</td>
                 {MONTHS.map(m=>{
                   const act=ACT[m][met.key], k=KPI[m][met.key];
                   const p=pct(act,k), pC=p>=100?"#059669":p>=85?"#d97706":"#dc2626";
@@ -1022,7 +1022,7 @@ function ExecSummary() {
               {label:"DAU/MAU", color:"#14b8a6",getAct:m=>ACT[m].dauMau, getTgt:m=>KPI_MAU[m].dauMau, fmt:n=>n+"%",     isRatio:true},
             ].map(({label,color,getAct,getTgt,fmt,isRatio})=>(
               <tr key={label} style={{borderTop:"1px solid #f0f0f0"}}>
-                <td style={{...TD,fontWeight:600,color,whiteSpace:"nowrap",position:"sticky",left:0,zIndex:1,background:"#fff"}}>{label}</td>
+                <td style={{...TD,fontWeight:600,color,whiteSpace:"nowrap",position:"sticky",left:0,zIndex:1,background:"#fff",boxShadow:"2px 0 4px rgba(0,0,0,0.06)"}}>{label}</td>
                 {MONTHS.map(m=>{
                   const act=getAct(m), k=getTgt(m);
                   const p=isRatio?(act&&k?Math.round(act/k*100):null):pct(act,k);
@@ -1047,7 +1047,7 @@ function ExecSummary() {
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
           <thead>
             <tr style={{background:"#f8f9ff"}}>
-              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",textAlign:"left",minWidth:110,position:"sticky",left:0,zIndex:3}}>Metric</th>
+              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",textAlign:"left",minWidth:110,position:"sticky",left:0,zIndex:3,boxShadow:"2px 0 4px rgba(0,0,0,0.06)"}}>Metric</th>
               {MONTHS.map(m=><th key={m} style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"}}>{ML[m]}</th>)}
               <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",color:"#6b7280"}}>Avg/Total</th>
             </tr>
@@ -1060,7 +1060,7 @@ function ExecSummary() {
               const smr=isLead?vals.reduce((a,x)=>a+x,0):isRatio?parseFloat((vals.filter(v=>v>0).reduce((a,x)=>a+x,0)/nz).toFixed(1)):Math.round(vals.reduce((a,x)=>a+x,0)/nz);
               return (
                 <tr key={met.key} style={{borderTop:"1px solid #f0f0f0"}}>
-                  <td style={{padding:"5px 8px",fontSize:12,fontWeight:600,color:met.color,textAlign:"left",position:"sticky",left:0,zIndex:1,background:"#fff"}}>{met.label}</td>
+                  <td style={{padding:"5px 8px",fontSize:12,fontWeight:600,color:met.color,textAlign:"left",position:"sticky",left:0,zIndex:1,background:"#fff",boxShadow:"2px 0 4px rgba(0,0,0,0.06)"}}>{met.label}</td>
                   {vals.map((v,i)=><td key={i} style={{padding:"5px 8px",fontSize:12,textAlign:"right",color:v?"#111":"#ddd"}}>{v?(isRatio?v+"%":fmtN(v)):"—"}</td>)}
                   <td style={{padding:"5px 8px",fontSize:12,textAlign:"right",fontWeight:600,color:"#374151",borderLeft:"1px solid #f0f0f0"}}>{smr?(isRatio?smr+"%":fmtN(smr)):"—"}</td>
                 </tr>
@@ -1077,7 +1077,7 @@ function ExecSummary() {
           <thead>
             <tr style={{background:"#f8f9ff"}}>
               <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",textAlign:"left",minWidth:110,position:"sticky",left:0,zIndex:3}}>Metric</th>
-              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",minWidth:80,position:"sticky",left:110,zIndex:3}}>User Type</th>
+              <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",minWidth:80,position:"sticky",left:110,zIndex:3,boxShadow:"2px 0 4px rgba(0,0,0,0.06)"}}>User Type</th>
               {MONTHS.map(m=><th key={m} style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"}}>{ML[m]}</th>)}
               <th style={{padding:"5px 8px",fontWeight:600,fontSize:11,background:"#f8f9ff",borderBottom:"2px solid #e5e7eb",color:"#6b7280"}}>Avg/Total</th>
             </tr>
@@ -1093,12 +1093,12 @@ function ExecSummary() {
               return [
                 <tr key={met.key+'-n'} style={{borderTop:"1px solid #f0f0f0"}}>
                   <td rowSpan={2} style={{padding:"5px 8px",fontSize:12,fontWeight:600,color:met.color,textAlign:"left",verticalAlign:"middle",position:"sticky",left:0,zIndex:1,background:"#fff"}}>{met.label}</td>
-                  <td style={{padding:"5px 8px",fontSize:12,color:"#6366f1",fontWeight:500,position:"sticky",left:110,zIndex:1,background:"#fff"}}>New</td>
+                  <td style={{padding:"5px 8px",fontSize:12,color:"#6366f1",fontWeight:500,position:"sticky",left:110,zIndex:1,background:"#fff",boxShadow:"2px 0 4px rgba(0,0,0,0.06)"}}>New</td>
                   {nvVals.map((v,i)=><td key={i} style={{padding:"5px 8px",fontSize:12,textAlign:"right",color:v?"#6366f1":"#ddd"}}>{v?fmtN(v):"—"}</td>)}
                   <td style={{padding:"5px 8px",fontSize:12,textAlign:"right",fontWeight:600,color:"#6366f1",borderLeft:"1px solid #f0f0f0"}}>{fmtN(smrN)}</td>
                 </tr>,
                 <tr key={met.key+'-r'}>
-                  <td style={{padding:"5px 8px",fontSize:12,color:"#059669",fontWeight:500,position:"sticky",left:110,zIndex:1,background:"#fff"}}>Returning</td>
+                  <td style={{padding:"5px 8px",fontSize:12,color:"#059669",fontWeight:500,position:"sticky",left:110,zIndex:1,background:"#fff",boxShadow:"2px 0 4px rgba(0,0,0,0.06)"}}>Returning</td>
                   {rvVals.map((v,i)=><td key={i} style={{padding:"5px 8px",fontSize:12,textAlign:"right",color:v?"#059669":"#ddd"}}>{v?fmtN(v):"—"}</td>)}
                   <td style={{padding:"5px 8px",fontSize:12,textAlign:"right",fontWeight:600,color:"#059669",borderLeft:"1px solid #f0f0f0"}}>{fmtN(smrR)}</td>
                 </tr>
