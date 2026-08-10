@@ -1392,20 +1392,6 @@ function VerticalSection() {
                       </tr>
                     ];
                   })}
-                  {(()=>{
-                    const actVals=MONTHS.map(m=>(met==="mau"?ACT[m]?.mau:met==="mauLead"?ACT[m]?.mauLead:ACT[m]?.[met])??0);
-                    const unattrib=MONTHS.map((m,i)=>actVals[i]-(allNVals[i]+allRVals[i]));
-                    if(!unattrib.some(v=>v!==0)) return null;
-                    const nzU=unattrib.filter(v=>v>0).length||1;
-                    const uSum=isAvg?Math.round(unattrib.reduce((a,x)=>a+x,0)/nzU):unattrib.reduce((a,x)=>a+x,0);
-                    return (
-                      <tr style={{background:"#fffbf0",borderTop:"1px solid #f5f5f5"}}>
-                        <td colSpan={2} style={{...TD2,textAlign:"left",fontWeight:500,color:"#9ca3af",paddingLeft:8,fontStyle:"italic"}}>Unattributed *</td>
-                        {unattrib.map((v,i)=><td key={i} style={{...TD2,color:v>0?"#9ca3af":"#f59e0b",fontStyle:"italic"}}>{v!==0?(v>0?fmtN(v):"(−"+fmtN(Math.abs(v))+")"):"—"}</td>)}
-                        <td style={{...TD2,color:"#9ca3af",fontStyle:"italic",borderLeft:"1px solid #f0f0f0"}}>{uSum>=0?fmtN(uSum):"(−"+fmtN(Math.abs(uSum))+")"}</td>
-                      </tr>
-                    );
-                  })()}
                   <tr style={{borderTop:"2px solid #e5e7eb",background:"#f8f9ff"}}>
                     <td rowSpan={2} style={{...TD2,textAlign:"left",fontWeight:700,color:"#374151",paddingLeft:8,verticalAlign:"middle"}}>Total</td>
                     <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#6366f1",fontWeight:600}}>New</td>
@@ -1567,14 +1553,6 @@ function ChannelSection() {
                 </tr>
               );
             })}
-            {(!isMauMet && unattribVals.some(v=>v>0)) && (
-              <tr style={{borderTop:"1px solid #f5f5f5",background:"#fffbf0"}}>
-                <td style={{...TD,textAlign:"left",fontWeight:500,color:"#9ca3af",paddingLeft:8,fontStyle:"italic"}}>Unattributed *</td>
-                {unattribVals.map((v,i)=><td key={i} style={{...TD,color:"#9ca3af",fontStyle:"italic"}}>{v>0?fmtN(v):"—"}</td>)}
-                <td style={{...TD,color:"#9ca3af",borderLeft:"1px solid #f0f0f0",fontStyle:"italic"}}>{fmtN(summary(unattribVals))}</td>
-                <td style={{...TD,color:"#9ca3af"}}>—</td>
-              </tr>
-            )}
             {(()=>{
               const tMom=delta(actTotals[lastIdx],actTotals[lastIdx-1]);
               const tMomC=tMom===null?"#9ca3af":tMom>0?"#059669":"#dc2626";
@@ -1589,7 +1567,6 @@ function ChannelSection() {
             })()}
           </tbody>
         </table>
-        {!isMauMet && <div style={{fontSize:11,color:"#9ca3af",marginTop:6,fontStyle:"italic"}}>* Unattributed = Total chotot_mtm − Σ channel (daumaulead_mkt_rp). Channel cells dùng số raw từ daumaulead_mkt_rp.</div>}
       </div>
       {/* User Type table - metric-aware */}
       <div style={{...card,overflowX:"auto",marginTop:12}}>
@@ -1644,20 +1621,6 @@ function ChannelSection() {
                     </tr>
                   ];
                 })}
-                {(()=>{
-                  const actVals2=MONTHS.map(m=>(met==="mau"?ACT[m]?.mau:met==="mauLead"?ACT[m]?.mauLead:ACT[m]?.[met])??0);
-                  const unattrib2=MONTHS.map((m,i)=>actVals2[i]-(allNVals2[i]+allRVals2[i]));
-                  if(!unattrib2.some(v=>v!==0)) return null;
-                  const nzU2=unattrib2.filter(v=>v>0).length||1;
-                  const uSum2=isAvg2?Math.round(unattrib2.reduce((a,x)=>a+x,0)/nzU2):unattrib2.reduce((a,x)=>a+x,0);
-                  return (
-                    <tr style={{background:"#fffbf0",borderTop:"1px solid #f5f5f5"}}>
-                      <td colSpan={2} style={{...TD2,textAlign:"left",fontWeight:500,color:"#9ca3af",paddingLeft:8,fontStyle:"italic"}}>Unattributed *</td>
-                      {unattrib2.map((v,i)=><td key={i} style={{...TD2,color:v>0?"#9ca3af":"#f59e0b",fontStyle:"italic"}}>{v!==0?(v>0?fmtN(v):"(−"+fmtN(Math.abs(v))+")"):"—"}</td>)}
-                      <td style={{...TD2,color:"#9ca3af",fontStyle:"italic",borderLeft:"1px solid #f0f0f0"}}>{uSum2>=0?fmtN(uSum2):"(−"+fmtN(Math.abs(uSum2))+")"}</td>
-                    </tr>
-                  );
-                })()}
                 <tr style={{borderTop:"2px solid #e5e7eb",background:"#f8f9ff"}}>
                   <td rowSpan={2} style={{...TD2,textAlign:"left",fontWeight:700,color:"#374151",paddingLeft:8,verticalAlign:"middle"}}>Total</td>
                   <td style={{...TD2,textAlign:"left",paddingLeft:8,color:"#6366f1",fontWeight:600}}>New</td>
@@ -16166,7 +16129,6 @@ function DetailSection() {
       <div style={{fontSize:11,color:"#6b7280",background:"#f8fafc",border:"1px solid #e5e7eb",borderRadius:6,padding:"7px 12px",marginBottom:10,lineHeight:1.7}}>
         <b style={{color:"#374151"}}>Nguồn dữ liệu:</b>{" "}
         <span style={{color:"#059669"}}>✅ DAU, DAU w/ Lead, Total Lead per channel</span> — từ <code>ct_product_analytics.daumaulead_mkt_rp</code> (raw). <b>Total row</b> dùng <code>chotot_mtm</code> (authoritative). <span style={{color:"#059669"}}>✅ MAU, MAU w/ Lead</span> — từ <code>chotot_mtm</code>, phân bổ về channel theo tỷ lệ DAU raw.
-        {" "}<span style={{color:"#f59e0b"}}>⚠️ <b>Số âm (Overcount †)</b> = Σ channel &gt; VERT_ACT. Nguyên nhân: <code>daumaulead_mkt_rp</code> đếm 1 user ở MỖI channel mà họ đã dùng trong tháng — nếu user vào qua Direct VÀ Growth (Paid), họ bị đếm 2 lần. Đây không phải lỗi data mà là giới hạn của multi-touch attribution.</span>
       </div>
       <MetricTab opts={METRICS} sel={metKey} onChange={setMetKey}/>
       {VERTS.map(vert=>(
@@ -16232,22 +16194,6 @@ function DetailSection() {
                     </tr>
                   );
                 })}
-                {(metKey==="dau"||metKey==="dwl"||metKey==="lead")&&(()=>{
-                  const rawSums=MONTHS.map(m=>CHANNELS.reduce((s,ch)=>s+(DATA.find(x=>x.v===vert&&x.ch===ch&&x.m===m)?.[metKey]??0),0));
-                  const vertTotals=MONTHS.map(m=>VERT_ACT[vert]?.[m]?.[metKey]??0);
-                  const unattrib=MONTHS.map((m,i)=>vertTotals[i]-rawSums[i]);
-                  if(!unattrib.some(v=>v!==0)) return null;
-                  const nz=unattrib.filter(v=>v>0).length||1;
-                  const uSum=metKey==="lead"?unattrib.reduce((a,x)=>a+x,0):Math.round(unattrib.reduce((a,x)=>a+x,0)/nz);
-                  return (
-                    <tr style={{background:"#fffbf0",borderTop:"1px solid #f5f5f5"}}>
-                      <td style={{...TD,textAlign:"left",fontWeight:500,color:"#9ca3af",paddingLeft:8,fontStyle:"italic"}}>Overcount † / Unattrib *</td>
-                      {unattrib.map((v,i)=><td key={i} style={{...TD,color:v>0?"#9ca3af":v<0?"#f59e0b":"#ddd",fontStyle:"italic"}}>{v!==0?(v>0?fmtN(v):"(−"+fmtN(Math.abs(v))+")"):"—"}</td>)}
-                      <td style={{...TD,color:"#9ca3af",borderLeft:"1px solid #f0f0f0",fontStyle:"italic"}}>{uSum>=0?fmtN(uSum):"(−"+fmtN(Math.abs(uSum))+")"}</td>
-                      <td style={{...TD,color:"#9ca3af"}}>—</td>
-                    </tr>
-                  );
-                })()}
                 {(()=>{
                   const mTotals=MONTHS.map(m=>{
                     if(metKey==="mau")     return vertMonthMau(vert,m).mau;
