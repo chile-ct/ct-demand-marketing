@@ -137,33 +137,46 @@ last_complete = (today.replace(day=1) - datetime.timedelta(days=1))  # last day 
 cost_actual = fetch_growth_cost_bq(f"{months[0]}-01", last_complete.strftime('%Y-%m-%d'))
 print(f"  Actual cost loaded for months up to {last_complete.strftime('%Y-%m')}")
 
-# ── 3b. Detail data (mtm_chotot_vertical_channel) ────────────────────────────
-# Source: ct_digital.mtm_chotot_vertical_channel — has all channels for all months
-# Replaces daumaulead_mkt_rp which only had Organic Search data for T5+
+# ── 3b. Detail data (daumaulead_mkt_rp) ──────────────────────────────────────
 print("Querying detail channel data...")
 detail_rows = q(f"""
 SELECT
   FORMAT_DATE('%Y-%m', date) AS m,
   vertical,
-  CASE channel
-    WHEN 'digital'       THEN 'Growth (Paid)'
-    WHEN 'direct'        THEN 'Direct'
-    WHEN 'growth_inapp'  THEN 'Growth (CRM)'
-    WHEN 'growth_outapp' THEN 'Growth (CRM)'
-    WHEN 'seo'           THEN 'Organic Search'
-    ELSE '(Other)'
-  END AS ch,
-  ROUND(SUM(dau), 0)               AS dau,
-  ROUND(SUM(new_dau), 0)           AS nd,
-  ROUND(SUM(return_dau), 0)        AS rd,
-  ROUND(SUM(dau_w_lead), 0)        AS dwl,
-  SUM(lead_count)                  AS lead,
-  ROUND(SUM(new_dau_w_lead), 0)    AS nm,
-  ROUND(SUM(return_dau_w_lead), 0) AS rm
-FROM `chotot-dwh.ct_digital.mtm_chotot_vertical_channel`
-WHERE date BETWEEN '{start}' AND '{latest_m}-01'
-  AND vertical IN ('pty','jobs','veh','gds')
-  AND platform IS NOT NULL
+  channel,
+  ROUND(AVG(daily_dau), 0)          AS dau,
+  ROUND(AVG(daily_new_dau), 0)      AS new_dau,
+  ROUND(AVG(daily_ret_dau), 0)      AS ret_dau,
+  ROUND(AVG(daily_dwl), 0)          AS dwl,
+  SUM(daily_lead)                   AS lead,
+  ROUND(AVG(daily_new_mau_lead), 0) AS new_mau_lead,
+  ROUND(AVG(daily_ret_mau_lead), 0) AS ret_mau_lead,
+  ROUND(AVG(daily_mau), 0)          AS mau_ch,
+  ROUND(AVG(daily_mau_lead), 0)     AS mau_lead_ch
+FROM (
+  SELECT
+    date, vertical,
+    CASE channel
+      WHEN 'Referral' THEN '(Other)'
+      WHEN 'Social'   THEN '(Other)'
+      WHEN 'Others'   THEN '(Other)'
+      ELSE channel
+    END                      AS channel,
+    SUM(dau)                 AS daily_dau,
+    SUM(new_dau)             AS daily_new_dau,
+    SUM(return_dau)          AS daily_ret_dau,
+    SUM(dau_w_lead)          AS daily_dwl,
+    SUM(lead_daily)          AS daily_lead,
+    SUM(new_mau_w_lead)      AS daily_new_mau_lead,
+    SUM(return_mau_w_lead)   AS daily_ret_mau_lead,
+    SUM(mau)                 AS daily_mau,
+    SUM(mau_w_lead)          AS daily_mau_lead
+  FROM `chotot-dwh.ct_product_analytics.daumaulead_mkt_rp`
+  WHERE date BETWEEN '{start}' AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+    AND vertical IN ('pty','jobs','veh','gds')
+    AND platform IS NOT NULL
+  GROUP BY 1, 2, 3
+)
 GROUP BY 1, 2, 3
 ORDER BY 1, 2, 3
 """)
@@ -259,20 +272,22 @@ def js_detail_data(detail_rows, camp_rows):
     import json as _json
     vert_map = {'pty':'PTY','jobs':'JOB','veh':'VEH','gds':'GDS'}
 
-    lines = ['// Detail channel data — auto-updated from mtm_chotot_vertical_channel (all channels, all months)',
+    lines = ['// Detail channel data — auto-updated from daumaulead_mkt_rp (SUM platforms/day → AVG/month)',
              'const RAW = [']
     for r in detail_rows:
         v = vert_map.get(str(r.get('vertical','')).lower())
         if not v: continue
-        ch = str(r.get('ch',''))
-        dau  = int(r['dau'])  if r['dau']  is not None else 0
-        nd   = int(r['nd'])   if r['nd']   is not None else 0
-        rd   = int(r['rd'])   if r['rd']   is not None else 0
-        dwl  = int(r['dwl'])  if r['dwl']  is not None else 0
-        lead = int(r['lead']) if r['lead'] is not None else 0
-        nm   = int(r['nm'])   if r['nm']   is not None else 0
-        rm   = int(r['rm'])   if r['rm']   is not None else 0
-        lines.append(f'  {{v:"{v}",ch:{_json.dumps(ch)},m:"{r["m"]}",dau:{dau},nd:{nd},rd:{rd},dwl:{dwl},lead:{lead},nm:{nm},rm:{rm},mc:0,ml:0}},' )
+        ch = str(r.get('channel',''))
+        dau  = int(r['dau'])          if r['dau']          is not None else 0
+        nd   = int(r['new_dau'])      if r['new_dau']      is not None else 0
+        rd   = int(r['ret_dau'])      if r['ret_dau']      is not None else 0
+        dwl  = int(r['dwl'])          if r['dwl']          is not None else 0
+        lead = int(r['lead'])         if r['lead']         is not None else 0
+        nm   = int(r['new_mau_lead']) if r['new_mau_lead'] is not None else 0
+        rm   = int(r['ret_mau_lead']) if r['ret_mau_lead'] is not None else 0
+        mc   = int(r['mau_ch'])       if r['mau_ch']       is not None else 0
+        ml   = int(r['mau_lead_ch'])  if r['mau_lead_ch']  is not None else 0
+        lines.append(f'  {{v:"{v}",ch:{_json.dumps(ch)},m:"{r["m"]}",dau:{dau},nd:{nd},rd:{rd},dwl:{dwl},lead:{lead},nm:{nm},rm:{rm},mc:{mc},ml:{ml}}},')
     lines.append('];')
     return '\n'.join(lines)
 
@@ -320,7 +335,7 @@ if cost_actual:
     print(f"  GROWTH_COST updated — actual for completed months, budget kept for future")
 _detail_js = js_detail_data(detail_rows, camp_rows)
 html=re.sub(r'// Detail channel data[\s\S]*?const RAW = \[[\s\S]*?^];', lambda _: _detail_js, html, flags=re.MULTILINE)
-print("  RAW (detail) updated from mtm_chotot_vertical_channel (all channels, all months)")
+print("  RAW (detail) updated from daumaulead_mkt_rp (all channels, SUM platforms/day)")
 _camp_js = js_campaign_data(camp_rows)
 html=re.sub(r'// Campaign data[\s\S]*?const CAMPAIGN_DATA = \[[\s\S]*?^];', lambda _: _camp_js, html, flags=re.MULTILINE)
 print("  CAMPAIGN_DATA updated")
