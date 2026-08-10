@@ -1403,18 +1403,6 @@ function VerticalSection() {
                     {allRVals.map((x,i)=><td key={i} style={{...TD2,fontWeight:600,color:"#059669"}}>{x?fmtN(x):"—"}</td>)}
                     <td style={{...TD2,fontWeight:700,color:"#059669",borderLeft:"1px solid #f0f0f0"}}>{fmtN(isAvg?Math.round(allRVals.reduce((a,b)=>a+b,0)/nz(allRVals)):allRVals.reduce((a,b)=>a+b,0))}</td>
                   </tr>
-                  {(()=>{
-                    const actVals=MONTHS.map(m=>(met==="mau"?ACT[m]?.mau:met==="mauLead"?ACT[m]?.mauLead:ACT[m]?.[met])??0);
-                    const nzA=actVals.filter(v=>v>0).length||1;
-                    const aSum=isAvg?Math.round(actVals.reduce((a,x)=>a+x,0)/nzA):actVals.reduce((a,x)=>a+x,0);
-                    return (
-                      <tr style={{background:"#f0f4ff",borderTop:"2px solid #6366f1"}}>
-                        <td colSpan={2} style={{...TD2,textAlign:"left",fontWeight:700,color:"#1e1b4b",paddingLeft:8}}>Total (chotot_mtm)</td>
-                        {actVals.map((v,i)=><td key={i} style={{...TD2,fontWeight:700,color:"#1e1b4b"}}>{v?fmtN(v):"—"}</td>)}
-                        <td style={{...TD2,fontWeight:700,color:"#1e1b4b",borderLeft:"1px solid #c7d2fe"}}>{fmtN(aSum)}</td>
-                      </tr>
-                    );
-                  })()}
                 </tbody>
               </table>
             </>);
@@ -1554,13 +1542,13 @@ function ChannelSection() {
               );
             })}
             {(()=>{
-              const tMom=delta(actTotals[lastIdx],actTotals[lastIdx-1]);
+              const tMom=delta(chTotals[lastIdx],chTotals[lastIdx-1]);
               const tMomC=tMom===null?"#9ca3af":tMom>0?"#059669":"#dc2626";
               return (
                 <tr style={{background:"#f8f9ff",borderTop:"2px solid #e5e7eb",fontWeight:700}}>
-                  <td style={{...TD,textAlign:"left",paddingLeft:8,color:"#374151"}}>Total (chotot_mtm)</td>
-                  {actTotals.map((v,i)=><td key={i} style={{...TD,color:"#374151"}}>{fmtN(v)}</td>)}
-                  <td style={{...TD,color:"#374151",borderLeft:"1px solid #e5e7eb"}}>{fmtN(summary(actTotals))}</td>
+                  <td style={{...TD,textAlign:"left",paddingLeft:8,color:"#374151"}}>Total</td>
+                  {chTotals.map((v,i)=><td key={i} style={{...TD,color:"#374151"}}>{fmtN(v)}</td>)}
+                  <td style={{...TD,color:"#374151",borderLeft:"1px solid #e5e7eb"}}>{fmtN(summary(chTotals))}</td>
                   <td style={{...TD,color:tMomC}}>{tMom!==null?sign(tMom)+"%":"—"}</td>
                 </tr>
               );
@@ -1632,18 +1620,6 @@ function ChannelSection() {
                   {allRVals2.map((x,i)=><td key={i} style={{...TD2,fontWeight:600,color:"#059669"}}>{x?fmtN(x):"—"}</td>)}
                   <td style={{...TD2,fontWeight:700,color:"#059669",borderLeft:"1px solid #f0f0f0"}}>{fmtN(isAvg2?Math.round(allRVals2.reduce((a,b)=>a+b,0)/nz2(allRVals2)):allRVals2.reduce((a,b)=>a+b,0))}</td>
                 </tr>
-                {(()=>{
-                  const actVals2=MONTHS.map(m=>(met==="mau"?ACT[m]?.mau:met==="mauLead"?ACT[m]?.mauLead:ACT[m]?.[met])??0);
-                  const nzA2=actVals2.filter(v=>v>0).length||1;
-                  const aSum2=isAvg2?Math.round(actVals2.reduce((a,x)=>a+x,0)/nzA2):actVals2.reduce((a,x)=>a+x,0);
-                  return (
-                    <tr style={{background:"#f0f4ff",borderTop:"2px solid #6366f1"}}>
-                      <td colSpan={2} style={{...TD2,textAlign:"left",fontWeight:700,color:"#1e1b4b",paddingLeft:8}}>Total (chotot_mtm)</td>
-                      {actVals2.map((v,i)=><td key={i} style={{...TD2,fontWeight:700,color:"#1e1b4b"}}>{v?fmtN(v):"—"}</td>)}
-                      <td style={{...TD2,fontWeight:700,color:"#1e1b4b",borderLeft:"1px solid #c7d2fe"}}>{fmtN(aSum2)}</td>
-                    </tr>
-                  );
-                })()}
               </tbody>
             </table>
           </>);
@@ -16195,19 +16171,14 @@ function DetailSection() {
                   );
                 })}
                 {(()=>{
-                  const mTotals=MONTHS.map(m=>{
-                    if(metKey==="mau")     return vertMonthMau(vert,m).mau;
-                    if(metKey==="mauLead") return vertMonthMau(vert,m).mauLead;
-                    if(metKey==="dauMau")  { const d=VERT_ACT[vert]?.[m]?.dau??0; const mu=vertMonthMau(vert,m).mau; return mu?parseFloat((d/mu*100).toFixed(1)):0; }
-                    return VERT_ACT[vert]?.[m]?.[metKey]??0;
-                  });
-                  const summary=metKey==="lead"?mTotals.reduce((a,x)=>a+x,0):Math.round(mTotals.filter(x=>x>0).reduce((a,x)=>a+x,0)/(mTotals.filter(x=>x>0).length||1));
-                  const liM=mTotals.length-1; const mom=mTotals[liM]&&mTotals[liM-1]?delta(mTotals[liM],mTotals[liM-1]):null;
+                  const chSums=MONTHS.map(m=>CHANNELS.reduce((s,ch)=>s+getDetailVal(ch,vert,m,metKey),0));
+                  const summary=metKey==="lead"?chSums.reduce((a,x)=>a+x,0):Math.round(chSums.filter(x=>x>0).reduce((a,x)=>a+x,0)/(chSums.filter(x=>x>0).length||1));
+                  const liM=chSums.length-1; const mom=chSums[liM]&&chSums[liM-1]?delta(chSums[liM],chSums[liM-1]):null;
                   const momC=mom===null?"#9ca3af":mom>0?"#059669":"#dc2626";
                   return (
                     <tr style={{background:"#f8f9ff",borderTop:"2px solid #e5e7eb",fontWeight:700}}>
                       <td style={{...TD,textAlign:"left",paddingLeft:8,color:VC[vert]}}>Total {vert}</td>
-                      {mTotals.map((t,i)=><td key={i} style={{...TD,color:VC[vert]}}>{fmtN(t)}</td>)}
+                      {chSums.map((t,i)=><td key={i} style={{...TD,color:VC[vert]}}>{fmtN(t)}</td>)}
                       <td style={{...TD,color:VC[vert],borderLeft:"1px solid #e5e7eb"}}>{fmtN(summary)}</td>
                       <td style={{...TD,color:momC}}>{mom!==null?sign(mom)+"%":"—"}</td>
                     </tr>
