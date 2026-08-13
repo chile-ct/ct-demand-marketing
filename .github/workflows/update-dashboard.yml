@@ -2,7 +2,7 @@ name: Update Dashboard Data
 
 on:
   schedule:
-    - cron: '0 4 * * *'   # 11:00 AM GMT+7 daily
+    - cron: '15 4 * * *'   # 11:15 AM GMT+7 daily — 15min buffer after the 10-11AM VN Ads Script append
   workflow_dispatch:
 
 jobs:
@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: '20'
       - name: Install dependencies
-        run: pip install google-cloud-bigquery google-auth && npm install
+        run: pip install google-cloud-bigquery google-auth google-api-python-client && npm install
       - name: Setup GCP credentials
         run: |
           echo '${{ secrets.GCP_USER_CREDENTIALS }}' > /tmp/gcp-creds.json

@@ -4,26 +4,34 @@ Queries BigQuery chotot_mtm + Google Sheets cost data.
 No Claude/Anthropic API. $0 token cost.
 Run: python3 scripts/update_marketplace.py
 """
-import re, os, datetime, subprocess, urllib.request, json
+import re, os, sys, datetime, subprocess, urllib.request, json
 from google.cloud import bigquery
 from google.oauth2 import service_account
+
+sys.path.insert(0, os.path.dirname(__file__))
+from url_tracking_classifier import classify_cluster, pty_campaign_group, job_campaign_group
 
 PROJECT   = "chotot-dwh"
 SRC_HTML  = os.path.join(os.path.dirname(__file__), '..', 'src', 'index.html')
 DIST_HTML = os.path.join(os.path.dirname(__file__), '..', 'dist', 'index.html')
 ROOT_HTML = os.path.join(os.path.dirname(__file__), '..', 'index.html')
 
-# BQ client with Drive scope so Sheets-linked tables (kiet_gg_ad_cost) are accessible
+# BQ client with Drive scope so Sheets-linked tables (kiet_gg_ad_cost) are accessible.
+# spreadsheets.readonly added for the URL Tracking tab's direct Sheets API read (PTY-URL/JOB-URL
+# tabs of the "Digital demand campaigns - LDP" sheet, shared Viewer with the ChoTot Company domain
+# the same way kiet_gg_ad_cost already is).
 _SCOPES = [
     'https://www.googleapis.com/auth/bigquery',
     'https://www.googleapis.com/auth/drive.readonly',
     'https://www.googleapis.com/auth/cloud-platform',
+    'https://www.googleapis.com/auth/spreadsheets.readonly',
 ]
 _creds_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 if _creds_path:
     _creds = service_account.Credentials.from_service_account_file(_creds_path, scopes=_SCOPES)
     client = bigquery.Client(project=PROJECT, credentials=_creds)
 else:
+    _creds = None
     client = bigquery.Client(project=PROJECT)
 
 def q(sql): return [dict(r) for r in client.query(sql).result()]
@@ -203,6 +211,212 @@ ORDER BY 1, vertical, channel, dwl DESC
 """)
 print(f"  Campaign rows: {len(camp_rows)}")
 
+# ── 3d. URL Tracking (PTY/JOB Google Ads landing-page focus tracking) ───────
+URL_TRACKING_SHEET_ID = '1JHL1Qei3hk4RRi-TIK3LO4gSc3ZfotEEzr0eZcY5CYk'  # "Digital demand campaigns - LDP"
+URL_TRACKING_TABS = {'PTY': 'PTY-URL', 'JOB': 'JOB-URL'}
+URL_TRACKING_MAX_DAYS = 30  # chart window cap; campaign tables/KPIs use all available rows
+
+
+def _sheets_service():
+    """Build a Sheets API client from the same credentials BigQuery already uses (service
+    account in CI via GOOGLE_APPLICATION_CREDENTIALS; falls back to google.auth.default() for
+    local/interactive runs, e.g. a developer's own gcloud ADC)."""
+    from googleapiclient.discovery import build as _gbuild
+    if _creds is not None:
+        return _gbuild('sheets', 'v4', credentials=_creds, cache_discovery=False)
+    import google.auth
+    default_creds, _ = google.auth.default(scopes=_SCOPES)
+    return _gbuild('sheets', 'v4', credentials=default_creds, cache_discovery=False)
+
+
+def fetch_url_tracking_rows(vertical):
+    """Read the PTY-URL/JOB-URL tab (append-only, growing forever) from the Sheet via the Sheets
+    API. Returns a list of dicts keyed by the sheet's own header row. Raises on auth/API failure —
+    callers must NOT silently substitute fake data on error, per this task's explicit instruction."""
+    tab = URL_TRACKING_TABS[vertical]
+    svc = _sheets_service()
+    resp = svc.spreadsheets().values().get(
+        spreadsheetId=URL_TRACKING_SHEET_ID, range=f"{tab}!A:J"
+    ).execute()
+    values = resp.get('values', [])
+    if not values:
+        return []
+    header = [h.strip() for h in values[0]]
+    rows = []
+    for raw in values[1:]:
+        if not raw or not raw[0]:
+            continue
+        padded = raw + [''] * (len(header) - len(raw))
+        rows.append(dict(zip(header, padded)))
+    return rows
+
+
+def _parse_num(v):
+    if v is None:
+        return 0.0
+    s = str(v).strip().replace(',', '').replace('₫', '')
+    if s in ('', '-', '--'):
+        return 0.0
+    try:
+        return float(s)
+    except ValueError:
+        return 0.0
+
+
+_CLUSTER_KEY = {'Focus': 'focus', 'Generic': 'generic', 'Non-focus': 'nonfocus'}
+
+
+def build_vertical_url_tracking(vertical, rows):
+    """Classify every row (date, campaign, URL, clicks, cost) into the Focus/Generic/Non-focus
+    3-way cluster (D-017), then aggregate into: daily cluster totals (for the trend chart),
+    campaign-level non-focus breakdown grouped by Let/Sell (PTY) or job type (JOB), and — PTY
+    only — the price-range bonus-signal coverage of Focus traffic."""
+    totals = {'cost': 0.0, 'clicks': 0.0, 'focusCost': 0.0, 'focusClicks': 0.0,
+              'genericCost': 0.0, 'genericClicks': 0.0, 'nonfocusCost': 0.0, 'nonfocusClicks': 0.0}
+    daily = {}  # date -> metrics dict
+    camp = {}   # campaign_name -> {cost, clicks, nonfocus_cost, nonfocus_clicks, reasons:{label:{cost,clicks}}}
+    price_focus_cost = price_focus_cost_priced = 0.0
+    price_focus_clicks = price_focus_clicks_priced = 0.0
+    skipped = 0
+
+    for r in rows:
+        date = (r.get('date') or '').strip()
+        url = (r.get('landing_page_url') or '').strip()
+        campaign_name = (r.get('campaign_name') or '').strip()
+        if not date or not url:
+            skipped += 1
+            continue
+        clicks = _parse_num(r.get('clicks'))
+        cost = _parse_num(r.get('cost_vnd'))
+
+        cls = classify_cluster(vertical, url)
+        cluster = cls['cluster']
+        ck = _CLUSTER_KEY[cluster]
+
+        totals['cost'] += cost
+        totals['clicks'] += clicks
+        totals[f'{ck}Cost'] += cost
+        totals[f'{ck}Clicks'] += clicks
+
+        d = daily.setdefault(date, {'date': date, 'cost': 0.0, 'clicks': 0.0,
+                                     'focusCost': 0.0, 'focusClicks': 0.0,
+                                     'genericCost': 0.0, 'genericClicks': 0.0,
+                                     'nonfocusCost': 0.0, 'nonfocusClicks': 0.0})
+        d['cost'] += cost
+        d['clicks'] += clicks
+        d[f'{ck}Cost'] += cost
+        d[f'{ck}Clicks'] += clicks
+
+        if vertical == 'PTY' and cluster == 'Focus':
+            price_focus_cost += cost
+            price_focus_clicks += clicks
+            if cls['price_signal']:
+                price_focus_cost_priced += cost
+                price_focus_clicks_priced += clicks
+
+        if campaign_name:
+            c = camp.setdefault(campaign_name, {'cost': 0.0, 'clicks': 0.0,
+                                                 'nonfocus_cost': 0.0, 'nonfocus_clicks': 0.0,
+                                                 'reasons': {}})
+            c['cost'] += cost
+            c['clicks'] += clicks
+            # Campaign-table "Non-focus" is the single Non-focus cluster ONLY (not combined with
+            # Generic) — the KPI card above is deliberately named "Leaking" instead of "Non-focus"
+            # specifically to avoid this column meaning something different from that card.
+            if cluster == 'Non-focus':
+                c['nonfocus_cost'] += cost
+                c['nonfocus_clicks'] += clicks
+                reason = c['reasons'].setdefault(cls['combined_label'], {'cost': 0.0, 'clicks': 0.0})
+                reason['cost'] += cost
+                reason['clicks'] += clicks
+
+    # Group campaigns (Let/Sell for PTY; 8 job types + Generic/multiple for JOB), omit empty groups.
+    groups = {}
+    group_fn = pty_campaign_group if vertical == 'PTY' else job_campaign_group
+    for name, c in camp.items():
+        group_name = group_fn(name)
+        top_reason = max(c['reasons'].items(), key=lambda kv: kv[1]['cost'], default=(None, None))
+        top_cluster = top_reason[0].replace(' x ', ' × ') if top_reason[0] else '—'
+        g = groups.setdefault(group_name, {'name': group_name, 'cost': 0.0, 'clicks': 0.0,
+                                            'nonfocusCost': 0.0, 'nonfocusClicks': 0.0, 'campaigns': []})
+        g['cost'] += c['cost']
+        g['clicks'] += c['clicks']
+        g['nonfocusCost'] += c['nonfocus_cost']
+        g['nonfocusClicks'] += c['nonfocus_clicks']
+        g['campaigns'].append({
+            'name': name, 'cost': round(c['cost']), 'clicks': round(c['clicks']),
+            'nonfocusCost': round(c['nonfocus_cost']), 'nonfocusClicks': round(c['nonfocus_clicks']),
+            'topCluster': top_cluster,
+        })
+
+    for g in groups.values():
+        g['campaigns'].sort(key=lambda x: -x['nonfocusCost'])
+        g['cost'] = round(g['cost']); g['clicks'] = round(g['clicks'])
+        g['nonfocusCost'] = round(g['nonfocusCost']); g['nonfocusClicks'] = round(g['nonfocusClicks'])
+    group_list = sorted(groups.values(), key=lambda g: -g['nonfocusCost'])
+
+    daily_list = sorted(daily.values(), key=lambda d: d['date'])[-URL_TRACKING_MAX_DAYS:]
+    for d in daily_list:
+        for k in list(d.keys()):
+            if k != 'date':
+                d[k] = round(d[k])
+    for k in totals:
+        totals[k] = round(totals[k])
+
+    result = {'totals': totals, 'daily': daily_list, 'groups': group_list}
+    if vertical == 'PTY':
+        result['priceTag'] = {
+            'focusCost': round(price_focus_cost), 'focusCostPriced': round(price_focus_cost_priced),
+            'focusClicks': round(price_focus_clicks), 'focusClicksPriced': round(price_focus_clicks_priced),
+        }
+    else:
+        result['priceTag'] = None
+    result['_skipped_rows'] = skipped
+    result['_total_rows'] = len(rows)
+    return result
+
+
+def build_url_tracking():
+    """Fetch + classify both PTY-URL/JOB-URL tabs. Prints a summary (row counts, cluster %) so
+    there's a paper trail. Returns None (leaving the existing embedded data untouched) if the
+    Sheets read fails — never substitutes fake/placeholder data on error."""
+    try:
+        pty_rows = fetch_url_tracking_rows('PTY')
+        job_rows = fetch_url_tracking_rows('JOB')
+    except Exception as e:
+        print(f"  ❌ URL Tracking Sheets read FAILED: {type(e).__name__}: {e}")
+        return None
+
+    pty = build_vertical_url_tracking('PTY', pty_rows)
+    job = build_vertical_url_tracking('JOB', job_rows)
+
+    all_dates = [d['date'] for d in pty['daily']] + [d['date'] for d in job['daily']]
+    data_as_of = max(all_dates) if all_dates else None
+
+    def pct(cost, total):
+        return round(cost / total * 100, 1) if total else 0.0
+
+    print(f"  PTY-URL: {pty['_total_rows']} rows ({pty['_skipped_rows']} skipped) — "
+          f"Focus {pct(pty['totals']['focusCost'], pty['totals']['cost'])}% / "
+          f"Generic {pct(pty['totals']['genericCost'], pty['totals']['cost'])}% / "
+          f"Non-focus {pct(pty['totals']['nonfocusCost'], pty['totals']['cost'])}% of cost")
+    print(f"  JOB-URL: {job['_total_rows']} rows ({job['_skipped_rows']} skipped) — "
+          f"Focus {pct(job['totals']['focusCost'], job['totals']['cost'])}% / "
+          f"Generic {pct(job['totals']['genericCost'], job['totals']['cost'])}% / "
+          f"Non-focus {pct(job['totals']['nonfocusCost'], job['totals']['cost'])}% of cost")
+    if pty['priceTag']:
+        pt = pty['priceTag']
+        print(f"  PTY price-tag coverage of Focus cost: {pct(pt['focusCostPriced'], pt['focusCost'])}%")
+    print(f"  data_as_of = {data_as_of}")
+
+    pty.pop('_skipped_rows', None); pty.pop('_total_rows', None)
+    job.pop('_skipped_rows', None); job.pop('_total_rows', None)
+    return {'dataAsOf': data_as_of, 'PTY': pty, 'JOB': job}
+
+
+print("Fetching URL Tracking sheet data (PTY-URL / JOB-URL)...")
+url_tracking = build_url_tracking()
+
 # ── 4. JS generators ─────────────────────────────────────────────────────────
 def js_months():
     arr=', '.join(f'"{m}"' for m in months)
@@ -317,6 +531,16 @@ def js_growth_cost(actual, existing_html):
     lines.append('};')
     return '\n'.join(lines)
 
+def js_url_tracking(data):
+    """Serialize the URL_TRACKING dict as a JS const. A plain dict of ints/strings/lists is
+    valid JSON, and JSON is a strict subset of JS object-literal syntax, so json.dumps is a
+    sufficient (and simplest) JS serializer here."""
+    body = json.dumps(data, ensure_ascii=False, indent=2)
+    return ('// URL Tracking data (PTY/JOB Google Ads landing-page focus tracking) — auto-updated by\n'
+            '// scripts/update_marketplace.py from the "PTY-URL"/"JOB-URL" tabs of the "Digital demand\n'
+            '// campaigns - LDP" Google Sheet, classified via scripts/url_tracking_classifier.py.\n'
+            f'const URL_TRACKING = {body};')
+
 # ── 5. Patch src/index.html ──────────────────────────────────────────────────
 print("Patching src/index.html...")
 with open(SRC_HTML) as f: html=f.read()
@@ -339,6 +563,14 @@ print("  RAW (detail) updated from daumaulead_mkt_rp (all channels, SUM platform
 _camp_js = js_campaign_data(camp_rows)
 html=re.sub(r'// Campaign data[\s\S]*?const CAMPAIGN_DATA = \[[\s\S]*?^];', lambda _: _camp_js, html, flags=re.MULTILINE)
 print("  CAMPAIGN_DATA updated")
+
+if url_tracking is not None:
+    _urlt_js = js_url_tracking(url_tracking)
+    html = re.sub(r'// URL Tracking data[\s\S]*?const URL_TRACKING = \{[\s\S]*?^\};',
+                  lambda _: _urlt_js, html, flags=re.MULTILINE)
+    print("  URL_TRACKING updated")
+else:
+    print("  ⚠️  URL_TRACKING left untouched (Sheets read failed — see error above)")
 
 # Patch DATA_AS_OF
 yesterday = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
