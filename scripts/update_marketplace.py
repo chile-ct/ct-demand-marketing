@@ -5,8 +5,8 @@ No Claude/Anthropic API. $0 token cost.
 Run: python3 scripts/update_marketplace.py
 """
 import re, os, sys, datetime, subprocess, urllib.request, json
+import google.auth
 from google.cloud import bigquery
-from google.oauth2 import service_account
 
 sys.path.insert(0, os.path.dirname(__file__))
 from url_tracking_classifier import classify_cluster, pty_campaign_group, job_campaign_group
@@ -28,7 +28,11 @@ _SCOPES = [
 ]
 _creds_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 if _creds_path:
-    _creds = service_account.Credentials.from_service_account_file(_creds_path, scopes=_SCOPES)
+    # load_credentials_from_file auto-detects the JSON's credential type (service_account vs
+    # authorized_user) instead of assuming service_account — GCP_USER_CREDENTIALS is a personal
+    # OAuth "authorized_user" token (from `gcloud auth application-default login`), not a
+    # service-account key (see O-060 in chotot-digital repo for the failure this caused).
+    _creds, _ = google.auth.load_credentials_from_file(_creds_path, scopes=_SCOPES)
     client = bigquery.Client(project=PROJECT, credentials=_creds)
 else:
     _creds = None
@@ -223,7 +227,11 @@ def _sheets_service():
     local/interactive runs, e.g. a developer's own gcloud ADC)."""
     from googleapiclient.discovery import build as _gbuild
     if _creds is not None:
-        return _gbuild('sheets', 'v4', credentials=_creds, cache_discovery=False)
+        # user (authorized_user) credentials need an explicit quota project for non-BigQuery
+        # APIs — BigQuery has its own billing-project mechanism so it doesn't need this, but the
+        # Sheets API does (fails with SERVICE_DISABLED against gcloud's own default project
+        # otherwise). Service-account credentials are unaffected by this call.
+        return _gbuild('sheets', 'v4', credentials=_creds.with_quota_project(PROJECT), cache_discovery=False)
     import google.auth
     default_creds, _ = google.auth.default(scopes=_SCOPES)
     return _gbuild('sheets', 'v4', credentials=default_creds, cache_discovery=False)
