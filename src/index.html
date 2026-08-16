@@ -855,7 +855,7 @@ function BarChartWithTotals({labels,datasets,height=220,hideLegend=false}) {
 }
 
 // Mixed: stacked bars (verticals) + KPI line overlay
-function StackedBarLineChart({labels,barDatasets,lineDataset,height=300,onExport=null}) {
+function StackedBarLineChart({labels,barDatasets,lineDataset,height=300,onExport=null,yTickFormat=fmtK,yMax,tooltipFormat}) {
   const ref=useRef(null), ch=useRef(null);
   useEffect(()=>{
     if(ch.current) ch.current.destroy();
@@ -877,10 +877,13 @@ function StackedBarLineChart({labels,barDatasets,lineDataset,height=300,onExport
       options:{
         animation:false,
         responsive:true, maintainAspectRatio:false,
-        plugins:{legend:{labels:{boxWidth:12,font:{size:12,weight:'500'},color:'#374151'}}},
+        plugins:{
+          legend:{labels:{boxWidth:12,font:{size:12,weight:'500'},color:'#374151'}},
+          ...(tooltipFormat ? {tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${tooltipFormat(ctx.parsed.y)}`}}} : {}),
+        },
         scales:{
           x:{stacked:true, grid:{color:"#f5f5f5"}, ticks:{font:{size:11}}},
-          y:{stacked:true, grid:{color:"#f5f5f5"}, ticks:{font:{size:11}, callback:v=>fmtK(v)}},
+          y:{stacked:true, grid:{color:"#f5f5f5"}, max:yMax, ticks:{font:{size:11}, callback:v=>yTickFormat(v)}},
         }
       }
     });
@@ -17827,15 +17830,16 @@ function urltSumWindow(daily, key, start, end) {
   return daily.slice(Math.max(0, start), Math.max(0, end)).reduce((s, d) => s + (d[key] || 0), 0);
 }
 
-// Trend badge: last-7d vs prior-7d, gracefully degrades when fewer days are available.
+// Trend badge: last-7d vs prior-7d. Both windows must be the SAME length (full 7 days each) —
+// requires 14 days of history. Comparing a full week against a partial leftover window (e.g. 7d
+// vs only 3d because history is short) mechanically inflates the % swing and is not a real
+// week-over-week comparison, so this returns null (not enough data yet) rather than show that.
 function urltTrend(daily, key) {
   const n = daily.length;
-  if (n < 2) return null;
-  const lastN = Math.min(7, n);
+  const lastN = 7;
+  if (n < lastN * 2) return null;
   const last = urltSumWindow(daily, key, n - lastN, n);
-  const prevN = Math.min(7, Math.max(0, n - lastN));
-  if (prevN === 0) return null;
-  const prev = urltSumWindow(daily, key, n - lastN - prevN, n - lastN);
+  const prev = urltSumWindow(daily, key, n - lastN * 2, n - lastN);
   if (!prev) return null;
   return {last, prev, deltaPct: ((last - prev) / prev) * 100};
 }
@@ -17905,12 +17909,17 @@ function UrltChart({data, unit}) {
   const costKey = c => c === "Focus" ? "focusCost" : c === "Generic" ? "genericCost" : "nonfocusCost";
   const clickKey = c => c === "Focus" ? "focusClicks" : c === "Generic" ? "genericClicks" : "nonfocusClicks";
   const key = c => unit === "cost" ? costKey(c) : clickKey(c);
+  const totKey = unit === "cost" ? "cost" : "clicks";
+  // Show % of that day's total instead of raw amounts — the trend (is Focus share growing or
+  // shrinking?) is what's meaningful here, and raw ₫/clicks bars just track overall spend volume
+  // instead, which drowns out the thing this chart is meant to answer.
+  const pct = (d, c) => { const t = d[totKey] || 0; return t ? (d[key(c)] || 0) / t * 100 : 0; };
   const barDatasets = ["Non-focus","Generic","Focus"].map(c => ({
-    label:c, data:daily.map(d => d[key(c)] || 0),
+    label:c, data:daily.map(d => pct(d, c)),
     backgroundColor:URLT_COLORS[c], stack:"s",
   }));
   const lineDataset = {
-    label:"Focus (line)", data:daily.map(d => d[key("Focus")] || 0),
+    label:"Focus %", data:daily.map(d => pct(d, "Focus")),
     borderColor:URLT_LINE_COLOR, backgroundColor:URLT_LINE_COLOR,
   };
   if (!daily.length) {
@@ -17920,7 +17929,8 @@ function UrltChart({data, unit}) {
       </div>
     );
   }
-  return <StackedBarLineChart labels={labels} barDatasets={barDatasets} lineDataset={lineDataset} height={260}/>;
+  return <StackedBarLineChart labels={labels} barDatasets={barDatasets} lineDataset={lineDataset} height={260}
+    yTickFormat={v=>Math.round(v)+"%"} yMax={100} tooltipFormat={v=>v.toFixed(1)+"%"}/>;
 }
 
 function UrltGroupTable({data, unit, vertical}) {
@@ -17999,19 +18009,19 @@ function UrlTrackingSection() {
   const ptyFocusPct = focusPctWindow(PTY);
   const jobFocusPct = focusPctWindow(JOB);
 
-  // Trend for Focus % cards: compare focus-share of last7 vs focus-share of prior7 (percentage-point delta)
+  // Trend for Focus % cards: compare focus-share of last7 vs focus-share of prior7 (percentage-point
+  // delta). Both windows must be the same length (full 7 days each, 14 days of history needed) —
+  // same reasoning as urltTrend above: a lopsided window comparison isn't a real week-over-week read.
   const focusPctTrend = (data) => {
     const n = data.daily.length;
-    if (n < 2) return null;
-    const lastN = Math.min(7, n);
-    const prevN = Math.min(7, Math.max(0, n - lastN));
-    if (!prevN) return null;
+    const lastN = 7;
+    if (n < lastN * 2) return null;
     const key = unit === "cost" ? "focusCost" : "focusClicks";
     const totKey = unit === "cost" ? "cost" : "clicks";
     const fLast = urltSumWindow(data.daily, key, n-lastN, n);
     const tLast = urltSumWindow(data.daily, totKey, n-lastN, n);
-    const fPrev = urltSumWindow(data.daily, key, n-lastN-prevN, n-lastN);
-    const tPrev = urltSumWindow(data.daily, totKey, n-lastN-prevN, n-lastN);
+    const fPrev = urltSumWindow(data.daily, key, n-lastN*2, n-lastN);
+    const tPrev = urltSumWindow(data.daily, totKey, n-lastN*2, n-lastN);
     const pctLast = tLast ? (fLast/tLast*100) : 0;
     const pctPrev = tPrev ? (fPrev/tPrev*100) : 0;
     if (!pctPrev) return null;
@@ -18079,8 +18089,11 @@ function UrlTrackingSection() {
       </div>
 
       {/* Charts */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:8}}>
-        <div style={card}>
+      {/* minmax(0,1fr) + minWidth:0 on the cards: a bare 1fr grid track won't shrink below its
+          content's natural width, so the wide campaign table below would otherwise force this
+          whole row (and the page) wider instead of scrolling inside its own card. */}
+      <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)",gap:16,marginBottom:8}}>
+        <div style={{...card,minWidth:0}}>
           <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:"#374151"}}>PTY — daily {unit==="cost"?"cost":"clicks"} by cluster</div>
           <UrltChart data={PTY} unit={unit}/>
           <UrltLegend vertical="PTY"/>
@@ -18091,7 +18104,7 @@ function UrlTrackingSection() {
             </div>
           )}
         </div>
-        <div style={card}>
+        <div style={{...card,minWidth:0}}>
           <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:"#374151"}}>JOB — daily {unit==="cost"?"cost":"clicks"} by cluster</div>
           <UrltChart data={JOB} unit={unit}/>
           <UrltLegend vertical="JOB"/>
@@ -18099,12 +18112,12 @@ function UrlTrackingSection() {
       </div>
 
       {/* Campaign tables */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginTop:24}}>
-        <div style={card}>
+      <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)",gap:16,marginTop:24}}>
+        <div style={{...card,minWidth:0}}>
           <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:"#374151"}}>PTY campaigns — grouped by Let/Sell</div>
           <UrltGroupTable data={PTY} unit={unit} vertical="PTY"/>
         </div>
-        <div style={card}>
+        <div style={{...card,minWidth:0}}>
           <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:"#374151"}}>JOB campaigns — grouped by job type</div>
           <UrltGroupTable data={JOB} unit={unit} vertical="JOB"/>
         </div>
