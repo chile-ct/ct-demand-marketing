@@ -17925,6 +17925,73 @@ function UrltGroupTable({data, unit, vertical}) {
   );
 }
 
+function UrltComboTable({data, unit}) {
+  const fmtVal = n => unit === "cost" ? fmtK(n) : (n||0).toLocaleString("en-US");
+  const TH2 = {padding:"7px 10px",fontWeight:700,fontSize:11,background:"#f8f9ff",
+    color:"#374151",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"};
+  const TD2 = {padding:"6px 10px",fontSize:12,borderBottom:"1px solid #f3f4f6"};
+  const combos = data.combos || [];
+  const rest = data.comboRest || {n:0, cost:0, clicks:0};
+  if (!combos.length) {
+    return (
+      <div style={{textAlign:"center",color:"#9ca3af",fontSize:13,padding:"24px 0"}}>
+        Chưa có URL breakdown data
+      </div>
+    );
+  }
+  const key = unit === "cost" ? "cost" : "clicks";
+  const total = combos.reduce((s,c)=>s+c[key],0) + rest[key];
+  const PILL = {
+    Focus:{background:"#ecfdf5",color:"#059669",label:"Yes"},
+    Generic:{background:"#f3f4f6",color:"#6b7280",label:"Generic"},
+    "Non-focus":{background:"#fef2f2",color:"#dc2626",label:"No"},
+  };
+  return (
+    <div style={{overflowX:"auto"}}>
+      <table style={{borderCollapse:"collapse",fontSize:12,width:"100%"}}>
+        <thead>
+          <tr>
+            <th style={{...TH2,textAlign:"left",minWidth:220}}>Location × Sub-category</th>
+            <th style={{...TH2,textAlign:"center"}}>In focus set?</th>
+            <th style={{...TH2,textAlign:"right"}}>{unit==="cost"?"Cost (₫)":"Clicks"}</th>
+            <th style={{...TH2,textAlign:"center"}}>%</th>
+          </tr>
+        </thead>
+        <tbody>
+          {combos.map((c,i) => {
+            const val = c[key];
+            const pct = total ? (val/total*100) : 0;
+            const [seg, loc] = c.label.split(" x ");
+            const p = PILL[c.cluster] || PILL["Non-focus"];
+            return (
+              <tr key={c.label} style={{background:i%2===0?"#fff":"#fafafa"}}>
+                <td style={{...TD2,color:"#374151"}}>
+                  <b>{seg}</b> <span style={{color:"#9ca3af"}}>× {loc}</span>
+                </td>
+                <td style={{...TD2,textAlign:"center"}}>
+                  <span style={{background:p.background,color:p.color,fontWeight:700,fontSize:11,padding:"2px 9px",borderRadius:99}}>
+                    {p.label}
+                  </span>
+                </td>
+                <td style={{...TD2,textAlign:"right"}}>{fmtVal(val)}</td>
+                <td style={{...TD2,textAlign:"center"}}>{pct.toFixed(1)}%</td>
+              </tr>
+            );
+          })}
+          <tr style={{background:"#fafafa",fontStyle:"italic",color:"#9ca3af"}}>
+            <td style={{...TD2,borderTop:"2px solid #e5e7eb"}}>All other combinations ({rest.n})</td>
+            <td style={{...TD2,textAlign:"center",borderTop:"2px solid #e5e7eb"}}>—</td>
+            <td style={{...TD2,textAlign:"right",borderTop:"2px solid #e5e7eb"}}>{fmtVal(rest[key])}</td>
+            <td style={{...TD2,textAlign:"center",borderTop:"2px solid #e5e7eb"}}>
+              {total ? (rest[key]/total*100).toFixed(1) : "0.0"}%
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function UrlTrackingSection() {
   const [unit, setUnit] = useState("cost"); // "cost" | "clicks"
   const PTY = URL_TRACKING.PTY, JOB = URL_TRACKING.JOB;
@@ -18054,6 +18121,20 @@ function UrlTrackingSection() {
         <div style={{...card,minWidth:0}}>
           <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:"#374151"}}>JOB campaigns — grouped by job type</div>
           <UrltGroupTable data={JOB} unit={unit} vertical="JOB"/>
+        </div>
+      </div>
+
+      {/* Location x Sub-category breakdown -- same shape as the "PTY-JOB URL Audit" Google Sheet
+          (D-017's cluster collapses this into 3 buckets; this shows every real combination so a
+          location miss and a segment miss don't get folded into the same "Non-focus" number). */}
+      <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)",gap:16,marginTop:24}}>
+        <div style={{...card,minWidth:0}}>
+          <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:"#374151"}}>PTY — Location × Sub-category breakdown</div>
+          <UrltComboTable data={PTY} unit={unit}/>
+        </div>
+        <div style={{...card,minWidth:0}}>
+          <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:"#374151"}}>JOB — Location × Sub-category breakdown</div>
+          <UrltComboTable data={JOB} unit={unit}/>
         </div>
       </div>
     </section>

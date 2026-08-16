@@ -257,6 +257,9 @@ def build_vertical_url_tracking(vertical, rows):
               'genericCost': 0.0, 'genericClicks': 0.0, 'nonfocusCost': 0.0, 'nonfocusClicks': 0.0}
     daily = {}  # date -> metrics dict
     camp = {}   # campaign_name -> {cost, clicks, nonfocus_cost, nonfocus_clicks, reasons:{label:{cost,clicks}}}
+    combo = {}  # "{segment} x {location}" -> {cost, clicks, eligible} -- the Location x Sub-category
+                # breakdown (mirrors the vertical's own "PTY-JOB URL Audit" Google Sheet), distinct
+                # from the collapsed 3-way cluster above
     price_focus_cost = price_focus_cost_priced = 0.0
     price_focus_clicks = price_focus_clicks_priced = 0.0
     skipped = 0
@@ -295,6 +298,12 @@ def build_vertical_url_tracking(vertical, rows):
             if cls['price_signal']:
                 price_focus_cost_priced += cost
                 price_focus_clicks_priced += clicks
+
+        # cluster is deterministic for a given (segment, location) pair, so it's safe to set once
+        # per combined_label rather than re-derive on every row.
+        cc = combo.setdefault(cls['combined_label'], {'cost': 0.0, 'clicks': 0.0, 'cluster': cluster})
+        cc['cost'] += cost
+        cc['clicks'] += clicks
 
         if campaign_name:
             c = camp.setdefault(campaign_name, {'cost': 0.0, 'clicks': 0.0,
@@ -345,7 +354,21 @@ def build_vertical_url_tracking(vertical, rows):
     for k in totals:
         totals[k] = round(totals[k])
 
-    result = {'totals': totals, 'daily': daily_list, 'groups': group_list}
+    # Location x Sub-category breakdown -- top N combinations by cost get their own row, the long
+    # tail rolls into one "All other combinations" line, same pattern as the vertical's audit sheet.
+    COMBO_TOP_N = 30
+    combo_sorted = sorted(combo.items(), key=lambda kv: -kv[1]['cost'])
+    combo_top, combo_tail = combo_sorted[:COMBO_TOP_N], combo_sorted[COMBO_TOP_N:]
+    combos = [{'label': label, 'cost': round(v['cost']), 'clicks': round(v['clicks']), 'cluster': v['cluster']}
+              for label, v in combo_top]
+    combo_rest = {
+        'n': len(combo_tail),
+        'cost': round(sum(v['cost'] for _, v in combo_tail)),
+        'clicks': round(sum(v['clicks'] for _, v in combo_tail)),
+    }
+
+    result = {'totals': totals, 'daily': daily_list, 'groups': group_list,
+              'combos': combos, 'comboRest': combo_rest}
     if vertical == 'PTY':
         result['priceTag'] = {
             'focusCost': round(price_focus_cost), 'focusCostPriced': round(price_focus_cost_priced),
