@@ -16,15 +16,12 @@ SRC_HTML  = os.path.join(os.path.dirname(__file__), '..', 'src', 'index.html')
 DIST_HTML = os.path.join(os.path.dirname(__file__), '..', 'dist', 'index.html')
 ROOT_HTML = os.path.join(os.path.dirname(__file__), '..', 'index.html')
 
-# BQ client with Drive scope so Sheets-linked tables (kiet_gg_ad_cost) are accessible.
-# spreadsheets.readonly added for the URL Tracking tab's direct Sheets API read (PTY-URL/JOB-URL
-# tabs of the "Digital demand campaigns - LDP" sheet, shared Viewer with the ChoTot Company domain
-# the same way kiet_gg_ad_cost already is).
+# BQ client with Drive scope so Sheets-linked tables (kiet_gg_ad_cost, kiet_url_tracking_pty/_job)
+# are accessible.
 _SCOPES = [
     'https://www.googleapis.com/auth/bigquery',
     'https://www.googleapis.com/auth/drive.readonly',
     'https://www.googleapis.com/auth/cloud-platform',
-    'https://www.googleapis.com/auth/spreadsheets.readonly',
 ]
 _creds_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 if _creds_path:
@@ -216,47 +213,24 @@ ORDER BY 1, vertical, channel, dwl DESC
 print(f"  Campaign rows: {len(camp_rows)}")
 
 # ── 3d. URL Tracking (PTY/JOB Google Ads landing-page focus tracking) ───────
-URL_TRACKING_SHEET_ID = '1JHL1Qei3hk4RRi-TIK3LO4gSc3ZfotEEzr0eZcY5CYk'  # "Digital demand campaigns - LDP"
-URL_TRACKING_TABS = {'PTY': 'PTY-URL', 'JOB': 'JOB-URL'}
+# Reads via the kiet_url_tracking_pty/_job BigQuery external tables (GOOGLE_SHEETS format, same
+# live-pointer mechanism as kiet_gg_ad_cost) instead of calling the Sheets API directly — the
+# direct Sheets API call hit USER_PROJECT_DENIED (no serviceusage.serviceUsageConsumer on this
+# project) which BigQuery's own external-table read doesn't need. See O-063 in chotot-digital repo.
+URL_TRACKING_TABLES = {'PTY': 'kiet_url_tracking_pty', 'JOB': 'kiet_url_tracking_job'}
 URL_TRACKING_MAX_DAYS = 30  # chart window cap; campaign tables/KPIs use all available rows
 
 
-def _sheets_service():
-    """Build a Sheets API client from the same credentials BigQuery already uses (service
-    account in CI via GOOGLE_APPLICATION_CREDENTIALS; falls back to google.auth.default() for
-    local/interactive runs, e.g. a developer's own gcloud ADC)."""
-    from googleapiclient.discovery import build as _gbuild
-    if _creds is not None:
-        # user (authorized_user) credentials need an explicit quota project for non-BigQuery
-        # APIs — BigQuery has its own billing-project mechanism so it doesn't need this, but the
-        # Sheets API does (fails with SERVICE_DISABLED against gcloud's own default project
-        # otherwise). Service-account credentials are unaffected by this call.
-        return _gbuild('sheets', 'v4', credentials=_creds.with_quota_project(PROJECT), cache_discovery=False)
-    import google.auth
-    default_creds, _ = google.auth.default(scopes=_SCOPES)
-    return _gbuild('sheets', 'v4', credentials=default_creds, cache_discovery=False)
-
-
 def fetch_url_tracking_rows(vertical):
-    """Read the PTY-URL/JOB-URL tab (append-only, growing forever) from the Sheet via the Sheets
-    API. Returns a list of dicts keyed by the sheet's own header row. Raises on auth/API failure —
-    callers must NOT silently substitute fake data on error, per this task's explicit instruction."""
-    tab = URL_TRACKING_TABS[vertical]
-    svc = _sheets_service()
-    resp = svc.spreadsheets().values().get(
-        spreadsheetId=URL_TRACKING_SHEET_ID, range=f"{tab}!A:J"
-    ).execute()
-    values = resp.get('values', [])
-    if not values:
-        return []
-    header = [h.strip() for h in values[0]]
-    rows = []
-    for raw in values[1:]:
-        if not raw or not raw[0]:
-            continue
-        padded = raw + [''] * (len(header) - len(raw))
-        rows.append(dict(zip(header, padded)))
-    return rows
+    """Read the PTY-URL/JOB-URL tab (append-only, growing forever) via its BigQuery external
+    table. Returns a list of dicts keyed by column name. Raises on query failure — callers must
+    NOT silently substitute fake data on error, per this task's explicit instruction."""
+    table = URL_TRACKING_TABLES[vertical]
+    return q(f"""
+        SELECT date, campaign_id, campaign_name, campaign_status, channel_type,
+               ad_network_type, landing_page_url, impressions, clicks, cost_vnd
+        FROM `{PROJECT}.ct_digital.{table}`
+    """)
 
 
 def _parse_num(v):
