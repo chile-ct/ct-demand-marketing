@@ -428,8 +428,20 @@ url_tracking = build_url_tracking()
 # only has ~2 weeks populated at a time — see chotot-digital's O-039); tracks our own universal
 # attributes instead. Full design rationale: chotot-digital repo, context/decisions.md D-020 and
 # tools/queries/pty|job/digital-lead-segment-mix.sql. Rolling 30-day window, computed in SQL
-# (CURRENT_DATE()), so no Python date interpolation needed here. ~25 GB combined scan per run.
-_PTY_SEGMENT_MIX_SQL = """
+# (CURRENT_DATE()), so no Python date interpolation needed here.
+#
+# ⚠️ TWO QUERIES PER VERTICAL, ON PURPOSE — corrected 2026-08-18 after Kiet caught an implausibly
+# large DWL number in production (548,247 DWL for one PTY bucket over 30 days). Root cause: the
+# first version computed DWL per ad_id, then SUMMED those per-ad values into each bucket — which
+# double/many-times counts anyone who contacts more than one ad within the same bucket on the same
+# day (routine — e.g. a room-hunter messaging several Room-HCM-low listings). Plain counts
+# (adview/lead) are safely summable across any regrouping; COUNT(DISTINCT ...) is NOT. Fix: one
+# query returns bucket-level adview_total/lead_total (plain counts, aggregate freely in Python);
+# a second returns raw DISTINCT (date, clientId, bucket-dims) rows that Python groups and
+# COUNT(DISTINCT date||clientId)'s itself at each grain shown (tier-only, category-only,
+# region-only, full detail, grand total) — never by summing a finer grain's distinct count. See
+# the DWL hard check in chotot-digital's context/shared/measurement/warehouse-model.md.
+_PTY_BUCKET_SQL = """
 WITH date_refs AS (
   SELECT DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY) AS window_end,
          DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) AS window_start
@@ -469,50 +481,87 @@ digital_visits AS (
     AND v.source IN ('google','google_search','facebook')
     AND LOWER(v.campaign) NOT LIKE '%appinstall%'
     AND LOWER(v.campaign) NOT LIKE '%install_app%'
-),
-adview_evt AS (
-  SELECT p.date, p.ad_id, COUNT(*) AS adview_total
-  FROM `chotot-dwh.chotot_data.traffic_pageview_detail` p CROSS JOIN date_refs dr
-  INNER JOIN digital_visits dv ON p.date = dv.date AND p.clientId = dv.clientId AND CAST(p.visitId AS STRING) = dv.visitId
-  WHERE p.date BETWEEN dr.window_start AND dr.window_end
-    AND p.page_type IN ('adview','ad_view') AND p.ad_id IS NOT NULL
-  GROUP BY 1,2
-),
-lead_evt AS (
-  SELECT l.date, l.ad_id,
-    COUNT(*) AS lead_total,
-    COUNT(DISTINCT CONCAT(CAST(l.date AS STRING),'_',CAST(l.clientId AS STRING))) AS dwl
-  FROM `chotot-dwh.chotot_data.traffic_lead_detail` l CROSS JOIN date_refs dr
-  INNER JOIN digital_visits dv ON l.date = dv.date AND l.clientId = dv.clientId AND CAST(l.visitId AS STRING) = dv.visitId
-  WHERE l.date BETWEEN dr.window_start AND dr.window_end AND l.is_bot IS NULL AND l.ad_id IS NOT NULL
-  GROUP BY 1,2
 )
 SELECT
-  w.ad_type, w.category_name,
-  CASE WHEN w.category_name IN ('Apartments','Houses','Rooms') THEN 'focus' ELSE 'non-focus' END AS is_focus_category,
-  w.region,
-  CASE WHEN w.region IN ('HCM','BD') THEN 'focus' ELSE 'non-focus' END AS is_focus_region,
-  w.tier,
-  SUM(COALESCE(a.adview_total,0)) AS adview_total,
-  SUM(COALESCE(l.lead_total,0)) AS lead_total,
-  SUM(COALESCE(l.dwl,0)) AS dwl_total
-FROM ad_w_info w
-LEFT JOIN adview_evt a ON w.ad_id = a.ad_id
-LEFT JOIN lead_evt l ON w.ad_id = l.ad_id
-WHERE a.ad_id IS NOT NULL OR l.ad_id IS NOT NULL
-GROUP BY 1,2,3,4,5,6
+  COALESCE(a.ad_type, l.ad_type) AS ad_type,
+  COALESCE(a.category_name, l.category_name) AS category_name,
+  COALESCE(a.region, l.region) AS region,
+  COALESCE(a.tier, l.tier) AS tier,
+  COALESCE(a.adview_total, 0) AS adview_total,
+  COALESCE(l.lead_total, 0) AS lead_total
+FROM (
+  SELECT w.ad_type, w.category_name, w.region, w.tier, COUNT(*) AS adview_total
+  FROM `chotot-dwh.chotot_data.traffic_pageview_detail` p CROSS JOIN date_refs dr
+  INNER JOIN digital_visits dv ON p.date = dv.date AND p.clientId = dv.clientId AND CAST(p.visitId AS STRING) = dv.visitId
+  INNER JOIN ad_w_info w ON p.ad_id = w.ad_id
+  WHERE p.date BETWEEN dr.window_start AND dr.window_end
+    AND p.page_type IN ('adview','ad_view') AND p.ad_id IS NOT NULL
+  GROUP BY 1,2,3,4
+) a
+FULL OUTER JOIN (
+  SELECT w.ad_type, w.category_name, w.region, w.tier, COUNT(*) AS lead_total
+  FROM `chotot-dwh.chotot_data.traffic_lead_detail` l CROSS JOIN date_refs dr
+  INNER JOIN digital_visits dv ON l.date = dv.date AND l.clientId = dv.clientId AND CAST(l.visitId AS STRING) = dv.visitId
+  INNER JOIN ad_w_info w ON l.ad_id = w.ad_id
+  WHERE l.date BETWEEN dr.window_start AND dr.window_end AND l.is_bot IS NULL AND l.ad_id IS NOT NULL
+  GROUP BY 1,2,3,4
+) l
+ON a.ad_type = l.ad_type AND a.category_name = l.category_name AND a.region = l.region AND a.tier = l.tier
 """
 
-_JOB_SEGMENT_MIX_SQL = """
+_PTY_DWL_RAW_SQL = """
 WITH date_refs AS (
   SELECT DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY) AS window_end,
          DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) AS window_start
 ),
-focused_job_types AS (
-  SELECT job_type FROM UNNEST([
-    'Bán hàng','Nhân viên kinh doanh','Nhân viên phục vụ','Tài xế giao hàng xe máy',
-    'Công nhân','Nhân viên kho vận','Bảo vệ','Tài xế ô tô'
-  ]) AS job_type
+ad_w_info AS (
+  SELECT
+    a1.ad_id, a1.ad_type,
+    CASE WHEN a1.category = 1010 THEN 'Apartments' WHEN a1.category = 1020 THEN 'Houses'
+         WHEN a1.category = 1030 THEN 'Offices' WHEN a1.category = 1040 THEN 'Land'
+         WHEN a1.category = 1050 THEN 'Rooms' END AS category_name,
+    CASE WHEN a1.city_name = 'Tp Hồ Chí Minh' THEN 'HCM' WHEN a1.city_name = 'Bình Dương' THEN 'BD'
+         WHEN a1.city_name = 'Hà Nội' THEN 'HN' WHEN a1.city_name = 'Đà Nẵng' THEN 'DN'
+         ELSE 'other' END AS region,
+    CASE
+      WHEN EXTRACT(YEAR FROM a1.first_approved_time) = 2026 AND a1.city_name IN ('Hà Nội')
+        THEN CASE WHEN a1.price < (t.mid_tier*1.3225) THEN 'low' WHEN a1.price < (t.high_tier*1.3225) THEN 'mid' ELSE 'high' END
+      WHEN EXTRACT(YEAR FROM a1.first_approved_time) = 2026 AND a1.city_name NOT IN ('Hà Nội')
+        THEN CASE WHEN a1.price < (t.mid_tier*1.265) THEN 'low' WHEN a1.price < (t.high_tier*1.265) THEN 'mid' ELSE 'high' END
+      WHEN EXTRACT(YEAR FROM a1.first_approved_time) = 2025
+        THEN CASE WHEN a1.price < (t.mid_tier*1.10) THEN 'low' WHEN a1.price < (t.high_tier*1.10) THEN 'mid' ELSE 'high' END
+      WHEN EXTRACT(YEAR FROM a1.first_approved_time) = 2024
+        THEN CASE WHEN a1.price < t.mid_tier THEN 'low' WHEN a1.price < t.high_tier THEN 'mid' ELSE 'high' END
+      WHEN EXTRACT(YEAR FROM a1.first_approved_time) < 2024
+        THEN CASE WHEN a1.price < n.price_segment THEN 'low' ELSE 'high_mid' END
+    END AS tier
+  FROM `chotot-dwh.chotot_data.ad` a1
+  LEFT JOIN `chotot-dwh.ct_nha.tuan_price_segment` t ON a1.city_id = t.city AND a1.category = t.category AND a1.ad_type = t.ad_type
+  LEFT JOIN `chotot-dwh.ct_nha.nguyen_new_market_segmentation_2025` n ON a1.city_name = n.city_name AND a1.ad_type = n.ad_type AND a1.category = n.category
+  WHERE a1.dwh_update_time >= '2022-01-01' AND a1.first_approved_time IS NOT NULL AND a1.category BETWEEN 1000 AND 1050
+),
+digital_visits AS (
+  SELECT DISTINCT v.date, v.clientId, CAST(v.visitId AS STRING) AS visitId
+  FROM `chotot-dwh.chotot_data.traffic_visit_detail` v CROSS JOIN date_refs dr
+  WHERE v.date BETWEEN dr.window_start AND dr.window_end
+    AND v.is_bot IS NULL
+    AND v.channelGrouping IN ('Paid Search','Display')
+    AND v.source IN ('google','google_search','facebook')
+    AND LOWER(v.campaign) NOT LIKE '%appinstall%'
+    AND LOWER(v.campaign) NOT LIKE '%install_app%'
+)
+SELECT DISTINCT
+  l.date, l.clientId, w.ad_type, w.category_name, w.region, w.tier
+FROM `chotot-dwh.chotot_data.traffic_lead_detail` l CROSS JOIN date_refs dr
+INNER JOIN digital_visits dv ON l.date = dv.date AND l.clientId = dv.clientId AND CAST(l.visitId AS STRING) = dv.visitId
+INNER JOIN ad_w_info w ON l.ad_id = w.ad_id
+WHERE l.date BETWEEN dr.window_start AND dr.window_end AND l.is_bot IS NULL AND l.ad_id IS NOT NULL
+"""
+
+_JOB_BUCKET_SQL = """
+WITH date_refs AS (
+  SELECT DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY) AS window_end,
+         DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) AS window_start
 ),
 job_ad_info AS (
   SELECT a.ad_id, p.value_name AS job_type,
@@ -532,66 +581,100 @@ digital_visits AS (
     AND v.source IN ('google','google_search','facebook')
     AND LOWER(v.campaign) NOT LIKE '%appinstall%'
     AND LOWER(v.campaign) NOT LIKE '%install_app%'
-),
-adview_evt AS (
-  SELECT p.date, p.ad_id, COUNT(*) AS adview_total
+)
+SELECT
+  COALESCE(a.job_type, l.job_type) AS job_type,
+  COALESCE(a.region, l.region) AS region,
+  COALESCE(a.adview_total, 0) AS adview_total,
+  COALESCE(l.lead_total, 0) AS lead_total
+FROM (
+  SELECT j.job_type, j.region, COUNT(*) AS adview_total
   FROM `chotot-dwh.chotot_data.traffic_pageview_detail` p CROSS JOIN date_refs dr
   INNER JOIN digital_visits dv ON p.date = dv.date AND p.clientId = dv.clientId AND CAST(p.visitId AS STRING) = dv.visitId
+  INNER JOIN job_ad_info j ON p.ad_id = j.ad_id
   WHERE p.date BETWEEN dr.window_start AND dr.window_end
     AND p.page_type IN ('adview','ad_view') AND p.ad_id IS NOT NULL
   GROUP BY 1,2
-),
-lead_evt AS (
-  SELECT l.date, l.ad_id,
-    COUNT(*) AS lead_total,
-    COUNT(DISTINCT CONCAT(CAST(l.date AS STRING),'_',CAST(l.clientId AS STRING))) AS dwl
+) a
+FULL OUTER JOIN (
+  SELECT j.job_type, j.region, COUNT(*) AS lead_total
   FROM `chotot-dwh.chotot_data.traffic_lead_detail` l CROSS JOIN date_refs dr
   INNER JOIN digital_visits dv ON l.date = dv.date AND l.clientId = dv.clientId AND CAST(l.visitId AS STRING) = dv.visitId
+  INNER JOIN job_ad_info j ON l.ad_id = j.ad_id
   WHERE l.date BETWEEN dr.window_start AND dr.window_end AND l.is_bot IS NULL AND l.ad_id IS NOT NULL
   GROUP BY 1,2
-)
-SELECT
-  j.job_type,
-  CASE WHEN j.job_type IN (SELECT job_type FROM focused_job_types) THEN 'focus' ELSE 'non-focus' END AS is_focus_job_type,
-  j.region,
-  CASE WHEN j.region IN ('HCM','BD') THEN 'focus' ELSE 'non-focus' END AS is_focus_region,
-  SUM(COALESCE(a.adview_total,0)) AS adview_total,
-  SUM(COALESCE(l.lead_total,0)) AS lead_total,
-  SUM(COALESCE(l.dwl,0)) AS dwl_total
-FROM job_ad_info j
-LEFT JOIN adview_evt a ON j.ad_id = a.ad_id
-LEFT JOIN lead_evt l ON j.ad_id = l.ad_id
-WHERE a.ad_id IS NOT NULL OR l.ad_id IS NOT NULL
-GROUP BY 1,2,3,4
+) l
+ON a.job_type = l.job_type AND a.region = l.region
 """
+
+_JOB_DWL_RAW_SQL = """
+WITH date_refs AS (
+  SELECT DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY) AS window_end,
+         DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) AS window_start
+),
+job_ad_info AS (
+  SELECT a.ad_id, p.value_name AS job_type,
+    CASE WHEN a.city_name = 'Tp Hồ Chí Minh' THEN 'HCM' WHEN a.city_name = 'Bình Dương' THEN 'BD'
+         WHEN a.city_name = 'Hà Nội' THEN 'HN' WHEN a.city_name = 'Đà Nẵng' THEN 'DN'
+         ELSE 'other' END AS region
+  FROM `chotot-dwh.chotot_data.ad` a
+  LEFT JOIN UNNEST(a.params) p ON p.name = 'job_type'
+  WHERE a.vertical = 'JOBS' AND a.dwh_update_time >= '2022-01-01'
+),
+digital_visits AS (
+  SELECT DISTINCT v.date, v.clientId, CAST(v.visitId AS STRING) AS visitId
+  FROM `chotot-dwh.chotot_data.traffic_visit_detail` v CROSS JOIN date_refs dr
+  WHERE v.date BETWEEN dr.window_start AND dr.window_end
+    AND v.is_bot IS NULL
+    AND v.channelGrouping IN ('Paid Search','Display')
+    AND v.source IN ('google','google_search','facebook')
+    AND LOWER(v.campaign) NOT LIKE '%appinstall%'
+    AND LOWER(v.campaign) NOT LIKE '%install_app%'
+)
+SELECT DISTINCT
+  l.date, l.clientId, j.job_type, j.region
+FROM `chotot-dwh.chotot_data.traffic_lead_detail` l CROSS JOIN date_refs dr
+INNER JOIN digital_visits dv ON l.date = dv.date AND l.clientId = dv.clientId AND CAST(l.visitId AS STRING) = dv.visitId
+INNER JOIN job_ad_info j ON l.ad_id = j.ad_id
+WHERE l.date BETWEEN dr.window_start AND dr.window_end AND l.is_bot IS NULL AND l.ad_id IS NOT NULL
+"""
+
+_PTY_FOCUS_CATEGORIES = {'Apartments', 'Houses', 'Rooms'}
+_FOCUS_REGIONS = {'HCM', 'BD'}
+_JOB_FOCUS_TYPES = {
+    'Bán hàng', 'Nhân viên kinh doanh', 'Nhân viên phục vụ', 'Tài xế giao hàng xe máy',
+    'Công nhân', 'Nhân viên kho vận', 'Bảo vệ', 'Tài xế ô tô',
+}
 
 
 def _seg_int(v):
     return int(v) if v is not None else 0
 
 
-def _seg_rollup(rows, key_fields, top_n=None):
-    """Aggregate `rows` (dicts with adview_total/lead_total/dwl_total) by key_fields into a list
-    of dicts sorted by dwl desc. With top_n set, caps the list and returns (head, rest) where
-    rest summarizes the tail — same no-silent-truncation pattern as URL Tracking's combo table."""
-    buckets = {}
-    for r in rows:
+def _seg_build_view(bucket_rows, dwl_raw_rows, key_fields):
+    """Build one rollup view at exactly `key_fields` granularity. adview/lead are plain counts —
+    safe to re-sum across bucket_rows at ANY grouping. dwl is NOT safe to re-sum across groupings,
+    so it's computed fresh here as COUNT(DISTINCT date||clientId) directly from the raw rows, at
+    this exact grain — never by summing a finer grain's distinct count (that's the 2026-08-18 bug).
+    key_fields=[] gives a single grand-total row."""
+    totals = {}
+    for r in bucket_rows:
         k = tuple(r[f] for f in key_fields)
-        b = buckets.get(k)
-        if b is None:
-            b = {f: r[f] for f in key_fields}
-            b['adview'] = 0; b['lead'] = 0; b['dwl'] = 0
-            buckets[k] = b
-        b['adview'] += _seg_int(r['adview_total'])
-        b['lead']   += _seg_int(r['lead_total'])
-        b['dwl']    += _seg_int(r['dwl_total'])
-    out = sorted(buckets.values(), key=lambda b: -b['dwl'])
-    if top_n is None or len(out) <= top_n:
-        return out, None
-    head, tail = out[:top_n], out[top_n:]
-    rest = {'n': len(tail), 'adview': sum(t['adview'] for t in tail),
-            'lead': sum(t['lead'] for t in tail), 'dwl': sum(t['dwl'] for t in tail)}
-    return head, rest
+        d = totals.setdefault(k, {'adview': 0, 'lead': 0})
+        d['adview'] += _seg_int(r['adview_total'])
+        d['lead']   += _seg_int(r['lead_total'])
+    dwl_sets = {}
+    for r in dwl_raw_rows:
+        k = tuple(r[f] for f in key_fields)
+        dwl_sets.setdefault(k, set()).add((str(r['date']), r['clientId']))
+    out = []
+    for k in set(totals) | set(dwl_sets):
+        row = dict(zip(key_fields, k))
+        row['adview'] = totals.get(k, {}).get('adview', 0)
+        row['lead']   = totals.get(k, {}).get('lead', 0)
+        row['dwl']    = len(dwl_sets.get(k, ()))
+        out.append(row)
+    return sorted(out, key=lambda r: -r['dwl'])
 
 
 def build_segment_mix():
@@ -599,46 +682,52 @@ def build_segment_mix():
     quadrant — see D-020 in chotot-digital's context/decisions.md). Returns None (leaving
     existing embedded data untouched) on query failure, same pattern as build_url_tracking()."""
     try:
-        pty_rows = q(_PTY_SEGMENT_MIX_SQL)
-        job_rows = q(_JOB_SEGMENT_MIX_SQL)
+        pty_bucket = q(_PTY_BUCKET_SQL)
+        pty_dwl_raw = q(_PTY_DWL_RAW_SQL)
+        job_bucket = q(_JOB_BUCKET_SQL)
+        job_dwl_raw = q(_JOB_DWL_RAW_SQL)
     except Exception as e:
         print(f"  ❌ Segment Mix query FAILED: {type(e).__name__}: {e}")
         return None
 
-    def totals_of(rows):
-        return {'adview': sum(_seg_int(r['adview_total']) for r in rows),
-                'lead':   sum(_seg_int(r['lead_total'])   for r in rows),
-                'dwl':    sum(_seg_int(r['dwl_total'])     for r in rows)}
+    for r in pty_bucket + pty_dwl_raw:
+        r['is_focus_category'] = 'focus' if r['category_name'] in _PTY_FOCUS_CATEGORIES else 'non-focus'
+        r['is_focus_region']   = 'focus' if r['region'] in _FOCUS_REGIONS else 'non-focus'
+    for r in job_bucket + job_dwl_raw:
+        r['is_focus_job_type'] = 'focus' if r['job_type'] in _JOB_FOCUS_TYPES else 'non-focus'
+        r['is_focus_region']   = 'focus' if r['region'] in _FOCUS_REGIONS else 'non-focus'
 
-    pty_totals = totals_of(pty_rows)
-    pty_tiers, _      = _seg_rollup(pty_rows, ['tier'])
-    pty_categories, _ = _seg_rollup(pty_rows, ['category_name', 'is_focus_category'])
-    pty_regions, _    = _seg_rollup(pty_rows, ['region', 'is_focus_region'])
-    pty_detail, pty_rest = _seg_rollup(
-        pty_rows, ['ad_type', 'category_name', 'is_focus_category', 'region', 'is_focus_region', 'tier'],
-        top_n=40)
+    pty_totals_rows = _seg_build_view(pty_bucket, pty_dwl_raw, [])
+    pty_totals = pty_totals_rows[0] if pty_totals_rows else {'adview': 0, 'lead': 0, 'dwl': 0}
+    pty_tiers      = _seg_build_view(pty_bucket, pty_dwl_raw, ['tier'])
+    pty_categories = _seg_build_view(pty_bucket, pty_dwl_raw, ['category_name', 'is_focus_category'])
+    pty_regions    = _seg_build_view(pty_bucket, pty_dwl_raw, ['region', 'is_focus_region'])
+    pty_detail     = _seg_build_view(
+        pty_bucket, pty_dwl_raw,
+        ['ad_type', 'category_name', 'is_focus_category', 'region', 'is_focus_region', 'tier'])
 
-    job_totals = totals_of(job_rows)
-    job_focus, _   = _seg_rollup(job_rows, ['is_focus_job_type'])
-    job_regions, _ = _seg_rollup(job_rows, ['region', 'is_focus_region'])
-    job_detail, job_rest = _seg_rollup(
-        job_rows, ['job_type', 'is_focus_job_type', 'region', 'is_focus_region'], top_n=40)
+    job_totals_rows = _seg_build_view(job_bucket, job_dwl_raw, [])
+    job_totals = job_totals_rows[0] if job_totals_rows else {'adview': 0, 'lead': 0, 'dwl': 0}
+    job_focus   = _seg_build_view(job_bucket, job_dwl_raw, ['is_focus_job_type'])
+    job_regions = _seg_build_view(job_bucket, job_dwl_raw, ['region', 'is_focus_region'])
+    job_detail  = _seg_build_view(
+        job_bucket, job_dwl_raw, ['job_type', 'is_focus_job_type', 'region', 'is_focus_region'])
 
     def pct(part, total):
         return round(part / total * 100, 1) if total else 0.0
 
-    print(f"  PTY Segment Mix: {len(pty_rows)} groups — tier split "
+    print(f"  PTY Segment Mix: {len(pty_detail)} groups, {pty_totals['dwl']} total DWL — tier split "
           + ", ".join(f"{t['tier']}={pct(t['dwl'], pty_totals['dwl'])}%" for t in pty_tiers))
-    print(f"  JOB Segment Mix: {len(job_rows)} groups — focus split "
+    print(f"  JOB Segment Mix: {len(job_detail)} groups, {job_totals['dwl']} total DWL — focus split "
           + ", ".join(f"{f['is_focus_job_type']}={pct(f['dwl'], job_totals['dwl'])}%" for f in job_focus))
 
     return {
         'dataAsOf': (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d'),
         'windowDays': 30,
         'PTY': {'totals': pty_totals, 'tiers': pty_tiers, 'categories': pty_categories,
-                 'regions': pty_regions, 'detail': pty_detail, 'detailRest': pty_rest},
+                 'regions': pty_regions, 'detail': pty_detail},
         'JOB': {'totals': job_totals, 'focus': job_focus, 'regions': job_regions,
-                 'detail': job_detail, 'detailRest': job_rest},
+                 'detail': job_detail},
     }
 
 
