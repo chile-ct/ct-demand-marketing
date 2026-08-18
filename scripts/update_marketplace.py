@@ -422,6 +422,229 @@ def build_url_tracking():
 print("Fetching URL Tracking sheet data (PTY-URL / JOB-URL)...")
 url_tracking = build_url_tracking()
 
+# ── 3e. Segment Mix (PTY: ad_type x category x region x price tier; JOB: job_type x region) ─
+# Direct BigQuery, no Sheets — unlike URL Tracking this data never lived in a spreadsheet.
+# Deliberately does NOT sync the vertical's own live demand-supply quadrant label (that table
+# only has ~2 weeks populated at a time — see chotot-digital's O-039); tracks our own universal
+# attributes instead. Full design rationale: chotot-digital repo, context/decisions.md D-020 and
+# tools/queries/pty|job/digital-lead-segment-mix.sql. Rolling 30-day window, computed in SQL
+# (CURRENT_DATE()), so no Python date interpolation needed here. ~25 GB combined scan per run.
+_PTY_SEGMENT_MIX_SQL = """
+WITH date_refs AS (
+  SELECT DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY) AS window_end,
+         DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) AS window_start
+),
+ad_w_info AS (
+  SELECT
+    a1.ad_id, a1.ad_type,
+    CASE WHEN a1.category = 1010 THEN 'Apartments' WHEN a1.category = 1020 THEN 'Houses'
+         WHEN a1.category = 1030 THEN 'Offices' WHEN a1.category = 1040 THEN 'Land'
+         WHEN a1.category = 1050 THEN 'Rooms' END AS category_name,
+    CASE WHEN a1.city_name = 'Tp Hồ Chí Minh' THEN 'HCM' WHEN a1.city_name = 'Bình Dương' THEN 'BD'
+         WHEN a1.city_name = 'Hà Nội' THEN 'HN' WHEN a1.city_name = 'Đà Nẵng' THEN 'DN'
+         ELSE 'other' END AS region,
+    CASE
+      WHEN EXTRACT(YEAR FROM a1.first_approved_time) = 2026 AND a1.city_name IN ('Hà Nội')
+        THEN CASE WHEN a1.price < (t.mid_tier*1.3225) THEN 'low' WHEN a1.price < (t.high_tier*1.3225) THEN 'mid' ELSE 'high' END
+      WHEN EXTRACT(YEAR FROM a1.first_approved_time) = 2026 AND a1.city_name NOT IN ('Hà Nội')
+        THEN CASE WHEN a1.price < (t.mid_tier*1.265) THEN 'low' WHEN a1.price < (t.high_tier*1.265) THEN 'mid' ELSE 'high' END
+      WHEN EXTRACT(YEAR FROM a1.first_approved_time) = 2025
+        THEN CASE WHEN a1.price < (t.mid_tier*1.10) THEN 'low' WHEN a1.price < (t.high_tier*1.10) THEN 'mid' ELSE 'high' END
+      WHEN EXTRACT(YEAR FROM a1.first_approved_time) = 2024
+        THEN CASE WHEN a1.price < t.mid_tier THEN 'low' WHEN a1.price < t.high_tier THEN 'mid' ELSE 'high' END
+      WHEN EXTRACT(YEAR FROM a1.first_approved_time) < 2024
+        THEN CASE WHEN a1.price < n.price_segment THEN 'low' ELSE 'high_mid' END
+    END AS tier
+  FROM `chotot-dwh.chotot_data.ad` a1
+  LEFT JOIN `chotot-dwh.ct_nha.tuan_price_segment` t ON a1.city_id = t.city AND a1.category = t.category AND a1.ad_type = t.ad_type
+  LEFT JOIN `chotot-dwh.ct_nha.nguyen_new_market_segmentation_2025` n ON a1.city_name = n.city_name AND a1.ad_type = n.ad_type AND a1.category = n.category
+  WHERE a1.dwh_update_time >= '2022-01-01' AND a1.first_approved_time IS NOT NULL AND a1.category BETWEEN 1000 AND 1050
+),
+digital_visits AS (
+  SELECT DISTINCT v.date, v.clientId, CAST(v.visitId AS STRING) AS visitId
+  FROM `chotot-dwh.chotot_data.traffic_visit_detail` v CROSS JOIN date_refs dr
+  WHERE v.date BETWEEN dr.window_start AND dr.window_end
+    AND v.is_bot IS NULL
+    AND v.channelGrouping IN ('Paid Search','Display')
+    AND v.source IN ('google','google_search','facebook')
+    AND LOWER(v.campaign) NOT LIKE '%appinstall%'
+    AND LOWER(v.campaign) NOT LIKE '%install_app%'
+),
+adview_evt AS (
+  SELECT p.date, p.ad_id, COUNT(*) AS adview_total
+  FROM `chotot-dwh.chotot_data.traffic_pageview_detail` p CROSS JOIN date_refs dr
+  INNER JOIN digital_visits dv ON p.date = dv.date AND p.clientId = dv.clientId AND CAST(p.visitId AS STRING) = dv.visitId
+  WHERE p.date BETWEEN dr.window_start AND dr.window_end
+    AND p.page_type IN ('adview','ad_view') AND p.ad_id IS NOT NULL
+  GROUP BY 1,2
+),
+lead_evt AS (
+  SELECT l.date, l.ad_id,
+    COUNT(*) AS lead_total,
+    COUNT(DISTINCT CONCAT(CAST(l.date AS STRING),'_',CAST(l.clientId AS STRING))) AS dwl
+  FROM `chotot-dwh.chotot_data.traffic_lead_detail` l CROSS JOIN date_refs dr
+  INNER JOIN digital_visits dv ON l.date = dv.date AND l.clientId = dv.clientId AND CAST(l.visitId AS STRING) = dv.visitId
+  WHERE l.date BETWEEN dr.window_start AND dr.window_end AND l.is_bot IS NULL AND l.ad_id IS NOT NULL
+  GROUP BY 1,2
+)
+SELECT
+  w.ad_type, w.category_name,
+  CASE WHEN w.category_name IN ('Apartments','Houses','Rooms') THEN 'focus' ELSE 'non-focus' END AS is_focus_category,
+  w.region,
+  CASE WHEN w.region IN ('HCM','BD') THEN 'focus' ELSE 'non-focus' END AS is_focus_region,
+  w.tier,
+  SUM(COALESCE(a.adview_total,0)) AS adview_total,
+  SUM(COALESCE(l.lead_total,0)) AS lead_total,
+  SUM(COALESCE(l.dwl,0)) AS dwl_total
+FROM ad_w_info w
+LEFT JOIN adview_evt a ON w.ad_id = a.ad_id
+LEFT JOIN lead_evt l ON w.ad_id = l.ad_id
+WHERE a.ad_id IS NOT NULL OR l.ad_id IS NOT NULL
+GROUP BY 1,2,3,4,5,6
+"""
+
+_JOB_SEGMENT_MIX_SQL = """
+WITH date_refs AS (
+  SELECT DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY) AS window_end,
+         DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) AS window_start
+),
+focused_job_types AS (
+  SELECT job_type FROM UNNEST([
+    'Bán hàng','Nhân viên kinh doanh','Nhân viên phục vụ','Tài xế giao hàng xe máy',
+    'Công nhân','Nhân viên kho vận','Bảo vệ','Tài xế ô tô'
+  ]) AS job_type
+),
+job_ad_info AS (
+  SELECT a.ad_id, p.value_name AS job_type,
+    CASE WHEN a.city_name = 'Tp Hồ Chí Minh' THEN 'HCM' WHEN a.city_name = 'Bình Dương' THEN 'BD'
+         WHEN a.city_name = 'Hà Nội' THEN 'HN' WHEN a.city_name = 'Đà Nẵng' THEN 'DN'
+         ELSE 'other' END AS region
+  FROM `chotot-dwh.chotot_data.ad` a
+  LEFT JOIN UNNEST(a.params) p ON p.name = 'job_type'
+  WHERE a.vertical = 'JOBS' AND a.dwh_update_time >= '2022-01-01'
+),
+digital_visits AS (
+  SELECT DISTINCT v.date, v.clientId, CAST(v.visitId AS STRING) AS visitId
+  FROM `chotot-dwh.chotot_data.traffic_visit_detail` v CROSS JOIN date_refs dr
+  WHERE v.date BETWEEN dr.window_start AND dr.window_end
+    AND v.is_bot IS NULL
+    AND v.channelGrouping IN ('Paid Search','Display')
+    AND v.source IN ('google','google_search','facebook')
+    AND LOWER(v.campaign) NOT LIKE '%appinstall%'
+    AND LOWER(v.campaign) NOT LIKE '%install_app%'
+),
+adview_evt AS (
+  SELECT p.date, p.ad_id, COUNT(*) AS adview_total
+  FROM `chotot-dwh.chotot_data.traffic_pageview_detail` p CROSS JOIN date_refs dr
+  INNER JOIN digital_visits dv ON p.date = dv.date AND p.clientId = dv.clientId AND CAST(p.visitId AS STRING) = dv.visitId
+  WHERE p.date BETWEEN dr.window_start AND dr.window_end
+    AND p.page_type IN ('adview','ad_view') AND p.ad_id IS NOT NULL
+  GROUP BY 1,2
+),
+lead_evt AS (
+  SELECT l.date, l.ad_id,
+    COUNT(*) AS lead_total,
+    COUNT(DISTINCT CONCAT(CAST(l.date AS STRING),'_',CAST(l.clientId AS STRING))) AS dwl
+  FROM `chotot-dwh.chotot_data.traffic_lead_detail` l CROSS JOIN date_refs dr
+  INNER JOIN digital_visits dv ON l.date = dv.date AND l.clientId = dv.clientId AND CAST(l.visitId AS STRING) = dv.visitId
+  WHERE l.date BETWEEN dr.window_start AND dr.window_end AND l.is_bot IS NULL AND l.ad_id IS NOT NULL
+  GROUP BY 1,2
+)
+SELECT
+  j.job_type,
+  CASE WHEN j.job_type IN (SELECT job_type FROM focused_job_types) THEN 'focus' ELSE 'non-focus' END AS is_focus_job_type,
+  j.region,
+  CASE WHEN j.region IN ('HCM','BD') THEN 'focus' ELSE 'non-focus' END AS is_focus_region,
+  SUM(COALESCE(a.adview_total,0)) AS adview_total,
+  SUM(COALESCE(l.lead_total,0)) AS lead_total,
+  SUM(COALESCE(l.dwl,0)) AS dwl_total
+FROM job_ad_info j
+LEFT JOIN adview_evt a ON j.ad_id = a.ad_id
+LEFT JOIN lead_evt l ON j.ad_id = l.ad_id
+WHERE a.ad_id IS NOT NULL OR l.ad_id IS NOT NULL
+GROUP BY 1,2,3,4
+"""
+
+
+def _seg_int(v):
+    return int(v) if v is not None else 0
+
+
+def _seg_rollup(rows, key_fields, top_n=None):
+    """Aggregate `rows` (dicts with adview_total/lead_total/dwl_total) by key_fields into a list
+    of dicts sorted by dwl desc. With top_n set, caps the list and returns (head, rest) where
+    rest summarizes the tail — same no-silent-truncation pattern as URL Tracking's combo table."""
+    buckets = {}
+    for r in rows:
+        k = tuple(r[f] for f in key_fields)
+        b = buckets.get(k)
+        if b is None:
+            b = {f: r[f] for f in key_fields}
+            b['adview'] = 0; b['lead'] = 0; b['dwl'] = 0
+            buckets[k] = b
+        b['adview'] += _seg_int(r['adview_total'])
+        b['lead']   += _seg_int(r['lead_total'])
+        b['dwl']    += _seg_int(r['dwl_total'])
+    out = sorted(buckets.values(), key=lambda b: -b['dwl'])
+    if top_n is None or len(out) <= top_n:
+        return out, None
+    head, tail = out[:top_n], out[top_n:]
+    rest = {'n': len(tail), 'adview': sum(t['adview'] for t in tail),
+            'lead': sum(t['lead'] for t in tail), 'dwl': sum(t['dwl'] for t in tail)}
+    return head, rest
+
+
+def build_segment_mix():
+    """Digital-campaign lead mix by our own universal attributes (not the vertical's live
+    quadrant — see D-020 in chotot-digital's context/decisions.md). Returns None (leaving
+    existing embedded data untouched) on query failure, same pattern as build_url_tracking()."""
+    try:
+        pty_rows = q(_PTY_SEGMENT_MIX_SQL)
+        job_rows = q(_JOB_SEGMENT_MIX_SQL)
+    except Exception as e:
+        print(f"  ❌ Segment Mix query FAILED: {type(e).__name__}: {e}")
+        return None
+
+    def totals_of(rows):
+        return {'adview': sum(_seg_int(r['adview_total']) for r in rows),
+                'lead':   sum(_seg_int(r['lead_total'])   for r in rows),
+                'dwl':    sum(_seg_int(r['dwl_total'])     for r in rows)}
+
+    pty_totals = totals_of(pty_rows)
+    pty_tiers, _      = _seg_rollup(pty_rows, ['tier'])
+    pty_categories, _ = _seg_rollup(pty_rows, ['category_name', 'is_focus_category'])
+    pty_regions, _    = _seg_rollup(pty_rows, ['region', 'is_focus_region'])
+    pty_detail, pty_rest = _seg_rollup(
+        pty_rows, ['ad_type', 'category_name', 'is_focus_category', 'region', 'is_focus_region', 'tier'],
+        top_n=40)
+
+    job_totals = totals_of(job_rows)
+    job_focus, _   = _seg_rollup(job_rows, ['is_focus_job_type'])
+    job_regions, _ = _seg_rollup(job_rows, ['region', 'is_focus_region'])
+    job_detail, job_rest = _seg_rollup(
+        job_rows, ['job_type', 'is_focus_job_type', 'region', 'is_focus_region'], top_n=40)
+
+    def pct(part, total):
+        return round(part / total * 100, 1) if total else 0.0
+
+    print(f"  PTY Segment Mix: {len(pty_rows)} groups — tier split "
+          + ", ".join(f"{t['tier']}={pct(t['dwl'], pty_totals['dwl'])}%" for t in pty_tiers))
+    print(f"  JOB Segment Mix: {len(job_rows)} groups — focus split "
+          + ", ".join(f"{f['is_focus_job_type']}={pct(f['dwl'], job_totals['dwl'])}%" for f in job_focus))
+
+    return {
+        'dataAsOf': (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d'),
+        'windowDays': 30,
+        'PTY': {'totals': pty_totals, 'tiers': pty_tiers, 'categories': pty_categories,
+                 'regions': pty_regions, 'detail': pty_detail, 'detailRest': pty_rest},
+        'JOB': {'totals': job_totals, 'focus': job_focus, 'regions': job_regions,
+                 'detail': job_detail, 'detailRest': job_rest},
+    }
+
+
+print("Querying Segment Mix (PTY category x tier, JOB job_type)...")
+segment_mix = build_segment_mix()
+
 # ── 4. JS generators ─────────────────────────────────────────────────────────
 def js_months():
     arr=', '.join(f'"{m}"' for m in months)
@@ -546,6 +769,16 @@ def js_url_tracking(data):
             '// campaigns - LDP" Google Sheet, classified via scripts/url_tracking_classifier.py.\n'
             f'const URL_TRACKING = {body};')
 
+def js_segment_mix(data):
+    """Serialize the SEGMENT_MIX dict as a JS const — same json.dumps-as-JS-literal approach as
+    js_url_tracking (a plain dict of ints/strings/lists is valid JSON, and JSON is a strict
+    subset of JS object-literal syntax)."""
+    body = json.dumps(data, ensure_ascii=False, indent=2)
+    return ('// Lead Segment Mix data (PTY: ad_type x category x region x price tier; JOB:\n'
+            '// job_type x region) — auto-updated by scripts/update_marketplace.py, direct\n'
+            '// BigQuery, rolling 30-day window. See chotot-digital repo context/decisions.md D-020.\n'
+            f'const SEGMENT_MIX = {body};')
+
 # ── 5. Patch src/index.html ──────────────────────────────────────────────────
 print("Patching src/index.html...")
 with open(SRC_HTML) as f: html=f.read()
@@ -576,6 +809,14 @@ if url_tracking is not None:
     print("  URL_TRACKING updated")
 else:
     print("  ⚠️  URL_TRACKING left untouched (Sheets read failed — see error above)")
+
+if segment_mix is not None:
+    _segmix_js = js_segment_mix(segment_mix)
+    html = re.sub(r'// Lead Segment Mix data[\s\S]*?const SEGMENT_MIX = \{[\s\S]*?^\};',
+                  lambda _: _segmix_js, html, flags=re.MULTILINE)
+    print("  SEGMENT_MIX updated")
+else:
+    print("  ⚠️  SEGMENT_MIX left untouched (query failed — see error above)")
 
 # Patch DATA_AS_OF
 yesterday = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')

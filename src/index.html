@@ -17212,6 +17212,29 @@ const URL_TRACKING = {
   }
 };
 
+// Lead Segment Mix data (PTY: ad_type x category x region x price tier; JOB:
+// job_type x region) — auto-updated by scripts/update_marketplace.py, direct
+// BigQuery, rolling 30-day window. See chotot-digital repo context/decisions.md D-020.
+const SEGMENT_MIX = {
+  "dataAsOf": null,
+  "windowDays": 30,
+  "PTY": {
+    "totals": {"adview": 0, "lead": 0, "dwl": 0},
+    "tiers": [],
+    "categories": [],
+    "regions": [],
+    "detail": [],
+    "detailRest": null
+  },
+  "JOB": {
+    "totals": {"adview": 0, "lead": 0, "dwl": 0},
+    "focus": [],
+    "regions": [],
+    "detail": [],
+    "detailRest": null
+  }
+};
+
 function GrowthSection({costData}) {
   const [met, setMet] = useState("dau");
   const [costTab, setCostTab] = useState("dwl");
@@ -18583,6 +18606,284 @@ function UrlTrackingSection() {
   );
 }
 
+// ─── LEAD SEGMENT MIX ────────────────────────────────────────────────────────
+// PTY: ad_type x category x region x price tier. JOB: job_type x region.
+// Deliberately does NOT sync the vertical's own live demand-supply quadrant label — see
+// chotot-digital repo context/decisions.md D-020 for why (that table only has ~2 weeks
+// populated at a time). Tracks our own universal, fully self-computed attributes instead.
+const SEGMIX_TIER_COLORS = {low:"#dc2626", mid:"#d97706", high:"#059669", high_mid:"#6b7280", unknown:"#9ca3af"};
+const SEGMIX_FOCUS_COLORS = {focus:"#059669", "non-focus":"#dc2626"};
+
+function SegMixStat({label, value, sublabel}) {
+  return (
+    <div style={{...card, flex:1, minWidth:220}}>
+      <div style={{fontSize:11,color:"#9ca3af",marginBottom:4}}>{label}</div>
+      <div style={{fontSize:24,fontWeight:800,color:"#111",marginBottom:6}}>{value}</div>
+      {sublabel && <div style={{fontSize:11,color:"#9ca3af",lineHeight:1.4}}>{sublabel}</div>}
+    </div>
+  );
+}
+
+function SegMixFocusPill({val}) {
+  const isFocus = val === "focus";
+  return (
+    <span style={{background:isFocus?"#ecfdf5":"#fef2f2",color:isFocus?"#059669":"#dc2626",
+      fontWeight:700,fontSize:11,padding:"2px 9px",borderRadius:99}}>
+      {isFocus ? "Yes" : "No"}
+    </span>
+  );
+}
+
+// Horizontal stacked-bar share breakdown + legend. `labelKey` picks the display label field;
+// `colorKey` (defaults to labelKey) picks which field's value looks up a color in `colorMap` —
+// separate props because e.g. the category bar labels by category_name but colors by
+// is_focus_category, not by the category name itself.
+function SegMixShareBar({segments, unit, labelKey, colorKey, colorMap}) {
+  const ck = colorKey || labelKey;
+  const total = (segments||[]).reduce((s,g)=>s+(g[unit]||0),0);
+  if (!segments || !segments.length || !total) {
+    return (
+      <div style={{textAlign:"center",color:"#9ca3af",fontSize:13,padding:"20px 0"}}>
+        Chưa có dữ liệu — chạy <code>python3 scripts/update_marketplace.py</code>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <div style={{display:"flex",height:22,borderRadius:6,overflow:"hidden",marginBottom:10,background:"#f3f4f6"}}>
+        {segments.map((g,i)=>{
+          const val = g[unit]||0, pct = val/total*100;
+          if (!pct) return null;
+          const color = colorMap[g[ck]] || "#9ca3af";
+          return <div key={i} style={{width:`${pct}%`,background:color}} title={`${g[labelKey]}: ${pct.toFixed(1)}%`}/>;
+        })}
+      </div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:12}}>
+        {segments.map((g,i)=>{
+          const val = g[unit]||0, pct = total ? val/total*100 : 0;
+          const color = colorMap[g[ck]] || "#9ca3af";
+          return (
+            <div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:12}}>
+              <span style={{width:10,height:10,borderRadius:3,background:color,display:"inline-block",flexShrink:0}}/>
+              <b style={{textTransform:"capitalize"}}>{g[labelKey] ?? "—"}</b>
+              <span style={{color:"#9ca3af"}}>{pct.toFixed(1)}%</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function PtySegMixTable({data, unit}) {
+  const fmtVal = n => (n||0).toLocaleString("en-US");
+  const TH2 = {padding:"7px 10px",fontWeight:700,fontSize:11,background:"#f8f9ff",
+    color:"#374151",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"};
+  const TD2 = {padding:"6px 10px",fontSize:12,borderBottom:"1px solid #f3f4f6"};
+  const rows = data.detail || [];
+  const rest = data.detailRest;
+  if (!rows.length) {
+    return <div style={{textAlign:"center",color:"#9ca3af",fontSize:13,padding:"24px 0"}}>Chưa có Segment Mix data</div>;
+  }
+  const total = rows.reduce((s,r)=>s+(r[unit]||0),0) + (rest ? rest[unit] : 0);
+  return (
+    <div style={{overflowX:"auto"}}>
+      <table style={{borderCollapse:"collapse",fontSize:12,width:"100%"}}>
+        <thead>
+          <tr>
+            <th style={{...TH2,textAlign:"left"}}>Let/Sell</th>
+            <th style={{...TH2,textAlign:"left"}}>Category</th>
+            <th style={{...TH2,textAlign:"center"}}>Focus?</th>
+            <th style={{...TH2,textAlign:"left"}}>Region</th>
+            <th style={{...TH2,textAlign:"center"}}>Focus?</th>
+            <th style={{...TH2,textAlign:"left"}}>Tier</th>
+            <th style={{...TH2,textAlign:"right"}}>{unit==="dwl"?"DWL":"Leads"}</th>
+            <th style={{...TH2,textAlign:"center"}}>%</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r,i)=>{
+            const val = r[unit]||0, pct = total ? val/total*100 : 0;
+            return (
+              <tr key={i} style={{background:i%2===0?"#fff":"#fafafa"}}>
+                <td style={TD2}>{r.ad_type==="let"?"Let":"Sell"}</td>
+                <td style={TD2}>{r.category_name || "—"}</td>
+                <td style={{...TD2,textAlign:"center"}}><SegMixFocusPill val={r.is_focus_category}/></td>
+                <td style={TD2}>{r.region}</td>
+                <td style={{...TD2,textAlign:"center"}}><SegMixFocusPill val={r.is_focus_region}/></td>
+                <td style={{...TD2,textTransform:"capitalize",color:SEGMIX_TIER_COLORS[r.tier]||SEGMIX_TIER_COLORS.unknown,fontWeight:700}}>
+                  {r.tier || "—"}
+                </td>
+                <td style={{...TD2,textAlign:"right"}}>{fmtVal(val)}</td>
+                <td style={{...TD2,textAlign:"center"}}>{pct.toFixed(1)}%</td>
+              </tr>
+            );
+          })}
+          {rest && rest.n > 0 && (
+            <tr style={{background:"#fafafa",fontStyle:"italic",color:"#9ca3af"}}>
+              <td colSpan={6} style={{...TD2,borderTop:"2px solid #e5e7eb"}}>All other combinations ({rest.n})</td>
+              <td style={{...TD2,textAlign:"right",borderTop:"2px solid #e5e7eb"}}>{fmtVal(rest[unit])}</td>
+              <td style={{...TD2,textAlign:"center",borderTop:"2px solid #e5e7eb"}}>
+                {total ? (rest[unit]/total*100).toFixed(1) : "0.0"}%
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function JobSegMixTable({data, unit}) {
+  const fmtVal = n => (n||0).toLocaleString("en-US");
+  const TH2 = {padding:"7px 10px",fontWeight:700,fontSize:11,background:"#f8f9ff",
+    color:"#374151",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"};
+  const TD2 = {padding:"6px 10px",fontSize:12,borderBottom:"1px solid #f3f4f6"};
+  const rows = data.detail || [];
+  const rest = data.detailRest;
+  if (!rows.length) {
+    return <div style={{textAlign:"center",color:"#9ca3af",fontSize:13,padding:"24px 0"}}>Chưa có Segment Mix data</div>;
+  }
+  const total = rows.reduce((s,r)=>s+(r[unit]||0),0) + (rest ? rest[unit] : 0);
+  return (
+    <div style={{overflowX:"auto"}}>
+      <table style={{borderCollapse:"collapse",fontSize:12,width:"100%"}}>
+        <thead>
+          <tr>
+            <th style={{...TH2,textAlign:"left",minWidth:160}}>Job type</th>
+            <th style={{...TH2,textAlign:"center"}}>Focus?</th>
+            <th style={{...TH2,textAlign:"left"}}>Region</th>
+            <th style={{...TH2,textAlign:"center"}}>Focus?</th>
+            <th style={{...TH2,textAlign:"right"}}>{unit==="dwl"?"DWL":"Leads"}</th>
+            <th style={{...TH2,textAlign:"center"}}>%</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r,i)=>{
+            const val = r[unit]||0, pct = total ? val/total*100 : 0;
+            return (
+              <tr key={i} style={{background:i%2===0?"#fff":"#fafafa"}}>
+                <td style={TD2}>{r.job_type || "(chưa gắn job_type)"}</td>
+                <td style={{...TD2,textAlign:"center"}}><SegMixFocusPill val={r.is_focus_job_type}/></td>
+                <td style={TD2}>{r.region}</td>
+                <td style={{...TD2,textAlign:"center"}}><SegMixFocusPill val={r.is_focus_region}/></td>
+                <td style={{...TD2,textAlign:"right"}}>{fmtVal(val)}</td>
+                <td style={{...TD2,textAlign:"center"}}>{pct.toFixed(1)}%</td>
+              </tr>
+            );
+          })}
+          {rest && rest.n > 0 && (
+            <tr style={{background:"#fafafa",fontStyle:"italic",color:"#9ca3af"}}>
+              <td colSpan={4} style={{...TD2,borderTop:"2px solid #e5e7eb"}}>All other combinations ({rest.n})</td>
+              <td style={{...TD2,textAlign:"right",borderTop:"2px solid #e5e7eb"}}>{fmtVal(rest[unit])}</td>
+              <td style={{...TD2,textAlign:"center",borderTop:"2px solid #e5e7eb"}}>
+                {total ? (rest[unit]/total*100).toFixed(1) : "0.0"}%
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function SegmentMixSection() {
+  const [unit, setUnit] = useState("dwl"); // "dwl" | "lead"
+  const PTY = SEGMENT_MIX.PTY, JOB = SEGMENT_MIX.JOB;
+  const dataAsOf = SEGMENT_MIX.dataAsOf;
+  const windowDays = SEGMENT_MIX.windowDays || 30;
+
+  const ptyLowPct = (() => {
+    const low = (PTY.tiers.find(t=>t.tier==="low")||{})[unit] || 0;
+    const total = PTY.totals[unit] || 0;
+    return total ? (low/total*100) : null;
+  })();
+  const jobFocusPct = (() => {
+    const focus = (JOB.focus.find(f=>f.is_focus_job_type==="focus")||{})[unit] || 0;
+    const total = JOB.totals[unit] || 0;
+    return total ? (focus/total*100) : null;
+  })();
+
+  return (
+    <section id="segmix">
+      <div className="section-title">🎯 Lead Segment Mix — Where Digital Demand Lands</div>
+      <div style={{fontSize:12,color:"#6b7280",marginBottom:12,lineHeight:1.6,maxWidth:900}}>
+        Không đồng bộ real-time với bảng demand-supply quadrant của vertical (bảng đó chỉ có ~2 tuần
+        dữ liệu tại một thời điểm) — thay vào đó theo dõi thuộc tính tự tính được: PTY theo loại
+        tin × khu vực × phân khúc giá; JOB theo job_type × khu vực. Chỉ tính traffic Google + Meta
+        (qua field <code style={{background:"#f3f4f6",padding:"1px 5px",borderRadius:4}}>source</code>),
+        loại trừ campaign appinstall.
+      </div>
+
+      {dataAsOf && (
+        <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>
+          Data as of {dataAsOf} · rolling {windowDays}-day window · nguồn: BigQuery trực tiếp
+        </div>
+      )}
+
+      {/* DWL/Lead toggle */}
+      <div style={{display:"flex",gap:4,background:"#f3f4f6",borderRadius:8,padding:3,marginBottom:16,width:180}}>
+        {[{key:"dwl",label:"DWL"},{key:"lead",label:"Leads"}].map(o=>(
+          <button key={o.key} onClick={()=>setUnit(o.key)} style={{
+            flex:1,padding:"5px 10px",borderRadius:6,border:"none",cursor:"pointer",
+            fontSize:12,fontWeight:600,transition:"all .15s",
+            background:unit===o.key?"#6366f1":"transparent",
+            color:unit===o.key?"#fff":"#6b7280",
+          }}>{o.label}</button>
+        ))}
+      </div>
+
+      {/* Headline KPIs */}
+      <div style={{display:"flex",gap:16,marginBottom:20,flexWrap:"wrap"}}>
+        <SegMixStat label="PTY — Low-tier share" value={ptyLowPct==null?"—":ptyLowPct.toFixed(1)+"%"}
+          sublabel="Low tier is chronically under-supply (known pattern) — a high share here means digital demand keeps piling into an already-saturated segment instead of mid/high tier."/>
+        <SegMixStat label="JOB — Focus job-type share" value={jobFocusPct==null?"—":jobFocusPct.toFixed(1)+"%"}
+          sublabel="Share landing on JOB's 8 declared focus job types (Bán hàng, NVKD, NVPV, Tài xế giao hàng, Công nhân, NV kho vận, Bảo vệ, Tài xế ô tô)."/>
+      </div>
+
+      <div style={{fontWeight:700,fontSize:13,color:"#374151",margin:"4px 0 10px"}}>PTY</div>
+      <div style={{display:"flex",gap:16,marginBottom:20,flexWrap:"wrap"}}>
+        <div style={{...card,flex:1,minWidth:260}}>
+          <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:"#374151"}}>By price tier</div>
+          <SegMixShareBar segments={PTY.tiers} unit={unit} labelKey="tier" colorMap={SEGMIX_TIER_COLORS}/>
+        </div>
+        <div style={{...card,flex:1,minWidth:260}}>
+          <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:"#374151"}}>By category (focus = Room/Apartment/House)</div>
+          <SegMixShareBar segments={PTY.categories} unit={unit} labelKey="category_name" colorKey="is_focus_category" colorMap={SEGMIX_FOCUS_COLORS}/>
+        </div>
+        <div style={{...card,flex:1,minWidth:260}}>
+          <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:"#374151"}}>By region (focus = HCM + Bình Dương)</div>
+          <SegMixShareBar segments={PTY.regions} unit={unit} labelKey="region" colorKey="is_focus_region" colorMap={SEGMIX_FOCUS_COLORS}/>
+        </div>
+      </div>
+
+      <div style={{fontWeight:700,fontSize:13,color:"#374151",margin:"4px 0 10px"}}>JOB</div>
+      <div style={{display:"flex",gap:16,marginBottom:20,flexWrap:"wrap"}}>
+        <div style={{...card,flex:1,minWidth:260}}>
+          <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:"#374151"}}>By focus job-type</div>
+          <SegMixShareBar segments={JOB.focus} unit={unit} labelKey="is_focus_job_type" colorMap={SEGMIX_FOCUS_COLORS}/>
+        </div>
+        <div style={{...card,flex:1,minWidth:260}}>
+          <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:"#374151"}}>By region (focus = HCM + Bình Dương)</div>
+          <SegMixShareBar segments={JOB.regions} unit={unit} labelKey="region" colorKey="is_focus_region" colorMap={SEGMIX_FOCUS_COLORS}/>
+        </div>
+      </div>
+
+      {/* Detail tables */}
+      <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)",gap:16,marginTop:8}}>
+        <div style={{...card,minWidth:0}}>
+          <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:"#374151"}}>PTY — full breakdown (Let/Sell × Category × Region × Tier)</div>
+          <PtySegMixTable data={PTY} unit={unit}/>
+        </div>
+        <div style={{...card,minWidth:0}}>
+          <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:"#374151"}}>JOB — full breakdown (Job type × Region)</div>
+          <JobSegMixTable data={JOB} unit={unit}/>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function CostInputSection({costData, setCostData}) {
   const M12 = ["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06",
                "2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"];
@@ -18789,6 +19090,7 @@ const VD_SECTIONS = [
   {id:"growth",   label:"🌱 Growth Performance"},
   {id:"campaign", label:"📊 Campaign Detail"},
   {id:"urltrack", label:"🔗 URL Tracking"},
+  {id:"segmix",   label:"🎯 Segment Mix"},
   {id:"cost",     label:"📝 Cost Input"},
 ];
 
@@ -18867,6 +19169,7 @@ function App() {
           <GrowthSection costData={costData}/>
           <CampaignSection/>
           <UrlTrackingSection/>
+          <SegmentMixSection/>
           <CostInputSection costData={costData} setCostData={setCostData}/>
           <div style={{height:60}}/>
         </>
