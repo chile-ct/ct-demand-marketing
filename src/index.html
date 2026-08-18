@@ -22535,15 +22535,21 @@ function SegmentMixSection() {
   const dataAsOf = SEGMENT_MIX.dataAsOf;
   const windowDays = SEGMENT_MIX.windowDays || 30;
 
+  // Denominator matches the tier/focus breakdown bar directly below each card (sum of that
+  // specific rollup), NOT the grand total — someone active in more than one tier/focus-group on
+  // the same day is legitimately counted in each group, so a tier-rollup sum can exceed the grand
+  // total slightly. Using the grand total here would show a different % than the bar right below
+  // it for the exact same claim, which reads as inconsistent even though both numbers are "correct"
+  // for what they measure.
   const ptyLowPct = (() => {
     const low = (PTY.tiers.find(t=>t.tier==="low")||{})[unit] || 0;
-    const total = PTY.totals[unit] || 0;
-    return total ? (low/total*100) : null;
+    const tierTotal = PTY.tiers.reduce((s,t)=>s+(t[unit]||0),0);
+    return tierTotal ? (low/tierTotal*100) : null;
   })();
   const jobFocusPct = (() => {
     const focus = (JOB.focus.find(f=>f.is_focus_job_type==="focus")||{})[unit] || 0;
-    const total = JOB.totals[unit] || 0;
-    return total ? (focus/total*100) : null;
+    const focusTotal = JOB.focus.reduce((s,f)=>s+(f[unit]||0),0);
+    return focusTotal ? (focus/focusTotal*100) : null;
   })();
 
   return (
