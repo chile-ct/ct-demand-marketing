@@ -23411,9 +23411,14 @@ const TH ={padding:"8px 12px",textAlign:"right",fontSize:12,fontWeight:600,color
 const TD = {padding:"7px 12px",textAlign:"right",fontSize:12,color:"#111"};
 
 
-// VD_SECTIONS drives scroll-spy (IntersectionObserver) for ALL sections, including "tests" —
-// that section's nav ENTRY moved to a separate left sidebar (below), but it still needs to be
-// observed so `active` tracks it correctly while scrolled into view.
+// VD_SECTIONS drives scroll-spy (IntersectionObserver) + the top header nav for the 9
+// "dashboard" sections. These 9 all coexist on one continuously-scrolling page — clicking a
+// header pill just scrollIntoView()s its anchor; nothing is hidden/shown exclusively, and there
+// never was an activeTab-style show/hide mechanism among them to reuse (verified in this file —
+// `view` is a hardcoded constant, not a switch). "tests" (D12) is deliberately NOT in this list
+// any more: it now gets its own real exclusive view (see `sidebarView` below), not an anchor on
+// the shared page, so clicking it in the sidebar hides all 9 dashboard sections rather than
+// scrolling past them.
 const VD_SECTIONS = [
   {id:"exec",    label:"📋 Executive Summary"},
   {id:"vertical",label:"📈 By Vertical"},
@@ -23423,16 +23428,13 @@ const VD_SECTIONS = [
   {id:"campaign", label:"📊 Campaign Detail"},
   {id:"urltrack", label:"🔗 URL Tracking"},
   {id:"segmix",   label:"🎯 Segment Mix"},
-  {id:"tests",    label:"🧪 Active Tests"},
   {id:"cost",     label:"📝 Cost Input"},
 ];
-// Top header nav renders every section EXCEPT "tests" (that one lives in the left sidebar only).
-const TOP_NAV_SECTIONS = VD_SECTIONS.filter(s => s.id !== "tests");
-// Left sidebar renders only "tests" — a single-item, slim persistent nav surface.
-const SIDEBAR_SECTIONS = VD_SECTIONS.filter(s => s.id === "tests");
+// Left sidebar — single item, its own exclusive view (not an anchor into the scrolling page).
+const SIDEBAR_SECTIONS = [{id:"tests", label:"🧪 D12 Thổ Địa"}];
 const SIDEBAR_WIDTH = 68;
 
-function AppSidebar({active}) {
+function AppSidebar({sidebarView, onSelect}) {
   return (
     <div style={{
       position:"fixed", top:0, left:0, bottom:0, width:SIDEBAR_WIDTH, zIndex:300,
@@ -23440,12 +23442,12 @@ function AppSidebar({active}) {
       display:"flex", flexDirection:"column", alignItems:"center", paddingTop:80, gap:8,
     }}>
       {SIDEBAR_SECTIONS.map(s=>{
-        const isActive = active===s.id;
+        const isActive = sidebarView===s.id;
         const [icon, ...rest] = s.label.split(" ");
         const text = rest.join(" ");
         return (
           <a key={s.id} href={`#${s.id}`}
-            onClick={e=>{e.preventDefault();document.getElementById(s.id)?.scrollIntoView({behavior:"smooth"});}}
+            onClick={e=>{e.preventDefault(); onSelect(s.id);}}
             title={text}
             style={{
               display:"flex", flexDirection:"column", alignItems:"center", gap:3,
@@ -23467,6 +23469,10 @@ function AppSidebar({active}) {
 function App() {
   const view = "demand";
   const [active, setActive] = useState("exec");
+  // sidebarView: null = normal scrolling dashboard (9 header tabs, unchanged); "tests" = D12's
+  // own EXCLUSIVE view — only <D12TestSection/> renders in the main canvas, nothing from any
+  // header tab is present in the DOM at all (not just scrolled away from).
+  const [sidebarView, setSidebarView] = useState(null);
   const [costData, setCostData] = useState(()=>{
     try{
       const s=localStorage.getItem('ctCostData');
@@ -23486,8 +23492,11 @@ function App() {
     catch{ return GROWTH_COST; }
   });
 
+  // Re-runs whenever we come back from the D12 exclusive view (sidebarView flips to null) so it
+  // re-attaches to the freshly-remounted dashboard section nodes — otherwise the observer would
+  // keep watching detached elements from before the D12 view unmounted them.
   useEffect(()=>{
-    if (view !== "demand") return;
+    if (view !== "demand" || sidebarView === "tests") return;
     const obs = new IntersectionObserver(entries=>{
       entries.forEach(e=>{ if(e.isIntersecting) setActive(e.target.id); });
     },{rootMargin:"-40% 0px -55% 0px"});
@@ -23496,59 +23505,84 @@ function App() {
       if(el) obs.observe(el);
     });
     return ()=>obs.disconnect();
-  },[view]);
+  },[view, sidebarView]);
+
+  const HeaderBar = ({children}) => (
+    <div style={{background:"#1e1b4b",padding:"14px 24px",display:"flex",alignItems:"center",gap:14}}>
+      <div style={{width:36,height:36,borderRadius:10,
+        background:"linear-gradient(135deg,#818cf8,#6366f1)",
+        display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>📊</div>
+      <div>
+        <div style={{fontWeight:700,fontSize:16,color:"#fff"}}>Chotot Marketplace Dashboard</div>
+        {(()=>{
+          const latestNum=parseInt(MONTHS[MONTHS.length-1].split('-')[1]);
+          const [,mm,dd]=DATA_AS_OF.split('-');
+          return <div style={{fontSize:11,color:"#a5b4fc"}}>T1~T{latestNum}/2026 · BigQuery chotot-dwh · <span style={{color:"#fbbf24"}}>T{latestNum} chưa đủ tháng, data tới {dd}/{mm}</span></div>;
+        })()}
+      </div>
+      {children}
+    </div>
+  );
 
   return (
     <div style={{display:"flex"}}>
-      {/* Left sidebar — Active Tests only. Every other tab stays in the top header nav. */}
-      <AppSidebar active={active}/>
+      {/* Left sidebar — D12 Thổ Địa only. Every other tab stays in the top header nav. */}
+      <AppSidebar sidebarView={sidebarView} onSelect={setSidebarView}/>
 
       <div style={{flex:1,minWidth:0,marginLeft:SIDEBAR_WIDTH}}>
-        {/* Header + Nav — single sticky block, no gap */}
-        <div style={{position:"sticky",top:0,zIndex:200}}>
-          <div style={{background:"#1e1b4b",padding:"14px 24px",display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:36,height:36,borderRadius:10,
-              background:"linear-gradient(135deg,#818cf8,#6366f1)",
-              display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>📊</div>
-            <div>
-              <div style={{fontWeight:700,fontSize:16,color:"#fff"}}>Chotot Marketplace Dashboard</div>
-              {(()=>{
-                const latestNum=parseInt(MONTHS[MONTHS.length-1].split('-')[1]);
-                const [,mm,dd]=DATA_AS_OF.split('-');
-                return <div style={{fontSize:11,color:"#a5b4fc"}}>T1~T{latestNum}/2026 · BigQuery chotot-dwh · <span style={{color:"#fbbf24"}}>T{latestNum} chưa đủ tháng, data tới {dd}/{mm}</span></div>;
-              })()}
-            </div>
-          </div>
-
-          {/* Sticky Nav — only for Vertical Demand. "Active Tests" excluded — lives in the left sidebar. */}
-          {view==="demand" && (
-            <nav className="sticky-nav">
-            {TOP_NAV_SECTIONS.map(s=>(
-              <a key={s.id} href={`#${s.id}`} className={active===s.id?"active":""}
-                onClick={e=>{e.preventDefault();document.getElementById(s.id)?.scrollIntoView({behavior:"smooth"});}}>
-                {s.label}
-              </a>
-            ))}
-          </nav>
-          )}
-        </div>
-
-        {/* Content */}
-        {view==="demand" ? (
+        {sidebarView === "tests" ? (
+          /* EXCLUSIVE VIEW — only D12TestSection renders below. None of the 9 dashboard
+             sections (ExecSummary, ChannelSection, ... CostInputSection) or the top sticky-nav
+             are mounted here at all, so nothing from any other tab is present in the DOM. */
           <>
-            <ExecSummary/>
-            <ChannelSection/>
-            <VerticalSection/>
-            <DetailSection/>
-            <GrowthSection costData={costData}/>
-            <CampaignSection/>
-            <UrlTrackingSection/>
-            <SegmentMixSection/>
+            <div style={{position:"sticky",top:0,zIndex:200}}>
+              <HeaderBar>
+                <button onClick={()=>setSidebarView(null)} style={{
+                  marginLeft:"auto",background:"rgba(255,255,255,.1)",color:"#fff",
+                  border:"1px solid rgba(255,255,255,.2)",borderRadius:8,
+                  padding:"7px 14px",fontSize:12,fontWeight:600,cursor:"pointer",
+                }}>← Back to Dashboard</button>
+              </HeaderBar>
+            </div>
             <D12TestSection/>
-            <CostInputSection costData={costData} setCostData={setCostData}/>
             <div style={{height:60}}/>
           </>
-        ) : null}
+        ) : (
+          <>
+            {/* Header + Nav — single sticky block, no gap */}
+            <div style={{position:"sticky",top:0,zIndex:200}}>
+              <HeaderBar/>
+              {view==="demand" && (
+                <nav className="sticky-nav">
+                {VD_SECTIONS.map(s=>(
+                  <a key={s.id} href={`#${s.id}`} className={active===s.id?"active":""}
+                    onClick={e=>{e.preventDefault();document.getElementById(s.id)?.scrollIntoView({behavior:"smooth"});}}>
+                    {s.label}
+                  </a>
+                ))}
+              </nav>
+              )}
+            </div>
+
+            {/* Content — the 9 dashboard sections, unchanged (still one continuously-scrolling
+                page with anchor-scroll nav). D12TestSection deliberately NOT included here
+                anymore — it only renders in the exclusive sidebarView above. */}
+            {view==="demand" ? (
+              <>
+                <ExecSummary/>
+                <ChannelSection/>
+                <VerticalSection/>
+                <DetailSection/>
+                <GrowthSection costData={costData}/>
+                <CampaignSection/>
+                <UrlTrackingSection/>
+                <SegmentMixSection/>
+                <CostInputSection costData={costData} setCostData={setCostData}/>
+                <div style={{height:60}}/>
+              </>
+            ) : null}
+          </>
+        )}
       </div>
     </div>
   );
