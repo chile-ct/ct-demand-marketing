@@ -646,17 +646,131 @@ _JOB_FOCUS_TYPES = {
     'Công nhân', 'Nhân viên kho vận', 'Bảo vệ', 'Tài xế ô tô',
 }
 
+_SEG_TREND_WINDOW_DAYS = 30
+
+# ── Trend queries (daily grain, for the two headline charts) ────────────────
+# Replaces the old single-snapshot headline KPI cards ("PTY Low-tier share: 80.8%",
+# "JOB Focus job-type share: 61.7%") with day-by-day trend lines, per 2026-08-19 feedback: the
+# dashboard owner wants to see whether the mix is *moving* (PTY toward mid/high tier, JOB toward
+# focus job-types), not a single frozen ratio. PTY's growth goal is more lead/DWL volume in the
+# mid+high price tiers specifically (low tier is already known to be chronically oversaturated —
+# that's exactly why low is excluded from this chart), tracked separately for Let vs Sell, so 4
+# lines: Let-Mid, Let-High, Sell-Mid, Sell-High. The "high_mid" tier (a legacy bucket for ads from
+# before the mid/high split existed) doesn't map onto the mid-vs-high growth story and is left out.
+# JOB: 2 lines, Focus vs Non-focus job-type.
+#
+# Both series need a real day-by-day value, each day computed independently — same window (30
+# days) as the rest of this section for visual/framing consistency. Per-day DWL is safe to compute
+# directly as COUNT(DISTINCT clientId) AT THE (date, segment) GRAIN in one GROUP BY — this is
+# already the finest grain asked for (a single day), so there is no finer grain being summed out
+# of; the 2026-08-18 double-counting bug was about summing distinct counts ACROSS days/buckets
+# into a coarser bucket, which does not happen here.
+_PTY_TREND_SQL = """
+WITH date_refs AS (
+  SELECT DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY) AS window_end,
+         DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) AS window_start
+),
+ad_w_info AS (
+  SELECT
+    a1.ad_id, a1.ad_type,
+    CASE
+      WHEN EXTRACT(YEAR FROM a1.first_approved_time) = 2026 AND a1.city_name IN ('Hà Nội')
+        THEN CASE WHEN a1.price < (t.mid_tier*1.3225) THEN 'low' WHEN a1.price < (t.high_tier*1.3225) THEN 'mid' ELSE 'high' END
+      WHEN EXTRACT(YEAR FROM a1.first_approved_time) = 2026 AND a1.city_name NOT IN ('Hà Nội')
+        THEN CASE WHEN a1.price < (t.mid_tier*1.265) THEN 'low' WHEN a1.price < (t.high_tier*1.265) THEN 'mid' ELSE 'high' END
+      WHEN EXTRACT(YEAR FROM a1.first_approved_time) = 2025
+        THEN CASE WHEN a1.price < (t.mid_tier*1.10) THEN 'low' WHEN a1.price < (t.high_tier*1.10) THEN 'mid' ELSE 'high' END
+      WHEN EXTRACT(YEAR FROM a1.first_approved_time) = 2024
+        THEN CASE WHEN a1.price < t.mid_tier THEN 'low' WHEN a1.price < t.high_tier THEN 'mid' ELSE 'high' END
+      WHEN EXTRACT(YEAR FROM a1.first_approved_time) < 2024
+        THEN CASE WHEN a1.price < n.price_segment THEN 'low' ELSE 'high_mid' END
+    END AS tier
+  FROM `chotot-dwh.chotot_data.ad` a1
+  LEFT JOIN `chotot-dwh.ct_nha.tuan_price_segment` t ON a1.city_id = t.city AND a1.category = t.category AND a1.ad_type = t.ad_type
+  LEFT JOIN `chotot-dwh.ct_nha.nguyen_new_market_segmentation_2025` n ON a1.city_name = n.city_name AND a1.ad_type = n.ad_type AND a1.category = n.category
+  WHERE a1.dwh_update_time >= '2022-01-01' AND a1.first_approved_time IS NOT NULL AND a1.category BETWEEN 1000 AND 1050
+),
+digital_visits AS (
+  SELECT DISTINCT v.date, v.clientId, CAST(v.visitId AS STRING) AS visitId
+  FROM `chotot-dwh.chotot_data.traffic_visit_detail` v CROSS JOIN date_refs dr
+  WHERE v.date BETWEEN dr.window_start AND dr.window_end
+    AND v.is_bot IS NULL
+    AND v.channelGrouping IN ('Paid Search','Display')
+    AND v.source IN ('google','google_search','facebook')
+    AND LOWER(v.campaign) NOT LIKE '%appinstall%'
+    AND LOWER(v.campaign) NOT LIKE '%install_app%'
+)
+SELECT
+  l.date, w.ad_type, w.tier,
+  COUNT(DISTINCT l.clientId) AS dwl,
+  COUNT(*) AS lead_total
+FROM `chotot-dwh.chotot_data.traffic_lead_detail` l CROSS JOIN date_refs dr
+INNER JOIN digital_visits dv ON l.date = dv.date AND l.clientId = dv.clientId AND CAST(l.visitId AS STRING) = dv.visitId
+INNER JOIN ad_w_info w ON l.ad_id = w.ad_id
+WHERE l.date BETWEEN dr.window_start AND dr.window_end AND l.is_bot IS NULL AND l.ad_id IS NOT NULL
+  AND w.tier IN ('mid','high')
+GROUP BY 1,2,3
+ORDER BY 1,2,3
+"""
+
+_JOB_FOCUS_TYPES_SQL_LIST = ', '.join(f"'{t}'" for t in _JOB_FOCUS_TYPES)
+
+_JOB_TREND_SQL = f"""
+WITH date_refs AS (
+  SELECT DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY) AS window_end,
+         DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) AS window_start
+),
+job_ad_info AS (
+  SELECT a.ad_id, p.value_name AS job_type
+  FROM `chotot-dwh.chotot_data.ad` a
+  LEFT JOIN UNNEST(a.params) p ON p.name = 'job_type'
+  WHERE a.vertical = 'JOBS' AND a.dwh_update_time >= '2022-01-01'
+),
+digital_visits AS (
+  SELECT DISTINCT v.date, v.clientId, CAST(v.visitId AS STRING) AS visitId
+  FROM `chotot-dwh.chotot_data.traffic_visit_detail` v CROSS JOIN date_refs dr
+  WHERE v.date BETWEEN dr.window_start AND dr.window_end
+    AND v.is_bot IS NULL
+    AND v.channelGrouping IN ('Paid Search','Display')
+    AND v.source IN ('google','google_search','facebook')
+    AND LOWER(v.campaign) NOT LIKE '%appinstall%'
+    AND LOWER(v.campaign) NOT LIKE '%install_app%'
+)
+SELECT
+  l.date,
+  CASE WHEN j.job_type IN ({_JOB_FOCUS_TYPES_SQL_LIST}) THEN 'focus' ELSE 'non-focus' END AS focus_type,
+  COUNT(DISTINCT l.clientId) AS dwl,
+  COUNT(*) AS lead_total
+FROM `chotot-dwh.chotot_data.traffic_lead_detail` l CROSS JOIN date_refs dr
+INNER JOIN digital_visits dv ON l.date = dv.date AND l.clientId = dv.clientId AND CAST(l.visitId AS STRING) = dv.visitId
+INNER JOIN job_ad_info j ON l.ad_id = j.ad_id
+WHERE l.date BETWEEN dr.window_start AND dr.window_end AND l.is_bot IS NULL AND l.ad_id IS NOT NULL
+GROUP BY 1,2
+ORDER BY 1,2
+"""
+
 
 def _seg_int(v):
     return int(v) if v is not None else 0
 
 
-def _seg_build_view(bucket_rows, dwl_raw_rows, key_fields):
+def _seg_build_view(bucket_rows, dwl_raw_rows, key_fields, window_days=30):
     """Build one rollup view at exactly `key_fields` granularity. adview/lead are plain counts —
     safe to re-sum across bucket_rows at ANY grouping. dwl is NOT safe to re-sum across groupings,
     so it's computed fresh here as COUNT(DISTINCT date||clientId) directly from the raw rows, at
     this exact grain — never by summing a finer grain's distinct count (that's the 2026-08-18 bug).
-    key_fields=[] gives a single grand-total row."""
+    key_fields=[] gives a single grand-total row.
+
+    `dwl` is the AVERAGE DAILY distinct count (dwlTotal / window_days) — a raw 30-day total like
+    19,426 reads as an absurd, meaningless number on the dashboard (2026-08-19 feedback). The
+    correctness rule still holds: dwlTotal is computed as the true distinct count AT THIS GRAIN
+    first, then divided — never summed from a finer grain and then divided. `dwlTotal` (the
+    pre-average 30-day total) is kept alongside for callers that need the un-averaged figure (e.g.
+    the long-tail row filter in the full breakdown tables, which must filter on the total, not the
+    post-average daily figure — a post-average threshold would cut far more aggressively).
+    Percentages computed downstream as share-of-total are unaffected by the division: dividing
+    every row's numerator AND the denominator (sum of rows in the same view) by the same constant
+    (window_days) leaves the ratio unchanged."""
     totals = {}
     for r in bucket_rows:
         k = tuple(r[f] for f in key_fields)
@@ -670,11 +784,38 @@ def _seg_build_view(bucket_rows, dwl_raw_rows, key_fields):
     out = []
     for k in set(totals) | set(dwl_sets):
         row = dict(zip(key_fields, k))
-        row['adview'] = totals.get(k, {}).get('adview', 0)
-        row['lead']   = totals.get(k, {}).get('lead', 0)
-        row['dwl']    = len(dwl_sets.get(k, ()))
+        row['adview']   = totals.get(k, {}).get('adview', 0)
+        row['lead']     = totals.get(k, {}).get('lead', 0)
+        dwl_total       = len(dwl_sets.get(k, ()))
+        row['dwlTotal'] = dwl_total
+        row['dwl']      = round(dwl_total / window_days, 1) if window_days else dwl_total
         out.append(row)
-    return sorted(out, key=lambda r: -r['dwl'])
+    return sorted(out, key=lambda r: -r['dwlTotal'])
+
+
+def _seg_build_trend(rows, key_fn, keys):
+    """Build a daily trend array from day-grain rows (each row already has dwl computed as
+    COUNT(DISTINCT clientId) directly at (date, segment) — the finest grain, so no re-aggregation
+    risk here; see the header note above _PTY_TREND_SQL/_JOB_TREND_SQL). `key_fn(row)` returns the
+    series key (e.g. "letMid") or None to skip the row; `keys` lists every expected series key so
+    every date gets a 0 for series with no rows that day, instead of a silently-missing field."""
+    daily = {}
+    for r in rows:
+        k = key_fn(r)
+        if k is None:
+            continue
+        d = str(r['date'])
+        row = daily.setdefault(d, {'date': d})
+        row[f'{k}Dwl'] = _seg_int(r['dwl'])
+        row[f'{k}Lead'] = _seg_int(r['lead_total'])
+    out = []
+    for d in sorted(daily):
+        row = daily[d]
+        for k in keys:
+            row.setdefault(f'{k}Dwl', 0)
+            row.setdefault(f'{k}Lead', 0)
+        out.append(row)
+    return out
 
 
 def build_segment_mix():
@@ -686,6 +827,8 @@ def build_segment_mix():
         pty_dwl_raw = q(_PTY_DWL_RAW_SQL)
         job_bucket = q(_JOB_BUCKET_SQL)
         job_dwl_raw = q(_JOB_DWL_RAW_SQL)
+        pty_trend_rows = q(_PTY_TREND_SQL)
+        job_trend_rows = q(_JOB_TREND_SQL)
     except Exception as e:
         print(f"  ❌ Segment Mix query FAILED: {type(e).__name__}: {e}")
         return None
@@ -713,21 +856,39 @@ def build_segment_mix():
     job_detail  = _seg_build_view(
         job_bucket, job_dwl_raw, ['job_type', 'is_focus_job_type', 'region', 'is_focus_region'])
 
+    # Trend charts (fix #3, replaces the two static headline snapshot cards): PTY 4 lines
+    # (Let-Mid/Let-High/Sell-Mid/Sell-High — deliberately excludes "low" tier, chronically
+    # oversaturated already, and "high_mid", a legacy pre-2024 bucket that doesn't map onto the
+    # mid/high growth story), JOB 2 lines (Focus vs Non-focus job-type).
+    def _pty_trend_key(r):
+        if r['ad_type'] not in ('let', 'sell') or r['tier'] not in ('mid', 'high'):
+            return None
+        return r['ad_type'] + r['tier'].capitalize()  # letMid / letHigh / sellMid / sellHigh
+    pty_trend = _seg_build_trend(pty_trend_rows, _pty_trend_key, ['letMid', 'letHigh', 'sellMid', 'sellHigh'])
+
+    def _job_trend_key(r):
+        return 'focus' if r['focus_type'] == 'focus' else 'nonfocus'
+    job_trend = _seg_build_trend(job_trend_rows, _job_trend_key, ['focus', 'nonfocus'])
+
     def pct(part, total):
         return round(part / total * 100, 1) if total else 0.0
 
-    print(f"  PTY Segment Mix: {len(pty_detail)} groups, {pty_totals['dwl']} total DWL — tier split "
-          + ", ".join(f"{t['tier']}={pct(t['dwl'], pty_totals['dwl'])}%" for t in pty_tiers))
-    print(f"  JOB Segment Mix: {len(job_detail)} groups, {job_totals['dwl']} total DWL — focus split "
-          + ", ".join(f"{f['is_focus_job_type']}={pct(f['dwl'], job_totals['dwl'])}%" for f in job_focus))
+    print(f"  PTY Segment Mix: {len(pty_detail)} groups, {pty_totals['dwlTotal']} total DWL "
+          f"({pty_totals['dwl']}/day avg) — tier split "
+          + ", ".join(f"{t['tier']}={pct(t['dwl'], pty_totals['dwl'])}%" for t in pty_tiers)
+          + f" — trend rows: {len(pty_trend)} days")
+    print(f"  JOB Segment Mix: {len(job_detail)} groups, {job_totals['dwlTotal']} total DWL "
+          f"({job_totals['dwl']}/day avg) — focus split "
+          + ", ".join(f"{f['is_focus_job_type']}={pct(f['dwl'], job_totals['dwl'])}%" for f in job_focus)
+          + f" — trend rows: {len(job_trend)} days")
 
     return {
         'dataAsOf': (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d'),
         'windowDays': 30,
         'PTY': {'totals': pty_totals, 'tiers': pty_tiers, 'categories': pty_categories,
-                 'regions': pty_regions, 'detail': pty_detail},
+                 'regions': pty_regions, 'detail': pty_detail, 'trend': pty_trend},
         'JOB': {'totals': job_totals, 'focus': job_focus, 'regions': job_regions,
-                 'detail': job_detail},
+                 'detail': job_detail, 'trend': job_trend},
     }
 
 

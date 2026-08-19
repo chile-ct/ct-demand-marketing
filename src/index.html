@@ -22731,16 +22731,6 @@ function UrlTrackingSection() {
 const SEGMIX_TIER_COLORS = {low:"#dc2626", mid:"#d97706", high:"#059669", high_mid:"#6b7280", unknown:"#9ca3af"};
 const SEGMIX_FOCUS_COLORS = {focus:"#059669", "non-focus":"#dc2626"};
 
-function SegMixStat({label, value, sublabel}) {
-  return (
-    <div style={{...card, flex:1, minWidth:220}}>
-      <div style={{fontSize:11,color:"#9ca3af",marginBottom:4}}>{label}</div>
-      <div style={{fontSize:24,fontWeight:800,color:"#111",marginBottom:6}}>{value}</div>
-      {sublabel && <div style={{fontSize:11,color:"#9ca3af",lineHeight:1.4}}>{sublabel}</div>}
-    </div>
-  );
-}
-
 function SegMixFocusPill({val}) {
   const isFocus = val === "focus";
   return (
@@ -22826,7 +22816,18 @@ function PtySegMixTable({data, unit}) {
     (catF==="all" || r.category_name===catF) &&
     (regionF==="all" || r.region===regionF)
   );
+  // Total is computed over EVERY row matching the dropdown filters, BEFORE the long-tail trim
+  // below — the removed long-tail rows must still count toward the % denominator so the visible
+  // rows' percentages stay honest (they just don't get their own row). Long-tail threshold is on
+  // dwlTotal (the raw pre-average 30-day distinct count), not the post-average daily `dwl` figure
+  // shown elsewhere — a post-average threshold would cut far more aggressively than intended.
   const total = rows.reduce((s,r)=>s+(r[unit]||0),0);
+  // `dwlTotal` is only present once data has been regenerated with this fix — until then, don't
+  // filter (show every row) rather than defaulting a missing field to 0 and hiding everything.
+  const hasDwlTotal = rows.some(r => typeof r.dwlTotal === "number");
+  const visibleRows = hasDwlTotal ? rows.filter(r => (r.dwlTotal||0) >= 10) : rows;
+  const hiddenCount = rows.length - visibleRows.length;
+  const hiddenVal = total - visibleRows.reduce((s,r)=>s+(r[unit]||0),0);
   return (
     <div>
       <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:10}}>
@@ -22847,12 +22848,12 @@ function PtySegMixTable({data, unit}) {
               <th style={{...TH2,textAlign:"left"}}>Region</th>
               <th style={{...TH2,textAlign:"center"}}>Focus?</th>
               <th style={{...TH2,textAlign:"left"}}>Tier</th>
-              <th style={{...TH2,textAlign:"right"}}>{unit==="dwl"?"DWL":"Leads"}</th>
+              <th style={{...TH2,textAlign:"right"}}>{unit==="dwl"?"DWL/day":"Leads"}</th>
               <th style={{...TH2,textAlign:"center"}}>%</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r,i)=>{
+            {visibleRows.map((r,i)=>{
               const val = r[unit]||0, pct = total ? val/total*100 : 0;
               return (
                 <tr key={i} style={{background:i%2===0?"#fff":"#fafafa"}}>
@@ -22872,6 +22873,13 @@ function PtySegMixTable({data, unit}) {
           </tbody>
         </table>
       </div>
+      )}
+      {hiddenCount > 0 && (
+        <div style={{fontSize:11,color:"#9ca3af",marginTop:8}}>
+          + {hiddenCount} combination{hiddenCount===1?"":"s"} with under 10 total DWL over 30 days not shown
+          (still counted in the % above — combined {fmtVal(hiddenVal)} {unit==="dwl"?"DWL/day":"Leads"},
+          {" "}{total ? (hiddenVal/total*100).toFixed(1) : "0.0"}% of this view).
+        </div>
       )}
     </div>
   );
@@ -22894,7 +22902,16 @@ function JobSegMixTable({data, unit}) {
     (typeF==="all" || r.job_type===typeF) &&
     (regionF==="all" || r.region===regionF)
   );
+  // See PtySegMixTable for the rationale: total is over every filtered row BEFORE the long-tail
+  // trim, so hidden rows still count toward the % denominator; the trim itself is on dwlTotal
+  // (raw 30-day total), not the post-average daily `dwl` figure.
   const total = rows.reduce((s,r)=>s+(r[unit]||0),0);
+  // See PtySegMixTable: don't filter until `dwlTotal` actually exists in the data (i.e. until the
+  // next update_marketplace.py run has regenerated SEGMENT_MIX with this fix).
+  const hasDwlTotal = rows.some(r => typeof r.dwlTotal === "number");
+  const visibleRows = hasDwlTotal ? rows.filter(r => (r.dwlTotal||0) >= 10) : rows;
+  const hiddenCount = rows.length - visibleRows.length;
+  const hiddenVal = total - visibleRows.reduce((s,r)=>s+(r[unit]||0),0);
   return (
     <div>
       <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:10}}>
@@ -22912,12 +22929,12 @@ function JobSegMixTable({data, unit}) {
               <th style={{...TH2,textAlign:"center"}}>Focus?</th>
               <th style={{...TH2,textAlign:"left"}}>Region</th>
               <th style={{...TH2,textAlign:"center"}}>Focus?</th>
-              <th style={{...TH2,textAlign:"right"}}>{unit==="dwl"?"DWL":"Leads"}</th>
+              <th style={{...TH2,textAlign:"right"}}>{unit==="dwl"?"DWL/day":"Leads"}</th>
               <th style={{...TH2,textAlign:"center"}}>%</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r,i)=>{
+            {visibleRows.map((r,i)=>{
               const val = r[unit]||0, pct = total ? val/total*100 : 0;
               return (
                 <tr key={i} style={{background:i%2===0?"#fff":"#fafafa"}}>
@@ -22934,8 +22951,53 @@ function JobSegMixTable({data, unit}) {
         </table>
       </div>
       )}
+      {hiddenCount > 0 && (
+        <div style={{fontSize:11,color:"#9ca3af",marginTop:8}}>
+          + {hiddenCount} combination{hiddenCount===1?"":"s"} with under 10 total DWL over 30 days not shown
+          (still counted in the % above — combined {fmtVal(hiddenVal)} {unit==="dwl"?"DWL/day":"Leads"},
+          {" "}{total ? (hiddenVal/total*100).toFixed(1) : "0.0"}% of this view).
+        </div>
+      )}
     </div>
   );
+}
+
+// Trend charts (replace the two static headline snapshot cards, 2026-08-19 feedback: the owner
+// is optimizing this mix and wants to see whether it moves over time, not a single frozen ratio).
+// PTY: Let-Mid/Let-High/Sell-Mid/Sell-High (low tier excluded — chronically oversaturated already,
+// not part of the growth goal; legacy "high_mid" bucket excluded too — doesn't map onto the
+// mid/high growth story). JOB: Focus vs Non-focus job-type. Reuses the same <LineChart/> Chart.js
+// wrapper already used elsewhere on this dashboard (e.g. D12TestChart) rather than a new library.
+const SEGMIX_PTY_TREND_LINES = [
+  {key:"letMid",   label:"Let — Mid tier",   color:SEGMIX_TIER_COLORS.mid,  dash:[]},
+  {key:"letHigh",  label:"Let — High tier",  color:SEGMIX_TIER_COLORS.high, dash:[]},
+  {key:"sellMid",  label:"Sell — Mid tier",  color:SEGMIX_TIER_COLORS.mid,  dash:[6,4]},
+  {key:"sellHigh", label:"Sell — High tier", color:SEGMIX_TIER_COLORS.high, dash:[6,4]},
+];
+const SEGMIX_JOB_TREND_LINES = [
+  {key:"focus",    label:"Focus job-type",     color:SEGMIX_FOCUS_COLORS.focus,      dash:[]},
+  {key:"nonfocus", label:"Non-focus job-type", color:SEGMIX_FOCUS_COLORS["non-focus"], dash:[]},
+];
+
+function SegMixTrendChart({daily, unit, lines}) {
+  if (!daily || !daily.length) {
+    return (
+      <div style={{textAlign:"center",color:"#9ca3af",fontSize:13,padding:"40px 0"}}>
+        Chưa có dữ liệu — chạy <code>python3 scripts/update_marketplace.py</code>
+      </div>
+    );
+  }
+  const labels = daily.map(d => d.date.slice(5));
+  const suffix = unit === "dwl" ? "Dwl" : "Lead";
+  const datasets = lines.map(l => ({
+    label: l.label,
+    data: daily.map(d => d[`${l.key}${suffix}`] || 0),
+    borderColor: l.color,
+    backgroundColor: l.color,
+    borderDash: l.dash || [],
+    tension: 0.25,
+  }));
+  return <LineChart labels={labels} datasets={datasets} height={260}/>;
 }
 
 function SegmentMixSection() {
@@ -22943,23 +23005,6 @@ function SegmentMixSection() {
   const PTY = SEGMENT_MIX.PTY, JOB = SEGMENT_MIX.JOB;
   const dataAsOf = SEGMENT_MIX.dataAsOf;
   const windowDays = SEGMENT_MIX.windowDays || 30;
-
-  // Denominator matches the tier/focus breakdown bar directly below each card (sum of that
-  // specific rollup), NOT the grand total — someone active in more than one tier/focus-group on
-  // the same day is legitimately counted in each group, so a tier-rollup sum can exceed the grand
-  // total slightly. Using the grand total here would show a different % than the bar right below
-  // it for the exact same claim, which reads as inconsistent even though both numbers are "correct"
-  // for what they measure.
-  const ptyLowPct = (() => {
-    const low = (PTY.tiers.find(t=>t.tier==="low")||{})[unit] || 0;
-    const tierTotal = PTY.tiers.reduce((s,t)=>s+(t[unit]||0),0);
-    return tierTotal ? (low/tierTotal*100) : null;
-  })();
-  const jobFocusPct = (() => {
-    const focus = (JOB.focus.find(f=>f.is_focus_job_type==="focus")||{})[unit] || 0;
-    const focusTotal = JOB.focus.reduce((s,f)=>s+(f[unit]||0),0);
-    return focusTotal ? (focus/focusTotal*100) : null;
-  })();
 
   return (
     <section id="segmix">
@@ -22990,12 +23035,30 @@ function SegmentMixSection() {
         ))}
       </div>
 
-      {/* Headline KPIs */}
+      {/* Headline trend charts — replaces the old single-snapshot "Low-tier share" / "Focus
+          job-type share" cards. We're actively optimizing this mix, so the useful view is
+          whether it's moving, not one frozen ratio. Both respond to the DWL/Leads toggle above. */}
       <div style={{display:"flex",gap:16,marginBottom:20,flexWrap:"wrap"}}>
-        <SegMixStat label="PTY — Low-tier share" value={ptyLowPct==null?"—":ptyLowPct.toFixed(1)+"%"}
-          sublabel="Low tier is chronically under-supply (known pattern) — a high share here means digital demand keeps piling into an already-saturated segment instead of mid/high tier."/>
-        <SegMixStat label="JOB — Focus job-type share" value={jobFocusPct==null?"—":jobFocusPct.toFixed(1)+"%"}
-          sublabel="Share landing on JOB's 8 declared focus job types (Bán hàng, NVKD, NVPV, Tài xế giao hàng, Công nhân, NV kho vận, Bảo vệ, Tài xế ô tô)."/>
+        <div style={{...card,flex:1,minWidth:380}}>
+          <div style={{fontWeight:600,fontSize:13,marginBottom:2,color:"#374151"}}>
+            PTY — Mid/High tier {unit==="dwl"?"DWL":"Leads"} trend (Let vs Sell)
+          </div>
+          <div style={{fontSize:11,color:"#9ca3af",marginBottom:10,lineHeight:1.4}}>
+            Growth goal is more volume in mid/high price tiers — low tier is already chronically
+            oversaturated, so it's excluded here on purpose. Watch whether these 4 lines trend up.
+          </div>
+          <SegMixTrendChart daily={PTY.trend} unit={unit} lines={SEGMIX_PTY_TREND_LINES}/>
+        </div>
+        <div style={{...card,flex:1,minWidth:380}}>
+          <div style={{fontWeight:600,fontSize:13,marginBottom:2,color:"#374151"}}>
+            JOB — Focus vs Non-focus job-type {unit==="dwl"?"DWL":"Leads"} trend
+          </div>
+          <div style={{fontSize:11,color:"#9ca3af",marginBottom:10,lineHeight:1.4}}>
+            Focus = JOB's 8 declared focus job types (Bán hàng, NVKD, NVPV, Tài xế giao hàng,
+            Công nhân, NV kho vận, Bảo vệ, Tài xế ô tô).
+          </div>
+          <SegMixTrendChart daily={JOB.trend} unit={unit} lines={SEGMIX_JOB_TREND_LINES}/>
+        </div>
       </div>
 
       <div style={{fontWeight:700,fontSize:13,color:"#374151",margin:"4px 0 10px"}}>PTY</div>
