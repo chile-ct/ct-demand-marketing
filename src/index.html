@@ -22828,6 +22828,9 @@ function PtySegMixTable({data, unit}) {
   const visibleRows = hasDwlTotal ? rows.filter(r => (r.dwlTotal||0) >= 10) : rows;
   const hiddenCount = rows.length - visibleRows.length;
   const hiddenVal = total - visibleRows.reduce((s,r)=>s+(r[unit]||0),0);
+  // "DWL/day" only once the data actually carries the averaged figure (hasDwlTotal) — otherwise
+  // this column is still the pre-fix 30-day total, so don't mislabel it as a daily average.
+  const dwlLabel = unit==="dwl" ? (hasDwlTotal ? "DWL/day" : "DWL") : "Leads";
   return (
     <div>
       <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:10}}>
@@ -22848,7 +22851,7 @@ function PtySegMixTable({data, unit}) {
               <th style={{...TH2,textAlign:"left"}}>Region</th>
               <th style={{...TH2,textAlign:"center"}}>Focus?</th>
               <th style={{...TH2,textAlign:"left"}}>Tier</th>
-              <th style={{...TH2,textAlign:"right"}}>{unit==="dwl"?"DWL/day":"Leads"}</th>
+              <th style={{...TH2,textAlign:"right"}}>{dwlLabel}</th>
               <th style={{...TH2,textAlign:"center"}}>%</th>
             </tr>
           </thead>
@@ -22877,7 +22880,7 @@ function PtySegMixTable({data, unit}) {
       {hiddenCount > 0 && (
         <div style={{fontSize:11,color:"#9ca3af",marginTop:8}}>
           + {hiddenCount} combination{hiddenCount===1?"":"s"} with under 10 total DWL over 30 days not shown
-          (still counted in the % above — combined {fmtVal(hiddenVal)} {unit==="dwl"?"DWL/day":"Leads"},
+          (still counted in the % above — combined {fmtVal(hiddenVal)} {dwlLabel},
           {" "}{total ? (hiddenVal/total*100).toFixed(1) : "0.0"}% of this view).
         </div>
       )}
@@ -22912,6 +22915,7 @@ function JobSegMixTable({data, unit}) {
   const visibleRows = hasDwlTotal ? rows.filter(r => (r.dwlTotal||0) >= 10) : rows;
   const hiddenCount = rows.length - visibleRows.length;
   const hiddenVal = total - visibleRows.reduce((s,r)=>s+(r[unit]||0),0);
+  const dwlLabel = unit==="dwl" ? (hasDwlTotal ? "DWL/day" : "DWL") : "Leads";
   return (
     <div>
       <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:10}}>
@@ -22929,7 +22933,7 @@ function JobSegMixTable({data, unit}) {
               <th style={{...TH2,textAlign:"center"}}>Focus?</th>
               <th style={{...TH2,textAlign:"left"}}>Region</th>
               <th style={{...TH2,textAlign:"center"}}>Focus?</th>
-              <th style={{...TH2,textAlign:"right"}}>{unit==="dwl"?"DWL/day":"Leads"}</th>
+              <th style={{...TH2,textAlign:"right"}}>{dwlLabel}</th>
               <th style={{...TH2,textAlign:"center"}}>%</th>
             </tr>
           </thead>
@@ -22954,7 +22958,7 @@ function JobSegMixTable({data, unit}) {
       {hiddenCount > 0 && (
         <div style={{fontSize:11,color:"#9ca3af",marginTop:8}}>
           + {hiddenCount} combination{hiddenCount===1?"":"s"} with under 10 total DWL over 30 days not shown
-          (still counted in the % above — combined {fmtVal(hiddenVal)} {unit==="dwl"?"DWL/day":"Leads"},
+          (still counted in the % above — combined {fmtVal(hiddenVal)} {dwlLabel},
           {" "}{total ? (hiddenVal/total*100).toFixed(1) : "0.0"}% of this view).
         </div>
       )}
