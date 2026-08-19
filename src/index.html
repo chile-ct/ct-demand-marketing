@@ -23450,6 +23450,12 @@ function AppSidebar({sidebarView, onSelect}) {
       background:"#1e1b4b", borderRight:"1px solid rgba(255,255,255,.08)",
       display:"flex", flexDirection:"column", alignItems:"center", paddingTop:80, gap:8,
     }}>
+      {/* Section label, not a nav item — flags every entry below as a live test/experiment,
+          not a permanent dashboard section. Kiet will add more test entries under this over time. */}
+      <div style={{
+        fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em",
+        color:"#6366f1", textAlign:"center", marginBottom:2,
+      }}>Testing</div>
       {SIDEBAR_SECTIONS.map(s=>{
         const isActive = sidebarView===s.id;
         const [icon, ...rest] = s.label.split(" ");
