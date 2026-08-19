@@ -734,6 +734,280 @@ def build_segment_mix():
 print("Querying Segment Mix (PTY category x tier, JOB job_type)...")
 segment_mix = build_segment_mix()
 
+# ── 3f. Active Tests — District 12 (PTY Sell) ───────────────────────────────
+# New top-level "Active Tests" tab (holds any currently-running test/initiative going forward;
+# for now exactly one section). Two parts, stacked:
+#   Part 1 — broad channel trend: ALL traffic (no campaign-name filter) landing on a District 12
+#     PTY Sell listing, daily DAU/DWL/Lead by channel (Google/Meta/Zalo), 2026-07-24 through the
+#     latest complete day.
+#   Part 2 — named-campaign table: DAU/DWL/Lead/Cost/CP-DWL/cost-per-lead for the specific
+#     campaigns built for D12 (Google PMax, Meta old+new). By design Part 1's total must be
+#     LARGER than Part 2's combined (broad/incidental traffic vs. deliberately-targeted campaigns)
+#     — if it's ever the other way round, something is mis-scoped; check before trusting the tab.
+#
+# D12 ad filter (established 2026-08-18, see chotot-digital's context/shared/measurement/
+# warehouse-model.md hard checks + tools/queries/pty/sell-houses-q12-match-rate-reconciliation.sql):
+# city_name='Tp Hồ Chí Minh' AND district_id=13107 AND ad_type='sell' AND vertical='PTY' AND
+# category IN (1010,1020) (Houses+Apartments, both confirmed 100% PTY-exclusive category codes).
+# district_id/district_name alone are NOT city- or vertical-specific — always pair with city_name
+# AND vertical/category, or the query silently pulls in ~11 other provinces' worth of "district 12"
+# and every other vertical's "sell" listings (caused a real ~12x DWL inflation once already).
+#
+# Channel detection — verified fresh against real BigQuery data 2026-08-19 (not assumed from
+# memory), independently cross-checked a second time mid-build:
+#   Google: channelGrouping IN ('Paid Search','Display') AND source IN ('google','google_search')
+#   Meta:   source = 'facebook' (medium='display', channelGrouping='Display' — the SAME
+#           channelGrouping bucket as Google Display/PMax; `source` MUST be checked too or Meta
+#           traffic silently gets counted as Google). Confirmed on the real campaigns:
+#           fb_growth_pty_web_pro_thodia_bau_072126_atc_HCM and _sell_..._180826_HCM both show
+#           source='facebook'/medium='display'/channelGrouping='Display'.
+#   Zalo:   NO reliable campaign-specific signal found. Every `source='zalo'` row in
+#           traffic_visit_detail (campaign='zalo', medium='zalo') is generic, pre-existing organic
+#           Zalo referral/share-button traffic — confirmed present at ~11-24 DAU/day on D12 PTY
+#           Sell listings every day back through 2026-07-24, well before the new paid campaign's
+#           Aug18 launch. The new Zalo campaign (₫300k budget, Aug18-31, manually-tagged UTM) has
+#           no distinguishable utm_campaign value in the warehouse as of the data checked — using
+#           source='zalo' would misattribute years of organic baseline to the new initiative.
+#           Ships as an honest zero / "not yet detected" (not fabricated) until a real UTM shows up.
+_D12_ADS_CTE = """
+  SELECT ad_id
+  FROM `chotot-dwh.chotot_data.ad`
+  WHERE city_name = 'Tp Hồ Chí Minh' AND district_id = 13107 AND ad_type = 'sell'
+    AND vertical = 'PTY' AND category IN (1010,1020)
+"""
+
+_D12_START_DATE = '2026-07-24'
+
+_D12_TEST_PART1_SQL = f"""
+DECLARE start_date DATE DEFAULT '{_D12_START_DATE}';
+DECLARE end_date DATE DEFAULT DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY);
+
+WITH d12_ads AS ({_D12_ADS_CTE}),
+visits AS (
+  SELECT date, clientId, CAST(visitId AS STRING) AS visitId, channelGrouping, source
+  FROM `chotot-dwh.chotot_data.traffic_visit_detail`
+  WHERE date BETWEEN start_date AND end_date AND (is_bot IS NULL OR is_bot = FALSE)
+),
+channel_map AS (
+  SELECT date, clientId, visitId,
+    CASE
+      WHEN channelGrouping IN ('Paid Search','Display') AND source IN ('google','google_search') THEN 'Google'
+      WHEN source = 'facebook' THEN 'Meta'
+      ELSE 'Other'
+    END AS channel
+  FROM visits
+),
+adviews AS (
+  SELECT p.date, p.clientId, CAST(p.visitId AS STRING) AS visitId
+  FROM `chotot-dwh.chotot_data.traffic_pageview_detail` p
+  INNER JOIN d12_ads a ON p.ad_id = a.ad_id
+  WHERE p.date BETWEEN start_date AND end_date AND p.page_type IN ('adview','ad_view')
+),
+leads AS (
+  SELECT l.date, l.clientId, CAST(l.visitId AS STRING) AS visitId
+  FROM `chotot-dwh.chotot_data.traffic_lead_detail` l
+  INNER JOIN d12_ads a ON l.ad_id = a.ad_id
+  WHERE l.date BETWEEN start_date AND end_date AND l.is_bot IS NULL
+),
+dau_rows AS (
+  SELECT DISTINCT av.date, av.clientId, cm.channel
+  FROM adviews av
+  INNER JOIN channel_map cm ON av.date=cm.date AND av.clientId=cm.clientId AND av.visitId=cm.visitId
+  WHERE cm.channel IN ('Google','Meta')
+),
+dwl_rows AS (
+  SELECT DISTINCT l.date, l.clientId, cm.channel
+  FROM leads l
+  INNER JOIN channel_map cm ON l.date=cm.date AND l.clientId=cm.clientId AND l.visitId=cm.visitId
+  WHERE cm.channel IN ('Google','Meta')
+),
+lead_rows AS (
+  SELECT l.date, cm.channel, l.clientId
+  FROM leads l
+  INNER JOIN channel_map cm ON l.date=cm.date AND l.clientId=cm.clientId AND l.visitId=cm.visitId
+  WHERE cm.channel IN ('Google','Meta')
+)
+SELECT
+  COALESCE(d.date, w.date, le.date) AS date,
+  COALESCE(d.channel, w.channel, le.channel) AS channel,
+  COALESCE(d.dau,0) AS dau, COALESCE(w.dwl,0) AS dwl, COALESCE(le.lead_cnt,0) AS lead_cnt
+FROM (SELECT date, channel, COUNT(*) AS dau FROM dau_rows GROUP BY 1,2) d
+FULL OUTER JOIN (SELECT date, channel, COUNT(*) AS dwl FROM dwl_rows GROUP BY 1,2) w
+  ON d.date=w.date AND d.channel=w.channel
+FULL OUTER JOIN (SELECT date, channel, COUNT(*) AS lead_cnt FROM lead_rows GROUP BY 1,2) le
+  ON COALESCE(d.date,w.date)=le.date AND COALESCE(d.channel,w.channel)=le.channel
+ORDER BY 1,2
+"""
+
+D12_CAMPAIGNS = [
+    {'name': 'digital_dau_pty_sell_houses_q12_pmax_lead_2026',
+     'label': 'Google PMax — sell_houses_q12_pmax_lead_2026', 'channel': 'Google'},
+    {'name': 'fb_growth_pty_web_pro_thodia_bau_072126_atc_HCM',
+     'label': 'Meta (old) — fb_growth_pty_web_pro_thodia_bau_072126_atc_HCM', 'channel': 'Meta'},
+    {'name': 'fb_growth_pty_web_pro_sell_thodia_bau_180826_HCM',
+     'label': 'Meta (new) — fb_growth_pty_web_pro_sell_thodia_bau_180826_HCM', 'channel': 'Meta'},
+]
+_D12_CAMP_NAMES_SQL = ', '.join(f"'{c['name']}'" for c in D12_CAMPAIGNS)
+
+_D12_TEST_PART2_SQL = f"""
+DECLARE start_date DATE DEFAULT '{_D12_START_DATE}';
+DECLARE end_date DATE DEFAULT DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY);
+DECLARE camps ARRAY<STRING> DEFAULT [{_D12_CAMP_NAMES_SQL}];
+
+WITH d12_ads AS ({_D12_ADS_CTE}),
+visits AS (
+  SELECT date, clientId, CAST(visitId AS STRING) AS visitId, campaign
+  FROM `chotot-dwh.chotot_data.traffic_visit_detail`
+  WHERE date BETWEEN start_date AND end_date AND (is_bot IS NULL OR is_bot = FALSE)
+    AND campaign IN UNNEST(camps)
+),
+adviews AS (
+  SELECT p.date, p.clientId, CAST(p.visitId AS STRING) AS visitId
+  FROM `chotot-dwh.chotot_data.traffic_pageview_detail` p
+  INNER JOIN d12_ads a ON p.ad_id = a.ad_id
+  WHERE p.date BETWEEN start_date AND end_date AND p.page_type IN ('adview','ad_view')
+),
+leads AS (
+  SELECT l.date, l.clientId, CAST(l.visitId AS STRING) AS visitId
+  FROM `chotot-dwh.chotot_data.traffic_lead_detail` l
+  INNER JOIN d12_ads a ON l.ad_id = a.ad_id
+  WHERE l.date BETWEEN start_date AND end_date AND l.is_bot IS NULL
+),
+dau_rows AS (
+  SELECT DISTINCT av.date, av.clientId, v.campaign
+  FROM adviews av
+  INNER JOIN visits v ON av.date=v.date AND av.clientId=v.clientId AND av.visitId=v.visitId
+),
+dwl_rows AS (
+  SELECT DISTINCT l.date, l.clientId, v.campaign
+  FROM leads l
+  INNER JOIN visits v ON l.date=v.date AND l.clientId=v.clientId AND l.visitId=v.visitId
+),
+lead_rows AS (
+  SELECT l.date, v.campaign, l.clientId
+  FROM leads l
+  INNER JOIN visits v ON l.date=v.date AND l.clientId=v.clientId AND l.visitId=v.visitId
+)
+SELECT
+  c AS campaign,
+  (SELECT COUNT(*) FROM dau_rows WHERE campaign=c) AS total_dau,
+  (SELECT COUNT(*) FROM dwl_rows WHERE campaign=c) AS total_dwl,
+  (SELECT COUNT(*) FROM lead_rows WHERE campaign=c) AS total_lead
+FROM UNNEST(camps) AS c
+"""
+
+_D12_COST_SQL = f"""
+SELECT campaign, ROUND(SUM(spend_vnd)) AS cost
+FROM `chotot-dwh.ct_digital.kiet_digital_campaign_daily`
+WHERE date BETWEEN '{_D12_START_DATE}' AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+  AND campaign IN ({_D12_CAMP_NAMES_SQL})
+GROUP BY 1
+"""
+
+
+def _d12_datestr(v):
+    return v.strftime('%Y-%m-%d') if hasattr(v, 'strftime') else str(v)
+
+
+def build_d12_test():
+    """Active Tests tab — District 12 (PTY Sell). Returns None (leaving existing embedded data
+    untouched) on query failure, same pattern as build_url_tracking()/build_segment_mix()."""
+    try:
+        part1_rows = q(_D12_TEST_PART1_SQL)
+        part2_rows = q(_D12_TEST_PART2_SQL)
+        cost_rows = q(_D12_COST_SQL)
+    except Exception as e:
+        print(f"  ❌ D12 Active Test query FAILED: {type(e).__name__}: {e}")
+        return None
+
+    # Part 1 — daily series by channel. Zalo is always zero here (see header note) — no reliable
+    # campaign-specific signal exists yet, and reusing source='zalo' would fold in pre-existing
+    # organic Zalo referral traffic that has nothing to do with the new campaign.
+    by_date_channel = {}
+    dates = set()
+    for r in part1_rows:
+        d = _d12_datestr(r['date'])
+        dates.add(d)
+        by_date_channel[(d, r['channel'])] = {
+            'dau': int(r['dau'] or 0), 'dwl': int(r['dwl'] or 0), 'lead': int(r['lead_cnt'] or 0)}
+
+    daily = []
+    totals = {'Google': {'dau': 0, 'dwl': 0, 'lead': 0},
+              'Meta': {'dau': 0, 'dwl': 0, 'lead': 0},
+              'Zalo': {'dau': 0, 'dwl': 0, 'lead': 0}}
+    for d in sorted(dates):
+        row = {'date': d}
+        for ch in ('Google', 'Meta', 'Zalo'):
+            m = by_date_channel.get((d, ch), {'dau': 0, 'dwl': 0, 'lead': 0})
+            key = ch.lower()
+            row[f'{key}Dau'] = m['dau']; row[f'{key}Dwl'] = m['dwl']; row[f'{key}Lead'] = m['lead']
+            totals[ch]['dau'] += m['dau']; totals[ch]['dwl'] += m['dwl']; totals[ch]['lead'] += m['lead']
+        daily.append(row)
+
+    # Part 2 — named campaigns. DAU/DWL/Lead computed the same way as Part 1 (direct distinct-count
+    # at the campaign grain, from raw joined rows — never summed from a finer grain, per the DWL
+    # hard check in warehouse-model.md). Cost comes from kiet_digital_campaign_daily (the campaign's
+    # own total spend, not scoped to D12 — CP-DWL/cost-per-lead show how efficiently that spend
+    # produces D12-specific results).
+    cost_by_camp = {r['campaign']: float(r['cost']) for r in cost_rows if r['cost'] is not None}
+    metrics_by_camp = {r['campaign']: {'dau': int(r['total_dau'] or 0), 'dwl': int(r['total_dwl'] or 0),
+                                        'lead': int(r['total_lead'] or 0)} for r in part2_rows}
+
+    campaigns = []
+    for c in D12_CAMPAIGNS:
+        m = metrics_by_camp.get(c['name'], {'dau': 0, 'dwl': 0, 'lead': 0})
+        cost = cost_by_camp.get(c['name'])
+        cp_dwl = round(cost / m['dwl']) if (cost is not None and m['dwl']) else None
+        cp_lead = round(cost / m['lead']) if (cost is not None and m['lead']) else None
+        campaigns.append({
+            'name': c['name'], 'label': c['label'], 'channel': c['channel'],
+            'dau': m['dau'], 'dwl': m['dwl'], 'lead': m['lead'],
+            'cost': round(cost) if cost is not None else None,
+            'cpDwl': cp_dwl, 'cpLead': cp_lead, 'placeholder': False,
+        })
+    # Zalo placeholder — no identifiable campaign-specific utm_campaign value in the warehouse yet
+    # (see header note). Per this task's own instruction: don't guess, flag it instead.
+    campaigns.append({
+        'name': None, 'label': 'Zalo — new D12 campaign (₫300k, Aug18-31)', 'channel': 'Zalo',
+        'dau': None, 'dwl': None, 'lead': None, 'cost': None, 'cpDwl': None, 'cpLead': None,
+        'placeholder': True,
+        'note': "not yet identifiable in warehouse — confirm exact utm_campaign value; "
+                "source='zalo' alone matches pre-existing organic Zalo referral traffic, not this campaign",
+    })
+
+    part1_totals = totals
+    part1_sum = {k: sum(v[k] for v in totals.values()) for k in ('dau', 'dwl', 'lead')}
+    part2_sum = {k: sum((c[k] or 0) for c in campaigns) for k in ('dau', 'dwl', 'lead')}
+
+    print(f"  D12 Active Test — Part1 (all traffic) totals: "
+          f"dau={part1_sum['dau']} dwl={part1_sum['dwl']} lead={part1_sum['lead']}")
+    print(f"  D12 Active Test — Part2 (named campaigns) totals: "
+          f"dau={part2_sum['dau']} dwl={part2_sum['dwl']} lead={part2_sum['lead']}")
+    if part1_sum['dwl'] <= part2_sum['dwl']:
+        print("  ⚠️  Part1 DWL is NOT larger than Part2 DWL — investigate scoping before trusting this tab")
+    else:
+        print("  ✅ Part1 > Part2 on DWL, as expected (broad/incidental traffic vs. deliberately-targeted campaigns)")
+
+    return {
+        'dataAsOf': (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d'),
+        'startDate': _D12_START_DATE,
+        'part1': {'daily': daily, 'totals': part1_totals},
+        'part2': {'campaigns': campaigns},
+        'notes': {
+            'google': "channelGrouping IN ('Paid Search','Display') AND source IN ('google','google_search')",
+            'meta': "source='facebook' (medium='display', channelGrouping='Display' — same bucket as "
+                    "Google Display/PMax, so source must be checked too, not channelGrouping alone)",
+            'zalo': "no reliable campaign-specific signal found — source='zalo' in the warehouse is "
+                    "generic pre-existing organic Zalo referral/share traffic (campaign='zalo', "
+                    "medium='zalo'), already present daily before the new campaign's Aug18 launch, "
+                    "so it is NOT used here; shown as zero/not-detected rather than misattributed",
+        },
+    }
+
+
+print("Querying D12 Active Test (District 12 PTY Sell)...")
+d12_test = build_d12_test()
+
 # ── 4. JS generators ─────────────────────────────────────────────────────────
 def js_months():
     arr=', '.join(f'"{m}"' for m in months)
@@ -868,6 +1142,16 @@ def js_segment_mix(data):
             '// BigQuery, rolling 30-day window. See chotot-digital repo context/decisions.md D-020.\n'
             f'const SEGMENT_MIX = {body};')
 
+def js_d12_test(data):
+    """Serialize the D12_TEST dict as a JS const — same json.dumps-as-JS-literal approach as
+    js_segment_mix/js_url_tracking."""
+    body = json.dumps(data, ensure_ascii=False, indent=2)
+    return ('// Active Tests — District 12 (PTY Sell) data — auto-updated by\n'
+            '// scripts/update_marketplace.py, direct BigQuery, from 2026-07-24 through the latest\n'
+            '// complete day. See build_d12_test() in that script for the full method + channel-\n'
+            '// detection notes (Google/Meta/Zalo source verification).\n'
+            f'const D12_TEST = {body};')
+
 # ── 5. Patch src/index.html ──────────────────────────────────────────────────
 print("Patching src/index.html...")
 with open(SRC_HTML) as f: html=f.read()
@@ -906,6 +1190,14 @@ if segment_mix is not None:
     print("  SEGMENT_MIX updated")
 else:
     print("  ⚠️  SEGMENT_MIX left untouched (query failed — see error above)")
+
+if d12_test is not None:
+    _d12_js = js_d12_test(d12_test)
+    html = re.sub(r'// Active Tests[\s\S]*?const D12_TEST = \{[\s\S]*?^\};',
+                  lambda _: _d12_js, html, flags=re.MULTILINE)
+    print("  D12_TEST updated")
+else:
+    print("  ⚠️  D12_TEST left untouched (query failed — see error above)")
 
 # Patch DATA_AS_OF
 yesterday = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
