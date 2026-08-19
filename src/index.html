@@ -23318,6 +23318,15 @@ function D12TestSection() {
     dau: s.dau + (c.dau||0), dwl: s.dwl + (c.dwl||0), lead: s.lead + (c.lead||0),
   }), {dau:0,dwl:0,lead:0});
   const part1Bigger = part1Sum.dwl > part2Sum.dwl;
+  // Stat cards show AVERAGE DAILY, not the period total — a 26-day sum (e.g. 910 DWL) reads as
+  // a much bigger, confusing number next to the ~35/day people actually compare against. Days
+  // count comes from the daily series itself (dynamic, not hardcoded) so it stays correct as the
+  // window grows.
+  const nDays = (D.part1.daily && D.part1.daily.length) || 1;
+  const fmtAvg = n => {
+    const avg = n / nDays;
+    return avg < 10 ? avg.toFixed(1) : Math.round(avg).toLocaleString("en-US");
+  };
 
   return (
     <section id="tests">
@@ -23358,10 +23367,11 @@ function D12TestSection() {
                 <span style={{fontSize:11,color:"#9ca3af"}}>{ch}</span>
               </div>
               <div style={{fontSize:20,fontWeight:800,color:"#111"}}>
-                {(part1Totals[ch]?.[metric]||0).toLocaleString("en-US")}
+                {fmtAvg(part1Totals[ch]?.[metric]||0)}
+                <span style={{fontSize:12,fontWeight:600,color:"#9ca3af"}}>/day</span>
               </div>
               <div style={{fontSize:10.5,color:"#9ca3af",marginTop:2}}>
-                {metric.toUpperCase()} — {D.startDate.slice(5)} → {D.dataAsOf.slice(5)}
+                Avg daily {metric.toUpperCase()} — {D.startDate.slice(5)} → {D.dataAsOf.slice(5)} ({nDays}d)
               </div>
             </div>
           ))}
@@ -23401,6 +23411,9 @@ const TH ={padding:"8px 12px",textAlign:"right",fontSize:12,fontWeight:600,color
 const TD = {padding:"7px 12px",textAlign:"right",fontSize:12,color:"#111"};
 
 
+// VD_SECTIONS drives scroll-spy (IntersectionObserver) for ALL sections, including "tests" —
+// that section's nav ENTRY moved to a separate left sidebar (below), but it still needs to be
+// observed so `active` tracks it correctly while scrolled into view.
 const VD_SECTIONS = [
   {id:"exec",    label:"📋 Executive Summary"},
   {id:"vertical",label:"📈 By Vertical"},
@@ -23413,6 +23426,43 @@ const VD_SECTIONS = [
   {id:"tests",    label:"🧪 Active Tests"},
   {id:"cost",     label:"📝 Cost Input"},
 ];
+// Top header nav renders every section EXCEPT "tests" (that one lives in the left sidebar only).
+const TOP_NAV_SECTIONS = VD_SECTIONS.filter(s => s.id !== "tests");
+// Left sidebar renders only "tests" — a single-item, slim persistent nav surface.
+const SIDEBAR_SECTIONS = VD_SECTIONS.filter(s => s.id === "tests");
+const SIDEBAR_WIDTH = 68;
+
+function AppSidebar({active}) {
+  return (
+    <div style={{
+      position:"fixed", top:0, left:0, bottom:0, width:SIDEBAR_WIDTH, zIndex:300,
+      background:"#1e1b4b", borderRight:"1px solid rgba(255,255,255,.08)",
+      display:"flex", flexDirection:"column", alignItems:"center", paddingTop:80, gap:8,
+    }}>
+      {SIDEBAR_SECTIONS.map(s=>{
+        const isActive = active===s.id;
+        const [icon, ...rest] = s.label.split(" ");
+        const text = rest.join(" ");
+        return (
+          <a key={s.id} href={`#${s.id}`}
+            onClick={e=>{e.preventDefault();document.getElementById(s.id)?.scrollIntoView({behavior:"smooth"});}}
+            title={text}
+            style={{
+              display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+              width:52, padding:"10px 4px", borderRadius:10, textDecoration:"none",
+              background: isActive ? "rgba(99,102,241,.35)" : "transparent",
+              border: isActive ? "1px solid #818cf8" : "1px solid transparent",
+              transition:"all .15s",
+            }}>
+            <div style={{fontSize:20}}>{icon}</div>
+            <div style={{fontSize:9,fontWeight:600,textAlign:"center",lineHeight:1.25,
+              color: isActive ? "#fff" : "#a5b4fc"}}>{text}</div>
+          </a>
+        );
+      })}
+    </div>
+  );
+}
 
 function App() {
   const view = "demand";
@@ -23449,52 +23499,57 @@ function App() {
   },[view]);
 
   return (
-    <div>
-      {/* Header + Nav — single sticky block, no gap */}
-      <div style={{position:"sticky",top:0,zIndex:200}}>
-        <div style={{background:"#1e1b4b",padding:"14px 24px",display:"flex",alignItems:"center",gap:14}}>
-          <div style={{width:36,height:36,borderRadius:10,
-            background:"linear-gradient(135deg,#818cf8,#6366f1)",
-            display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>📊</div>
-          <div>
-            <div style={{fontWeight:700,fontSize:16,color:"#fff"}}>Chotot Marketplace Dashboard</div>
-            {(()=>{
-              const latestNum=parseInt(MONTHS[MONTHS.length-1].split('-')[1]);
-              const [,mm,dd]=DATA_AS_OF.split('-');
-              return <div style={{fontSize:11,color:"#a5b4fc"}}>T1~T{latestNum}/2026 · BigQuery chotot-dwh · <span style={{color:"#fbbf24"}}>T{latestNum} chưa đủ tháng, data tới {dd}/{mm}</span></div>;
-            })()}
+    <div style={{display:"flex"}}>
+      {/* Left sidebar — Active Tests only. Every other tab stays in the top header nav. */}
+      <AppSidebar active={active}/>
+
+      <div style={{flex:1,minWidth:0,marginLeft:SIDEBAR_WIDTH}}>
+        {/* Header + Nav — single sticky block, no gap */}
+        <div style={{position:"sticky",top:0,zIndex:200}}>
+          <div style={{background:"#1e1b4b",padding:"14px 24px",display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:36,height:36,borderRadius:10,
+              background:"linear-gradient(135deg,#818cf8,#6366f1)",
+              display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>📊</div>
+            <div>
+              <div style={{fontWeight:700,fontSize:16,color:"#fff"}}>Chotot Marketplace Dashboard</div>
+              {(()=>{
+                const latestNum=parseInt(MONTHS[MONTHS.length-1].split('-')[1]);
+                const [,mm,dd]=DATA_AS_OF.split('-');
+                return <div style={{fontSize:11,color:"#a5b4fc"}}>T1~T{latestNum}/2026 · BigQuery chotot-dwh · <span style={{color:"#fbbf24"}}>T{latestNum} chưa đủ tháng, data tới {dd}/{mm}</span></div>;
+              })()}
+            </div>
           </div>
+
+          {/* Sticky Nav — only for Vertical Demand. "Active Tests" excluded — lives in the left sidebar. */}
+          {view==="demand" && (
+            <nav className="sticky-nav">
+            {TOP_NAV_SECTIONS.map(s=>(
+              <a key={s.id} href={`#${s.id}`} className={active===s.id?"active":""}
+                onClick={e=>{e.preventDefault();document.getElementById(s.id)?.scrollIntoView({behavior:"smooth"});}}>
+                {s.label}
+              </a>
+            ))}
+          </nav>
+          )}
         </div>
 
-        {/* Sticky Nav — only for Vertical Demand */}
-        {view==="demand" && (
-          <nav className="sticky-nav">
-          {VD_SECTIONS.map(s=>(
-            <a key={s.id} href={`#${s.id}`} className={active===s.id?"active":""}
-              onClick={e=>{e.preventDefault();document.getElementById(s.id)?.scrollIntoView({behavior:"smooth"});}}>
-              {s.label}
-            </a>
-          ))}
-        </nav>
-        )}
+        {/* Content */}
+        {view==="demand" ? (
+          <>
+            <ExecSummary/>
+            <ChannelSection/>
+            <VerticalSection/>
+            <DetailSection/>
+            <GrowthSection costData={costData}/>
+            <CampaignSection/>
+            <UrlTrackingSection/>
+            <SegmentMixSection/>
+            <D12TestSection/>
+            <CostInputSection costData={costData} setCostData={setCostData}/>
+            <div style={{height:60}}/>
+          </>
+        ) : null}
       </div>
-
-      {/* Content */}
-      {view==="demand" ? (
-        <>
-          <ExecSummary/>
-          <ChannelSection/>
-          <VerticalSection/>
-          <DetailSection/>
-          <GrowthSection costData={costData}/>
-          <CampaignSection/>
-          <UrlTrackingSection/>
-          <SegmentMixSection/>
-          <D12TestSection/>
-          <CostInputSection costData={costData} setCostData={setCostData}/>
-          <div style={{height:60}}/>
-        </>
-      ) : null}
     </div>
   );
 }
