@@ -930,6 +930,19 @@ segment_mix = build_segment_mix()
 #           no distinguishable utm_campaign value in the warehouse as of the data checked — using
 #           source='zalo' would misattribute years of organic baseline to the new initiative.
 #           Ships as an honest zero / "not yet detected" (not fabricated) until a real UTM shows up.
+#   Push:   medium = 'pushnote' (added 2026-08-24). Tried channelGrouping='Growth' first (matches
+#           these campaigns too) but rejected it — checked the full breakdown and channelGrouping=
+#           'Growth' also covers unrelated owned-channel traffic that has nothing to do with push
+#           (a floating-button rewards banner alone was ~308K rows/7d, referral program in-app ~65K,
+#           OOH offline codes, etc.) — using it here would massively overcount. `medium='pushnote'`
+#           is what the actual ThoDia push/in-app-message campaigns carry (verified against
+#           `push_mkt_pty_ThoDia_demand_buyer_082026_tier1/2/3` and the earlier `push_mkt_all_ThoDia_*`
+#           / `inappmess_mkt_all_ThoDia_*` campaigns — both campaign types tag identically as
+#           source='onflow', medium='pushnote'). Deliberately match on `medium` alone, not
+#           `source='onflow' AND medium='pushnote'` — the known push-tagging bug (chotot-digital
+#           O-073) corrupts `source` into `onflow?utm_campaign=...` on ~13% of push sessions while
+#           leaving `medium` clean, so requiring source='onflow' too would silently undercount by
+#           that same ~13%.
 _D12_ADS_CTE = """
   SELECT ad_id
   FROM `chotot-dwh.chotot_data.ad`
@@ -945,7 +958,7 @@ DECLARE end_date DATE DEFAULT DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY);
 
 WITH d12_ads AS ({_D12_ADS_CTE}),
 visits AS (
-  SELECT date, clientId, CAST(visitId AS STRING) AS visitId, channelGrouping, source
+  SELECT date, clientId, CAST(visitId AS STRING) AS visitId, channelGrouping, source, medium
   FROM `chotot-dwh.chotot_data.traffic_visit_detail`
   WHERE date BETWEEN start_date AND end_date AND (is_bot IS NULL OR is_bot = FALSE)
 ),
@@ -954,6 +967,7 @@ channel_map AS (
     CASE
       WHEN channelGrouping IN ('Paid Search','Display') AND source IN ('google','google_search') THEN 'Google'
       WHEN source = 'facebook' THEN 'Meta'
+      WHEN medium = 'pushnote' THEN 'Push'
       ELSE 'Other'
     END AS channel
   FROM visits
@@ -974,19 +988,19 @@ dau_rows AS (
   SELECT DISTINCT av.date, av.clientId, cm.channel
   FROM adviews av
   INNER JOIN channel_map cm ON av.date=cm.date AND av.clientId=cm.clientId AND av.visitId=cm.visitId
-  WHERE cm.channel IN ('Google','Meta')
+  WHERE cm.channel IN ('Google','Meta','Push')
 ),
 dwl_rows AS (
   SELECT DISTINCT l.date, l.clientId, cm.channel
   FROM leads l
   INNER JOIN channel_map cm ON l.date=cm.date AND l.clientId=cm.clientId AND l.visitId=cm.visitId
-  WHERE cm.channel IN ('Google','Meta')
+  WHERE cm.channel IN ('Google','Meta','Push')
 ),
 lead_rows AS (
   SELECT l.date, cm.channel, l.clientId
   FROM leads l
   INNER JOIN channel_map cm ON l.date=cm.date AND l.clientId=cm.clientId AND l.visitId=cm.visitId
-  WHERE cm.channel IN ('Google','Meta')
+  WHERE cm.channel IN ('Google','Meta','Push')
 )
 SELECT
   COALESCE(d.date, w.date, le.date) AS date,
@@ -1007,6 +1021,16 @@ D12_CAMPAIGNS = [
      'label': 'Meta (old) — fb_growth_pty_web_pro_thodia_bau_072126_atc_HCM', 'channel': 'Meta'},
     {'name': 'fb_growth_pty_web_pro_sell_thodia_bau_180826_HCM',
      'label': 'Meta (new) — fb_growth_pty_web_pro_sell_thodia_bau_180826_HCM', 'channel': 'Meta'},
+    # Added 2026-08-24 — the 3 push-note tiers of the ThoDia demand-buyer push campaign, launched
+    # 2026-08-20/21/23 (tier2/tier1/tier3 respectively). No spend data exists for these in
+    # kiet_digital_campaign_daily (owned push channel, not a paid ad platform) — cost/cpDwl/cpLead
+    # render as "—" the same way Zalo's placeholder row already does.
+    {'name': 'push_mkt_pty_ThoDia_demand_buyer_082026_tier1',
+     'label': 'Push — ThoDia_demand_buyer tier1', 'channel': 'Push'},
+    {'name': 'push_mkt_pty_ThoDia_demand_buyer_082026_tier2',
+     'label': 'Push — ThoDia_demand_buyer tier2', 'channel': 'Push'},
+    {'name': 'push_mkt_pty_ThoDia_demand_buyer_082026_tier3',
+     'label': 'Push — ThoDia_demand_buyer tier3', 'channel': 'Push'},
 ]
 _D12_CAMP_NAMES_SQL = ', '.join(f"'{c['name']}'" for c in D12_CAMPAIGNS)
 
@@ -1053,7 +1077,8 @@ SELECT
   c AS campaign,
   (SELECT COUNT(*) FROM dau_rows WHERE campaign=c) AS total_dau,
   (SELECT COUNT(*) FROM dwl_rows WHERE campaign=c) AS total_dwl,
-  (SELECT COUNT(*) FROM lead_rows WHERE campaign=c) AS total_lead
+  (SELECT COUNT(*) FROM lead_rows WHERE campaign=c) AS total_lead,
+  (SELECT MIN(date) FROM visits WHERE campaign=c) AS first_date
 FROM UNNEST(camps) AS c
 """
 
@@ -1095,10 +1120,11 @@ def build_d12_test():
     daily = []
     totals = {'Google': {'dau': 0, 'dwl': 0, 'lead': 0},
               'Meta': {'dau': 0, 'dwl': 0, 'lead': 0},
+              'Push': {'dau': 0, 'dwl': 0, 'lead': 0},
               'Zalo': {'dau': 0, 'dwl': 0, 'lead': 0}}
     for d in sorted(dates):
         row = {'date': d}
-        for ch in ('Google', 'Meta', 'Zalo'):
+        for ch in ('Google', 'Meta', 'Push', 'Zalo'):
             m = by_date_channel.get((d, ch), {'dau': 0, 'dwl': 0, 'lead': 0})
             key = ch.lower()
             row[f'{key}Dau'] = m['dau']; row[f'{key}Dwl'] = m['dwl']; row[f'{key}Lead'] = m['lead']
@@ -1110,27 +1136,53 @@ def build_d12_test():
     # hard check in warehouse-model.md). Cost comes from kiet_digital_campaign_daily (the campaign's
     # own total spend, not scoped to D12 — CP-DWL/cost-per-lead show how efficiently that spend
     # produces D12-specific results).
+    #
+    # 2026-08-24: dau/dwl/lead/cost below are now DAILY AVERAGES, not period totals. A raw sum
+    # (e.g. 328 DWL) reads as a much bigger number than the "X/day" figures used everywhere else on
+    # this tab (Part 1's stat cards), and worse, it silently favors whichever campaign has been
+    # running longest — comparing a campaign live since Jul24 against one launched Aug23 on raw
+    # totals isn't a fair read. The divisor is each campaign's OWN active-days count
+    # (dataAsOf - first_date + 1), not a single global window, since these campaigns launched on
+    # very different dates (Google PMax/Meta old predate this tab's Jul24 start; Meta new is
+    # Aug18; the 3 push tiers are Aug20/21/23). CP-DWL/cost-per-lead are untouched — they're already
+    # ratios of totals over the same date range, so averaging both sides changes nothing (the shared
+    # divisor cancels out).
     cost_by_camp = {r['campaign']: float(r['cost']) for r in cost_rows if r['cost'] is not None}
     metrics_by_camp = {r['campaign']: {'dau': int(r['total_dau'] or 0), 'dwl': int(r['total_dwl'] or 0),
-                                        'lead': int(r['total_lead'] or 0)} for r in part2_rows}
+                                        'lead': int(r['total_lead'] or 0), 'first_date': r['first_date']}
+                        for r in part2_rows}
+    data_as_of_date = datetime.date.today() - datetime.timedelta(days=1)
 
     campaigns = []
     for c in D12_CAMPAIGNS:
-        m = metrics_by_camp.get(c['name'], {'dau': 0, 'dwl': 0, 'lead': 0})
+        m = metrics_by_camp.get(c['name'], {'dau': 0, 'dwl': 0, 'lead': 0, 'first_date': None})
         cost = cost_by_camp.get(c['name'])
+        # active_days: from this campaign's own first day of D12-matched traffic through dataAsOf.
+        # Falls back to 1 (no averaging) if the campaign has zero matched traffic at all yet.
+        active_days = (data_as_of_date - m['first_date']).days + 1 if m['first_date'] else 1
+        active_days = max(active_days, 1)
+        dau_avg = m['dau'] / active_days
+        dwl_avg = m['dwl'] / active_days
+        lead_avg = m['lead'] / active_days
+        cost_avg = (cost / active_days) if cost is not None else None
         cp_dwl = round(cost / m['dwl']) if (cost is not None and m['dwl']) else None
         cp_lead = round(cost / m['lead']) if (cost is not None and m['lead']) else None
         campaigns.append({
             'name': c['name'], 'label': c['label'], 'channel': c['channel'],
-            'dau': m['dau'], 'dwl': m['dwl'], 'lead': m['lead'],
-            'cost': round(cost) if cost is not None else None,
+            'dau': round(dau_avg, 1), 'dwl': round(dwl_avg, 1), 'lead': round(lead_avg, 1),
+            'cost': round(cost_avg) if cost_avg is not None else None,
             'cpDwl': cp_dwl, 'cpLead': cp_lead, 'placeholder': False,
+            'activeDays': active_days,
+            # Raw period totals, kept for the Part1-vs-Part2 sanity check below — NOT rendered in
+            # the table (that shows the daily averages above).
+            'dwlTotal': m['dwl'], 'dauTotal': m['dau'], 'leadTotal': m['lead'],
         })
     # Zalo placeholder — no identifiable campaign-specific utm_campaign value in the warehouse yet
     # (see header note). Per this task's own instruction: don't guess, flag it instead.
     campaigns.append({
         'name': None, 'label': 'Zalo — new D12 campaign (₫300k, Aug18-31)', 'channel': 'Zalo',
         'dau': None, 'dwl': None, 'lead': None, 'cost': None, 'cpDwl': None, 'cpLead': None,
+        'dwlTotal': 0, 'dauTotal': 0, 'leadTotal': 0,
         'placeholder': True,
         'note': "not yet identifiable in warehouse — confirm exact utm_campaign value; "
                 "source='zalo' alone matches pre-existing organic Zalo referral traffic, not this campaign",
@@ -1138,7 +1190,12 @@ def build_d12_test():
 
     part1_totals = totals
     part1_sum = {k: sum(v[k] for v in totals.values()) for k in ('dau', 'dwl', 'lead')}
-    part2_sum = {k: sum((c[k] or 0) for c in campaigns) for k in ('dau', 'dwl', 'lead')}
+    # Part2's dau/dwl/lead fields are now daily AVERAGES (see above) — this sanity check needs the
+    # raw period TOTALS instead, or a fast-growing campaign roster with short histories would make
+    # Part2's sum look artificially small and always pass. Use the *Total fields kept for this purpose.
+    part2_sum = {'dau': sum(c['dauTotal'] for c in campaigns),
+                 'dwl': sum(c['dwlTotal'] for c in campaigns),
+                 'lead': sum(c['leadTotal'] for c in campaigns)}
 
     print(f"  D12 Active Test — Part1 (all traffic) totals: "
           f"dau={part1_sum['dau']} dwl={part1_sum['dwl']} lead={part1_sum['lead']}")
@@ -1158,6 +1215,9 @@ def build_d12_test():
             'google': "channelGrouping IN ('Paid Search','Display') AND source IN ('google','google_search')",
             'meta': "source='facebook' (medium='display', channelGrouping='Display' — same bucket as "
                     "Google Display/PMax, so source must be checked too, not channelGrouping alone)",
+            'push': "medium='pushnote' (not channelGrouping='Growth', which also covers unrelated "
+                    "owned-channel traffic like referral programs and floating-button banners — "
+                    "'pushnote' is what the actual push/in-app-message campaigns carry)",
             'zalo': "no reliable campaign-specific signal found — source='zalo' in the warehouse is "
                     "generic pre-existing organic Zalo referral/share traffic (campaign='zalo', "
                     "medium='zalo'), already present daily before the new campaign's Aug18 launch, "
