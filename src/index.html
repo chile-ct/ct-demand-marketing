@@ -24774,7 +24774,7 @@ function D12TestSection() {
 // funnel baselines) to compare against once real delivery data exists. Numbers below are frozen at
 // pull time — update by hand after re-pulling, this is not wired to a live query.
 const AGENT_SHOWCASE_TEST = {
-  status: "Live — Google PMax & Meta built 2026-08-26, no delivery data yet. Demand Gen building.",
+  status: "Setup complete 2026-08-26 — all 3 legs live (Google PMax, Meta, Google Demand Gen). Waiting on delivery data to check against baseline.",
   ticket: "PTY-AGENT-SHOWCASE-2026-08",
   scope: "PTY Sell House only",
   hypothesis: "Agent-recorded video content sourced from other social platforms (TikTok/Facebook), " +
@@ -24784,16 +24784,17 @@ const AGENT_SHOWCASE_TEST = {
     {channel:"Google PMax", campaign:"gg_growth_pty_demand_sell_pmax_agentkoc_bau_082426", state:"live",
      detail:"One asset group → collection hub chotot.com/hashtag/xem-nha-cung-moi-gioi. Hub confirmed live (page_type='video_standalone_list'), not a dead/wrong destination. No kiet_digital_campaign_daily rows yet (just built)."},
     {channel:"Meta", campaign:"fb_growth_pty_demand_agentkoc_bau_082426_hcm", state:"live",
-     detail:"Destination fix confirmed: drives to each video's own on-platform page, not the agent's profile/shop_front (the precedent's mistake). Ad-set structure unconfirmed — see flag below."},
-    {channel:"Google Demand Gen", campaign:"1 campaign per agent video (not yet named)", state:"building",
-     detail:"Kiet building now — add campaign name(s) to the tracking query once live."},
+     detail:"Destination fix confirmed: drives to each video's own on-platform page, not the agent's profile/shop_front (the precedent's mistake). Ad-set structure confirmed one-ad-set-per-video; daily budget raised SGD 3.00 → SGD 7.00/ad set as a partial mitigation against O-067-A-style fragmentation — see note below."},
+    {channel:"Google Demand Gen", campaign:"gg_growth_pty_demand_sell_demandgen_agentkoc_bau_082426", state:"live",
+     detail:"One campaign, one ad group per agent, each driving to that agent's own video page — same destination pattern as the PMax hub and Meta leg. Deviates from the original 2026-08-25 plan (one campaign per video), but Google ad groups don't carry their own budget cap the way Meta ad sets do, so this doesn't repeat the Meta fragmentation risk."},
   ],
-  flag: "Open, unresolved: Kiet described the Meta build as \"each ad group = one video\" — an ad " +
-    "group is a Meta ad set, the opposite of the 2026-08-25 decision (one pooled ad set, each video " +
-    "as a separate ad, made specifically to avoid repeating O-067-A's budget-fragmentation failure). " +
-    "Not yet confirmed whether this is a deliberate override, a terminology mix-up, or what the " +
-    "per-ad-set budget is if it's genuinely one-ad-set-per-video. Don't read this campaign's funnel " +
-    "numbers as a verdict on the destination fix until this is answered.",
+  flag: "Resolved 2026-08-26: Kiet confirmed the Meta build genuinely is one ad set per agent video " +
+    "(not a terminology mix-up), and raised each ad set's daily budget from SGD 3.00 to SGD 7.00 — " +
+    "more than double the O-067-A precedent's SGD 3.00/day that produced ~0 DWL across 5 ad sets. " +
+    "This is a mitigation, not a confirmed fix: no documented PTY Meta cost-per-lead figure exists to " +
+    "check SGD 7/day against the ~15-25 conversions/week/ad-set threshold Meta needs to exit learning " +
+    "— that can only be settled once real delivery data lands. Don't read Meta's funnel numbers as a " +
+    "final verdict until each ad set's actual weekly conversion count is checked against that threshold.",
   rootCause: "Independently verified by Mobu 2026-08-26: the direct Meta precedent's near-total " +
     "funnel collapse was a landing-page/routing problem, not (necessarily) a content-resonance one — " +
     "99.7% of its sessions landed on page_type='shop_front' (an agent storefront page), confirmed via " +
@@ -24830,10 +24831,11 @@ const AGENT_SHOWCASE_TEST = {
       "Meta lead objective: no clean Sell House baseline exists either. The agentKOC precedent above (0 DWL) and the current D12 lead campaign (1 DWL on 130 DAU) are the only two data points, and neither proves the channel works yet for this segment.",
     ],
   },
-  next: "Get Kiet's answer on the Meta ad-set-structure flag above before judging any Meta funnel " +
-    "numbers. Once Demand Gen is live, add its campaign name(s) to the tracking query and re-run. " +
-    "Compare CTR/CP-DAU/CP-DWL and the funnel metrics (bounce/adviews/login) per channel against " +
-    "these baselines — true CP-DWL (warehouse), not platform-reported conversions.",
+  next: "Setup is done — all 3 legs live, tracking query set, and this brief in place. Come back once " +
+    "delivery data lands: re-run the tracking query (tools/queries/pty/agent-showcase-funnel-" +
+    "tracking.sql) for CTR/CP-DAU/CP-DWL and the funnel metrics (bounce/adviews/login) per channel, " +
+    "compare against these baselines — true CP-DWL (warehouse), not platform-reported conversions — " +
+    "and check Meta's actual weekly conversions per ad set against the ~15-25 threshold.",
 };
 
 function AgentShowcaseTestSection() {
@@ -24842,7 +24844,7 @@ function AgentShowcaseTestSection() {
     <section id="agentShowcase">
       <div className="section-title">🎬 Agent Showcase Creative</div>
       <div style={{fontSize:11,color:"#9ca3af",marginBottom:16}}>
-        {D.ticket} · {D.scope} · <span style={{color:"#f59e0b",fontWeight:600}}>{D.status}</span>
+        {D.ticket} · {D.scope} · <span style={{color:"#059669",fontWeight:600}}>{D.status}</span>
       </div>
 
       <div style={{...card,marginBottom:20}}>
@@ -24866,9 +24868,9 @@ function AgentShowcaseTestSection() {
         ))}
       </div>
 
-      <div style={{...card,marginBottom:20,background:"#fef2f2",border:"1px solid #fecaca"}}>
-        <div style={{fontWeight:700,fontSize:12.5,marginBottom:4,color:"#991b1b"}}>🚩 Open flag — unresolved</div>
-        <div style={{fontSize:12,color:"#7f1d1d",lineHeight:1.6}}>{D.flag}</div>
+      <div style={{...card,marginBottom:20,background:"#eff6ff",border:"1px solid #bfdbfe"}}>
+        <div style={{fontWeight:700,fontSize:12.5,marginBottom:4,color:"#1e40af"}}>✅ Meta ad-set-structure flag — resolved (mitigation, not proof)</div>
+        <div style={{fontSize:12,color:"#1e3a8a",lineHeight:1.6}}>{D.flag}</div>
       </div>
 
       <div style={{...card,marginBottom:20}}>
