@@ -24786,6 +24786,138 @@ function D12TestSection() {
   );
 }
 
+// PTY-AGENT-SHOWCASE-2026-08: scoped 2026-08-25, not launched yet — no live campaign data exists,
+// so unlike D12TestSection this renders a static plan + baseline snapshot (hypothesis, Google/Meta
+// build plan, direct Meta precedent, pre-launch CTR/CP-DAU/CP-DWL baselines) to compare against once
+// the campaigns go live. Numbers below are frozen at pull time (2026-08-25) — update by hand after
+// re-pulling, this is not wired to a live query.
+const AGENT_SHOWCASE_TEST = {
+  status: "Scoped — not launched",
+  ticket: "PTY-AGENT-SHOWCASE-2026-08",
+  scope: "PTY Sell House only",
+  hypothesis: "Agent-recorded video content sourced from other social platforms (TikTok/Facebook), " +
+    "consent obtained, already resonates organically. Hypothesis: running it as paid creative lifts " +
+    "click and lead behavior versus existing creative.",
+  plan: {
+    google: [
+      "1 PMax campaign combining all agent videos → xem-nha-cung-moi-gioi collection URL",
+      "1 Demand Gen campaign per agent video → that video's own on-platform page",
+    ],
+    meta: [
+      "1 pooled ad set for all agent creatives (each video as a separate ad within it) — not one ad set per video",
+      "Optimizing to the real lead/contact conversion event, with real budget behind it",
+    ],
+  },
+  lesson: "Applies the O-067-A lesson directly: a sibling Meta campaign already switched to a genuine " +
+    "lead-conversion event but still shows ~0 DWL, because its 5 ad sets are each capped at SGD 3/day — " +
+    "splitting an already-narrow signal 5 ways, nowhere near the ~15-25 conversions/week per ad set Meta " +
+    "needs to learn. Don't repeat that by giving every agent video its own tiny ad set.",
+  precedent: {
+    name: "fb_growth_pty_web_pro_agentKOC_bau_090826_traffic",
+    window: "Aug 5–24 (20d)",
+    spend: "₫1,962,101", ctr: "7.25%", clicks: "6,237 / 86,009 impr",
+    dau: "5,299", cpDau: "₫370", dwl: "0", leads: "0",
+    note: "High engagement, zero lead conversion — reads as a traffic/page-view objective, not a lead objective.",
+  },
+  baselines: {
+    asOf: "Pulled 2026-08-25 from kiet_digital_campaign_daily (warehouse DAU/DWL, not platform-reported), PTY Sell House, Jul 27–Aug 24 (29d)",
+    rows: [
+      {channel:"Google PMax (blended, 3 campaigns)", spend:"₫31.8M", ctr:"5.39%", dau:"26,313", cpDau:"₫1,209", dwl:"2,457", cpDwl:"₫12,950", usable:true},
+      {channel:"Google DSA (blended, 2 campaigns)", spend:"₫39.7M", ctr:"29.95%", dau:"15,164", cpDau:"₫2,617", dwl:"1,454", cpDwl:"₫27,304", usable:true},
+      {channel:"Google Search (2 campaigns)", spend:"—", ctr:"—", dau:"—", cpDau:"—", dwl:"1", cpDwl:"~₫4.0M", usable:false},
+    ],
+    notes: [
+      "Google Search: known-inefficient (O-068) — CP-DWL ~₫4.0M on 1 real DWL. Not a usable baseline, shown for completeness only.",
+      "Google Demand Gen: no Sell House Demand Gen campaign exists yet (only Let has one) — this test's Demand Gen line has no in-house precedent; treat its first numbers as new information, not a pass/fail.",
+      "Meta lead objective: no clean Sell House baseline exists either. The agentKOC precedent above (0 DWL) and the current D12 lead campaign (1 DWL on 130 DAU) are the only two data points, and neither proves the channel works yet for this segment.",
+    ],
+  },
+  next: "Decide Meta ad-set structure + per-ad-set budget, then build. Once live, re-pull the same " +
+    "CTR / CP-DAU / CP-DWL lines per channel for the actual pre/post read — true CP-DWL (warehouse), " +
+    "not platform-reported conversions.",
+};
+
+function AgentShowcaseTestSection() {
+  const D = AGENT_SHOWCASE_TEST;
+  return (
+    <section id="agentShowcase">
+      <div className="section-title">🎬 Agent Showcase Creative</div>
+      <div style={{fontSize:11,color:"#9ca3af",marginBottom:16}}>
+        {D.ticket} · {D.scope} · <span style={{color:"#f59e0b",fontWeight:600}}>{D.status}</span>
+      </div>
+
+      <div style={{...card,marginBottom:20}}>
+        <div style={{fontWeight:700,fontSize:14,marginBottom:8,color:"#1f2937"}}>Hypothesis</div>
+        <div style={{fontSize:12.5,color:"#374151",lineHeight:1.6}}>{D.hypothesis}</div>
+      </div>
+
+      <div style={{display:"flex",gap:16,marginBottom:20,flexWrap:"wrap"}}>
+        <div style={{...card,flex:1,minWidth:280}}>
+          <div style={{fontWeight:700,fontSize:13,marginBottom:8,color:"#4285F4"}}>Google</div>
+          <ul style={{margin:0,paddingLeft:18,fontSize:12,color:"#374151",lineHeight:1.7}}>
+            {D.plan.google.map((l,i)=><li key={i}>{l}</li>)}
+          </ul>
+        </div>
+        <div style={{...card,flex:1,minWidth:280}}>
+          <div style={{fontWeight:700,fontSize:13,marginBottom:8,color:"#8b5cf6"}}>Meta</div>
+          <ul style={{margin:0,paddingLeft:18,fontSize:12,color:"#374151",lineHeight:1.7}}>
+            {D.plan.meta.map((l,i)=><li key={i}>{l}</li>)}
+          </ul>
+        </div>
+      </div>
+
+      <div style={{...card,marginBottom:20,background:"#fffbeb",border:"1px solid #fde68a"}}>
+        <div style={{fontWeight:700,fontSize:12.5,marginBottom:4,color:"#92400e"}}>⚠ Lesson applied (O-067-A)</div>
+        <div style={{fontSize:12,color:"#78350f",lineHeight:1.6}}>{D.lesson}</div>
+      </div>
+
+      <div style={{...card,marginBottom:20}}>
+        <div style={{fontWeight:700,fontSize:14,marginBottom:4,color:"#1f2937"}}>Direct precedent — Meta</div>
+        <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>{D.precedent.name} · {D.precedent.window}</div>
+        <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:10}}>
+          {[["Spend",D.precedent.spend],["CTR",D.precedent.ctr],["Clicks",D.precedent.clicks],
+            ["DAU",D.precedent.dau],["CP-DAU",D.precedent.cpDau],["DWL",D.precedent.dwl],["Leads",D.precedent.leads]]
+            .map(([label,val])=>(
+            <div key={label} style={{minWidth:90}}>
+              <div style={{fontSize:10,color:"#9ca3af"}}>{label}</div>
+              <div style={{fontSize:15,fontWeight:700,color:(label==="DWL"||label==="Leads")?"#dc2626":"#111"}}>{val}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{fontSize:11.5,color:"#6b7280",lineHeight:1.5}}>{D.precedent.note}</div>
+      </div>
+
+      <div style={{...card}}>
+        <div style={{fontWeight:700,fontSize:14,marginBottom:4,color:"#1f2937"}}>Pre-launch baselines (for pre/post comparison)</div>
+        <div style={{fontSize:11,color:"#9ca3af",marginBottom:14}}>{D.baselines.asOf}</div>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr>
+            {["Channel","Spend","CTR","DAU","CP-DAU","DWL","CP-DWL"].map(h=>(
+              <th key={h} style={h==="Channel"?{...TH,textAlign:"left"}:TH}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {D.baselines.rows.map(r=>(
+              <tr key={r.channel} style={{opacity:r.usable?1:0.55}}>
+                <td style={{...TD,textAlign:"left",fontWeight:600}}>{r.channel}</td>
+                <td style={TD}>{r.spend}</td><td style={TD}>{r.ctr}</td><td style={TD}>{r.dau}</td>
+                <td style={TD}>{r.cpDau}</td><td style={TD}>{r.dwl}</td>
+                <td style={{...TD,fontWeight:700}}>{r.cpDwl}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div style={{fontSize:11,color:"#6b7280",marginTop:14,lineHeight:1.7}}>
+          {D.baselines.notes.map((n,i)=>(<div key={i} style={{marginBottom:4}}>• {n}</div>))}
+        </div>
+        <div style={{fontSize:11.5,marginTop:14,padding:"10px 12px",borderRadius:8,background:"#eef2ff",color:"#4338ca"}}>
+          <b>Next:</b> {D.next}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── MAIN ────────────────────────────────────────────────────────────────────
 const TH ={padding:"8px 12px",textAlign:"right",fontSize:12,fontWeight:600,color:"#6b7280",borderBottom:"2px solid #e5e7eb"};
 const TD = {padding:"7px 12px",textAlign:"right",fontSize:12,color:"#111"};
@@ -24810,8 +24942,11 @@ const VD_SECTIONS = [
   {id:"segmix",   label:"🎯 Segment Mix"},
   {id:"cost",     label:"📝 Cost Input"},
 ];
-// Left sidebar — single item, its own exclusive view (not an anchor into the scrolling page).
-const SIDEBAR_SECTIONS = [{id:"tests", label:"🧪 D12 Thổ Địa"}];
+// Left sidebar — each item is its own exclusive view (not an anchor into the scrolling page).
+const SIDEBAR_SECTIONS = [
+  {id:"tests", label:"🧪 D12 Thổ Địa"},
+  {id:"agentShowcase", label:"🎬 Agent Showcase"},
+];
 const SIDEBAR_WIDTH = 68;
 
 function AppSidebar({sidebarView, onSelect}) {
@@ -24855,9 +24990,9 @@ function AppSidebar({sidebarView, onSelect}) {
 function App() {
   const view = "demand";
   const [active, setActive] = useState("exec");
-  // sidebarView: null = normal scrolling dashboard (9 header tabs, unchanged); "tests" = D12's
-  // own EXCLUSIVE view — only <D12TestSection/> renders in the main canvas, nothing from any
-  // header tab is present in the DOM at all (not just scrolled away from).
+  // sidebarView: null = normal scrolling dashboard (9 header tabs, unchanged); any SIDEBAR_SECTIONS
+  // id = that test's own EXCLUSIVE view — only its section component renders in the main canvas,
+  // nothing from any header tab is present in the DOM at all (not just scrolled away from).
   const [sidebarView, setSidebarView] = useState(null);
   const [costData, setCostData] = useState(()=>{
     try{
@@ -24912,14 +25047,15 @@ function App() {
 
   return (
     <div style={{display:"flex"}}>
-      {/* Left sidebar — D12 Thổ Địa only. Every other tab stays in the top header nav. */}
+      {/* Left sidebar — Testing views (D12 Thổ Địa, Agent Showcase, ...). Every other tab stays
+          in the top header nav. */}
       <AppSidebar sidebarView={sidebarView} onSelect={setSidebarView}/>
 
       <div style={{flex:1,minWidth:0,marginLeft:SIDEBAR_WIDTH}}>
-        {sidebarView === "tests" ? (
-          /* EXCLUSIVE VIEW — only D12TestSection renders below. None of the 9 dashboard
-             sections (ExecSummary, ChannelSection, ... CostInputSection) or the top sticky-nav
-             are mounted here at all, so nothing from any other tab is present in the DOM. */
+        {sidebarView ? (
+          /* EXCLUSIVE VIEW — only the selected test's section renders below. None of the 9
+             dashboard sections (ExecSummary, ChannelSection, ... CostInputSection) or the top
+             sticky-nav are mounted here at all, so nothing from any other tab is present in the DOM. */
           <>
             <div style={{position:"sticky",top:0,zIndex:200}}>
               <HeaderBar>
@@ -24930,7 +25066,8 @@ function App() {
                 }}>← Back to Dashboard</button>
               </HeaderBar>
             </div>
-            <D12TestSection/>
+            {sidebarView === "tests" && <D12TestSection/>}
+            {sidebarView === "agentShowcase" && <AgentShowcaseTestSection/>}
             <div style={{height:60}}/>
           </>
         ) : (
