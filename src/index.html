@@ -24786,38 +24786,54 @@ function D12TestSection() {
   );
 }
 
-// PTY-AGENT-SHOWCASE-2026-08: scoped 2026-08-25, not launched yet — no live campaign data exists,
-// so unlike D12TestSection this renders a static plan + baseline snapshot (hypothesis, Google/Meta
-// build plan, direct Meta precedent, pre-launch CTR/CP-DAU/CP-DWL baselines) to compare against once
-// the campaigns go live. Numbers below are frozen at pull time (2026-08-25) — update by hand after
-// re-pulling, this is not wired to a live query.
+// PTY-AGENT-SHOWCASE-2026-08: scoped 2026-08-25, Google PMax + Meta built 2026-08-26 (Demand Gen
+// still building) — so unlike D12TestSection this renders a static plan + baseline snapshot
+// (hypothesis, build status, Google/Meta plan, root-cause finding on the direct Meta precedent,
+// funnel baselines) to compare against once real delivery data exists. Numbers below are frozen at
+// pull time — update by hand after re-pulling, this is not wired to a live query.
 const AGENT_SHOWCASE_TEST = {
-  status: "Scoped — not launched",
+  status: "Live — Google PMax & Meta built 2026-08-26, no delivery data yet. Demand Gen building.",
   ticket: "PTY-AGENT-SHOWCASE-2026-08",
   scope: "PTY Sell House only",
   hypothesis: "Agent-recorded video content sourced from other social platforms (TikTok/Facebook), " +
     "consent obtained, already resonates organically. Hypothesis: running it as paid creative lifts " +
     "click and lead behavior versus existing creative.",
-  plan: {
-    google: [
-      "1 PMax campaign combining all agent videos → xem-nha-cung-moi-gioi collection URL",
-      "1 Demand Gen campaign per agent video → that video's own on-platform page",
-    ],
-    meta: [
-      "1 pooled ad set for all agent creatives (each video as a separate ad within it) — not one ad set per video",
-      "Optimizing to the real lead/contact conversion event, with real budget behind it",
-    ],
-  },
-  lesson: "Applies the O-067-A lesson directly: a sibling Meta campaign already switched to a genuine " +
-    "lead-conversion event but still shows ~0 DWL, because its 5 ad sets are each capped at SGD 3/day — " +
-    "splitting an already-narrow signal 5 ways, nowhere near the ~15-25 conversions/week per ad set Meta " +
-    "needs to learn. Don't repeat that by giving every agent video its own tiny ad set.",
+  build: [
+    {channel:"Google PMax", campaign:"gg_growth_pty_demand_sell_pmax_agentkoc_bau_082426", state:"live",
+     detail:"One asset group → collection hub chotot.com/hashtag/xem-nha-cung-moi-gioi. Hub confirmed live (page_type='video_standalone_list'), not a dead/wrong destination. No kiet_digital_campaign_daily rows yet (just built)."},
+    {channel:"Meta", campaign:"fb_growth_pty_demand_agentkoc_bau_082426_hcm", state:"live",
+     detail:"Destination fix confirmed: drives to each video's own on-platform page, not the agent's profile/shop_front (the precedent's mistake). Ad-set structure unconfirmed — see flag below."},
+    {channel:"Google Demand Gen", campaign:"1 campaign per agent video (not yet named)", state:"building",
+     detail:"Kiet building now — add campaign name(s) to the tracking query once live."},
+  ],
+  flag: "Open, unresolved: Kiet described the Meta build as \"each ad group = one video\" — an ad " +
+    "group is a Meta ad set, the opposite of the 2026-08-25 decision (one pooled ad set, each video " +
+    "as a separate ad, made specifically to avoid repeating O-067-A's budget-fragmentation failure). " +
+    "Not yet confirmed whether this is a deliberate override, a terminology mix-up, or what the " +
+    "per-ad-set budget is if it's genuinely one-ad-set-per-video. Don't read this campaign's funnel " +
+    "numbers as a verdict on the destination fix until this is answered.",
+  rootCause: "Independently verified by Mobu 2026-08-26: the direct Meta precedent's near-total " +
+    "funnel collapse was a landing-page/routing problem, not (necessarily) a content-resonance one — " +
+    "99.7% of its sessions landed on page_type='shop_front' (an agent storefront page), confirmed via " +
+    "the real GA4 landingScreenName to resolve to nhatot.com/moi-gioi-quan-vu, not a video page — " +
+    "despite the campaign's stated intent to drive to the video's own page. The 0-adview result is " +
+    "real, not a tagging artifact (24.4% of shop_front-landing sessions sitewide do have adviews). " +
+    "The new Meta build above fixes exactly this destination.",
   precedent: {
     name: "fb_growth_pty_web_pro_agentKOC_bau_090826_traffic",
     window: "Aug 5–24 (20d)",
     spend: "₫1,962,101", ctr: "7.25%", clicks: "6,237 / 86,009 impr",
     dau: "5,299", cpDau: "₫370", dwl: "0", leads: "0",
-    note: "High engagement, zero lead conversion — reads as a traffic/page-view objective, not a lead objective.",
+    note: "High engagement, zero lead conversion — full-funnel read below shows why.",
+  },
+  funnels: {
+    asOf: "Full-funnel baselines pulled 2026-08-26 (traffic_visit_detail + lead join per D-021), two representative Sell House campaigns",
+    rows: [
+      {name:"Google PMax — digital_dau_pty_sell_houses_hcm_pmax_lead_2026 (largest live Sell House PMax, HCM, Jul27-Aug24)",
+       sessions:"25,678", bounce:"31.0%", adviews:"1.66/session", login:"26.6%", dwl:"1,732", cpDwl:"~₫12,850"},
+      {name:"Meta — fb_growth_pty_web_pro_agentKOC_bau_090826_traffic (direct precedent, Aug5-24)",
+       sessions:"5,514", bounce:"95.1%", adviews:"0", login:"0%", dwl:"0", cpDwl:"—", bad:true},
+    ],
   },
   baselines: {
     asOf: "Pulled 2026-08-25 from kiet_digital_campaign_daily (warehouse DAU/DWL, not platform-reported), PTY Sell House, Jul 27–Aug 24 (29d)",
@@ -24832,9 +24848,10 @@ const AGENT_SHOWCASE_TEST = {
       "Meta lead objective: no clean Sell House baseline exists either. The agentKOC precedent above (0 DWL) and the current D12 lead campaign (1 DWL on 130 DAU) are the only two data points, and neither proves the channel works yet for this segment.",
     ],
   },
-  next: "Decide Meta ad-set structure + per-ad-set budget, then build. Once live, re-pull the same " +
-    "CTR / CP-DAU / CP-DWL lines per channel for the actual pre/post read — true CP-DWL (warehouse), " +
-    "not platform-reported conversions.",
+  next: "Get Kiet's answer on the Meta ad-set-structure flag above before judging any Meta funnel " +
+    "numbers. Once Demand Gen is live, add its campaign name(s) to the tracking query and re-run. " +
+    "Compare CTR/CP-DAU/CP-DWL and the funnel metrics (bounce/adviews/login) per channel against " +
+    "these baselines — true CP-DWL (warehouse), not platform-reported conversions.",
 };
 
 function AgentShowcaseTestSection() {
@@ -24851,24 +24868,25 @@ function AgentShowcaseTestSection() {
         <div style={{fontSize:12.5,color:"#374151",lineHeight:1.6}}>{D.hypothesis}</div>
       </div>
 
-      <div style={{display:"flex",gap:16,marginBottom:20,flexWrap:"wrap"}}>
-        <div style={{...card,flex:1,minWidth:280}}>
-          <div style={{fontWeight:700,fontSize:13,marginBottom:8,color:"#4285F4"}}>Google</div>
-          <ul style={{margin:0,paddingLeft:18,fontSize:12,color:"#374151",lineHeight:1.7}}>
-            {D.plan.google.map((l,i)=><li key={i}>{l}</li>)}
-          </ul>
-        </div>
-        <div style={{...card,flex:1,minWidth:280}}>
-          <div style={{fontWeight:700,fontSize:13,marginBottom:8,color:"#8b5cf6"}}>Meta</div>
-          <ul style={{margin:0,paddingLeft:18,fontSize:12,color:"#374151",lineHeight:1.7}}>
-            {D.plan.meta.map((l,i)=><li key={i}>{l}</li>)}
-          </ul>
-        </div>
+      <div style={{...card,marginBottom:20}}>
+        <div style={{fontWeight:700,fontSize:14,marginBottom:10,color:"#1f2937"}}>Build status</div>
+        {D.build.map(b=>(
+          <div key={b.channel} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:10,paddingBottom:10,borderBottom:"1px solid #f3f4f6"}}>
+            <span style={{fontSize:11,fontWeight:700,padding:"3px 8px",borderRadius:6,whiteSpace:"nowrap",
+              background:b.state==="live"?"#ecfdf5":"#fef3c7", color:b.state==="live"?"#059669":"#92400e"}}>
+              {b.state==="live"?"LIVE":"BUILDING"}
+            </span>
+            <div>
+              <div style={{fontSize:12.5,fontWeight:600,color:"#111"}}>{b.channel} — <code style={{background:"#f3f4f6",padding:"1px 5px",borderRadius:4,fontWeight:400}}>{b.campaign}</code></div>
+              <div style={{fontSize:11.5,color:"#6b7280",marginTop:3,lineHeight:1.5}}>{b.detail}</div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div style={{...card,marginBottom:20,background:"#fffbeb",border:"1px solid #fde68a"}}>
-        <div style={{fontWeight:700,fontSize:12.5,marginBottom:4,color:"#92400e"}}>⚠ Lesson applied (O-067-A)</div>
-        <div style={{fontSize:12,color:"#78350f",lineHeight:1.6}}>{D.lesson}</div>
+      <div style={{...card,marginBottom:20,background:"#fef2f2",border:"1px solid #fecaca"}}>
+        <div style={{fontWeight:700,fontSize:12.5,marginBottom:4,color:"#991b1b"}}>🚩 Open flag — unresolved</div>
+        <div style={{fontSize:12,color:"#7f1d1d",lineHeight:1.6}}>{D.flag}</div>
       </div>
 
       <div style={{...card,marginBottom:20}}>
@@ -24884,11 +24902,39 @@ function AgentShowcaseTestSection() {
             </div>
           ))}
         </div>
-        <div style={{fontSize:11.5,color:"#6b7280",lineHeight:1.5}}>{D.precedent.note}</div>
+        <div style={{fontSize:11.5,color:"#6b7280",lineHeight:1.5,marginBottom:10}}>{D.precedent.note}</div>
+        <div style={{fontSize:11.5,color:"#374151",lineHeight:1.6,paddingTop:10,borderTop:"1px solid #f3f4f6"}}>
+          <b>Root cause (Mobu-verified):</b> {D.rootCause}
+        </div>
+      </div>
+
+      <div style={{...card,marginBottom:20}}>
+        <div style={{fontWeight:700,fontSize:14,marginBottom:4,color:"#1f2937"}}>Full-funnel baselines</div>
+        <div style={{fontSize:11,color:"#9ca3af",marginBottom:14}}>{D.funnels.asOf}</div>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr>
+            {["Campaign","Sessions","Bounce","Adviews","Login rate","DWL","CP-DWL"].map(h=>(
+              <th key={h} style={h==="Campaign"?{...TH,textAlign:"left"}:TH}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {D.funnels.rows.map(r=>(
+              <tr key={r.name} style={r.bad?{background:"#fef2f2"}:undefined}>
+                <td style={{...TD,textAlign:"left",fontWeight:600,fontSize:11.5}}>{r.name}</td>
+                <td style={TD}>{r.sessions}</td>
+                <td style={{...TD,color:r.bad?"#dc2626":"#111",fontWeight:r.bad?700:400}}>{r.bounce}</td>
+                <td style={{...TD,color:r.bad?"#dc2626":"#111",fontWeight:r.bad?700:400}}>{r.adviews}</td>
+                <td style={{...TD,color:r.bad?"#dc2626":"#111",fontWeight:r.bad?700:400}}>{r.login}</td>
+                <td style={TD}>{r.dwl}</td>
+                <td style={{...TD,fontWeight:700}}>{r.cpDwl}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <div style={{...card}}>
-        <div style={{fontWeight:700,fontSize:14,marginBottom:4,color:"#1f2937"}}>Pre-launch baselines (for pre/post comparison)</div>
+        <div style={{fontWeight:700,fontSize:14,marginBottom:4,color:"#1f2937"}}>Pre-launch channel baselines (for pre/post comparison)</div>
         <div style={{fontSize:11,color:"#9ca3af",marginBottom:14}}>{D.baselines.asOf}</div>
         <table style={{width:"100%",borderCollapse:"collapse"}}>
           <thead><tr>
