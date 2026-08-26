@@ -5,6 +5,10 @@ on:
     paths:
       - 'src/index.html'
 
+concurrency:
+  group: dashboard-bot-push
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,5 +30,7 @@ jobs:
           git add index.html dist/index.html
           git diff --staged --quiet && echo "No changes" || (
             git commit -m "build: compile src/index.html [skip ci]"
+            git fetch origin main
+            git rebase origin/main
             git push
           )

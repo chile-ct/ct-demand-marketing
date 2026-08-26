@@ -5,6 +5,10 @@ on:
     - cron: '15 4 * * *'   # 11:15 AM GMT+7 daily — 15min buffer after the 10-11AM VN Ads Script append
   workflow_dispatch:
 
+concurrency:
+  group: dashboard-bot-push
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -34,5 +38,7 @@ jobs:
           git add index.html dist/index.html src/index.html
           git diff --staged --quiet && echo "No changes" || (
             git commit -m "data: auto-update $(date -u '+%Y-%m-%d') [skip ci]"
+            git fetch origin main
+            git rebase origin/main
             git push
           )
