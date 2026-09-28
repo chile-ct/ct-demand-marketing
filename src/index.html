@@ -26950,6 +26950,23 @@ function D12TestSection() {
 }
 
 // PTY-AGENT-SHOWCASE-2026-08: scoped 2026-08-25, Google PMax + Meta built 2026-08-26 (Demand Gen
+// Placeholder scaffold — sidebar tab wired up 2026-09-28, no data/content decided yet. Fill in
+// AD_PARTNERSHIP (or replace this whole component) once the actual partnership scope, metrics,
+// and data source are defined; follow the AGENT_SHOWCASE_TEST pattern above for structure.
+function AdPartnershipSection() {
+  return (
+    <section id="adPartnership">
+      <div className="section-title">🤝 Ad Partnership</div>
+      <div style={{...card}}>
+        <div style={{fontSize:12.5,color:"#6b7280",lineHeight:1.6}}>
+          Chưa có nội dung — tab này mới được tạo khung sườn. Cho biết partnership/đối tác nào cần theo dõi,
+          các chỉ số (KPI) cần xem, và nguồn dữ liệu (BigQuery table / Sheet) để build nội dung thật.
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // still building) — so unlike D12TestSection this renders a static plan + baseline snapshot
 // (hypothesis, build status, Google/Meta plan, root-cause finding on the direct Meta precedent,
 // funnel baselines) to compare against once real delivery data exists. Numbers below are frozen at
@@ -27157,6 +27174,7 @@ const VD_SECTIONS = [
 const SIDEBAR_SECTIONS = [
   {id:"tests", label:"🧪 D12 Thổ Địa"},
   {id:"agentShowcase", label:"🎬 Agent Showcase"},
+  {id:"adPartnership", label:"🤝 Ad Partnership"},
 ];
 const SIDEBAR_WIDTH = 68;
 
@@ -27279,6 +27297,7 @@ function App() {
             </div>
             {sidebarView === "tests" && <D12TestSection/>}
             {sidebarView === "agentShowcase" && <AgentShowcaseTestSection/>}
+            {sidebarView === "adPartnership" && <AdPartnershipSection/>}
             <div style={{height:60}}/>
           </>
         ) : (
