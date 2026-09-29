@@ -26974,18 +26974,143 @@ function D12TestSection() {
   );
 }
 
-// PTY-AGENT-SHOWCASE-2026-08: scoped 2026-08-25, Google PMax + Meta built 2026-08-26 (Demand Gen
-// Placeholder scaffold — sidebar tab wired up 2026-09-28, no data/content decided yet. Fill in
-// AD_PARTNERSHIP (or replace this whole component) once the actual partnership scope, metrics,
-// and data source are defined; follow the AGENT_SHOWCASE_TEST pattern above for structure.
+// AD-PARTNERSHIP-2026-09: Chotot_JOB_VND ran its first partner-ship ad groups this
+// month (added as a suffix on the ad group name) alongside the existing default
+// job-type ad groups, both inside the same PMax campaigns. The ask was to compare
+// those two ad-group flavors directly — but no reachable source (the gg_raw_creative
+// Sheet connector, any BigQuery Google Ads table, or session UTM) tracks ad_group/
+// asset_group for this account, so that split isn't buildable from real data yet.
+// This section instead compares at the CAMPAIGN grain — PMax (per job type) vs.
+// Search/DSA/DemandGen — sourced live-pulled 2026-09-29 from
+// chotot-dwh.chotot_data.traffic_visit_detail (session UTM, source=google &
+// medium=cpc, campaign LIKE '%job_vnd%', 2026-09-01→28). On-site behavior only
+// (sessions/DAU proxy/ad views/leads/bounce) — no cost/CPL, traffic_visit_detail
+// has no cost column. Manual snapshot like D12_TEST/AGENT_SHOWCASE_TEST above, not
+// wired into update_marketplace.py. To get the ad_group split originally asked for,
+// pull an Asset Group performance export from Google Ads UI for these PMax
+// campaigns and rebuild this section from that instead.
+const AD_PARTNERSHIP = {"account": "Chotot_JOB_VND", "dateFrom": "2026-09-01", "dateTo": "2026-09-28", "pulledAt": "2026-09-29", "summary": {"trad": {"sessions": 84698, "dau": 67647, "bounces": 7095, "adviews": 329703, "leads": 39067, "listings": 512626, "avg_dur": 2965.0, "bounce_rate": 0.0838, "cr_lead": 0.4613, "cr_adview": 3.8927}, "pmax": {"sessions": 58747, "dau": 46751, "bounces": 8121, "adviews": 162018, "leads": 19205, "listings": 247023, "avg_dur": 2242.9, "bounce_rate": 0.1382, "cr_lead": 0.3269, "cr_adview": 2.7579}}, "daily": [{"date": "2026-09-01", "trad": {"sessions": 1856, "leads": 778, "adviews": 7335}, "pmax": {"sessions": 1819, "leads": 593, "adviews": 4762}}, {"date": "2026-09-02", "trad": {"sessions": 1922, "leads": 804, "adviews": 6928}, "pmax": {"sessions": 2030, "leads": 431, "adviews": 4470}}, {"date": "2026-09-03", "trad": {"sessions": 2744, "leads": 1153, "adviews": 10745}, "pmax": {"sessions": 2236, "leads": 892, "adviews": 6373}}, {"date": "2026-09-04", "trad": {"sessions": 2896, "leads": 1363, "adviews": 11367}, "pmax": {"sessions": 2273, "leads": 782, "adviews": 6646}}, {"date": "2026-09-05", "trad": {"sessions": 2644, "leads": 1259, "adviews": 11184}, "pmax": {"sessions": 2113, "leads": 706, "adviews": 5642}}, {"date": "2026-09-06", "trad": {"sessions": 2400, "leads": 993, "adviews": 9998}, "pmax": {"sessions": 2091, "leads": 759, "adviews": 6722}}, {"date": "2026-09-07", "trad": {"sessions": 2946, "leads": 1428, "adviews": 12037}, "pmax": {"sessions": 2315, "leads": 854, "adviews": 7738}}, {"date": "2026-09-08", "trad": {"sessions": 3155, "leads": 1579, "adviews": 13171}, "pmax": {"sessions": 2249, "leads": 945, "adviews": 7623}}, {"date": "2026-09-09", "trad": {"sessions": 3013, "leads": 1417, "adviews": 12463}, "pmax": {"sessions": 2223, "leads": 827, "adviews": 7060}}, {"date": "2026-09-10", "trad": {"sessions": 2923, "leads": 1432, "adviews": 12095}, "pmax": {"sessions": 2249, "leads": 830, "adviews": 6980}}, {"date": "2026-09-11", "trad": {"sessions": 2923, "leads": 1449, "adviews": 11580}, "pmax": {"sessions": 1986, "leads": 643, "adviews": 6120}}, {"date": "2026-09-12", "trad": {"sessions": 2762, "leads": 1231, "adviews": 10520}, "pmax": {"sessions": 1711, "leads": 600, "adviews": 5021}}, {"date": "2026-09-13", "trad": {"sessions": 2822, "leads": 1456, "adviews": 11414}, "pmax": {"sessions": 2050, "leads": 678, "adviews": 6022}}, {"date": "2026-09-14", "trad": {"sessions": 3869, "leads": 1599, "adviews": 14471}, "pmax": {"sessions": 2198, "leads": 871, "adviews": 6251}}, {"date": "2026-09-15", "trad": {"sessions": 3505, "leads": 1788, "adviews": 14029}, "pmax": {"sessions": 2231, "leads": 729, "adviews": 6198}}, {"date": "2026-09-16", "trad": {"sessions": 3406, "leads": 1400, "adviews": 12831}, "pmax": {"sessions": 2081, "leads": 600, "adviews": 5562}}, {"date": "2026-09-17", "trad": {"sessions": 3373, "leads": 1519, "adviews": 12329}, "pmax": {"sessions": 2019, "leads": 804, "adviews": 6245}}, {"date": "2026-09-18", "trad": {"sessions": 3539, "leads": 1539, "adviews": 13273}, "pmax": {"sessions": 2013, "leads": 547, "adviews": 5063}}, {"date": "2026-09-19", "trad": {"sessions": 3217, "leads": 1357, "adviews": 11447}, "pmax": {"sessions": 1837, "leads": 554, "adviews": 4742}}, {"date": "2026-09-20", "trad": {"sessions": 2910, "leads": 1349, "adviews": 11423}, "pmax": {"sessions": 1747, "leads": 599, "adviews": 5058}}, {"date": "2026-09-21", "trad": {"sessions": 4000, "leads": 1905, "adviews": 15473}, "pmax": {"sessions": 2445, "leads": 695, "adviews": 6160}}, {"date": "2026-09-22", "trad": {"sessions": 3454, "leads": 1690, "adviews": 12930}, "pmax": {"sessions": 2085, "leads": 616, "adviews": 5548}}, {"date": "2026-09-23", "trad": {"sessions": 3498, "leads": 1732, "adviews": 12987}, "pmax": {"sessions": 2311, "leads": 642, "adviews": 5117}}, {"date": "2026-09-24", "trad": {"sessions": 3333, "leads": 1517, "adviews": 12789}, "pmax": {"sessions": 2138, "leads": 569, "adviews": 4866}}, {"date": "2026-09-25", "trad": {"sessions": 2646, "leads": 1096, "adviews": 10041}, "pmax": {"sessions": 2003, "leads": 557, "adviews": 4486}}, {"date": "2026-09-26", "trad": {"sessions": 2562, "leads": 1093, "adviews": 9512}, "pmax": {"sessions": 2491, "leads": 623, "adviews": 5363}}, {"date": "2026-09-27", "trad": {"sessions": 2620, "leads": 1271, "adviews": 10641}, "pmax": {"sessions": 1978, "leads": 600, "adviews": 4853}}, {"date": "2026-09-28", "trad": {"sessions": 3760, "leads": 1870, "adviews": 14690}, "pmax": {"sessions": 1825, "leads": 659, "adviews": 5327}}], "jobTypes": [{"key": "ban_hang", "label": "Bán hàng", "trad": {"sessions": 46620, "dau": 37464, "leads": 18982, "adviews": 176453, "listings": 280843, "bounces": 3784}, "pmax": {"sessions": 9579, "dau": 7220, "leads": 3581, "adviews": 31654, "listings": 47163, "bounces": 1172}}, {"key": "nvpv", "label": "NV phục vụ", "trad": {"sessions": 10787, "dau": 8830, "leads": 5729, "adviews": 43322, "listings": 67019, "bounces": 923}, "pmax": {"sessions": 12677, "dau": 10946, "leads": 3766, "adviews": 28662, "listings": 49293, "bounces": 2575}}, {"key": "cong_nhan", "label": "Công nhân", "trad": {"sessions": 7086, "dau": 5602, "leads": 4259, "adviews": 32855, "listings": 47885, "bounces": 549}, "pmax": {"sessions": 7045, "dau": 5679, "leads": 2618, "adviews": 23899, "listings": 36279, "bounces": 694}}, {"key": "bao_ve", "label": "Bảo vệ", "trad": {"sessions": 4308, "dau": 3552, "leads": 2606, "adviews": 16592, "listings": 25093, "bounces": 323}, "pmax": {"sessions": 7827, "dau": 6593, "leads": 1895, "adviews": 15858, "listings": 24632, "bounces": 1341}}, {"key": "nvkv", "label": "NV kho vận", "trad": {"sessions": 5378, "dau": 4287, "leads": 2525, "adviews": 21135, "listings": 32172, "bounces": 494}, "pmax": {"sessions": 5540, "dau": 4494, "leads": 1511, "adviews": 14127, "listings": 19981, "bounces": 750}}, {"key": "tai_xe", "label": "Tài xế ô tô", "trad": {"sessions": 2487, "dau": 1938, "leads": 1562, "adviews": 9715, "listings": 13330, "bounces": 180}, "pmax": {"sessions": 7841, "dau": 5947, "leads": 3098, "adviews": 23168, "listings": 33572, "bounces": 538}}, {"key": "nvkd", "label": "NV kinh doanh", "trad": {"sessions": 6271, "dau": 4767, "leads": 2520, "adviews": 23230, "listings": 37903, "bounces": 621}, "pmax": {"sessions": 2880, "dau": 2278, "leads": 824, "adviews": 7007, "listings": 12007, "bounces": 370}}, {"key": "shipper", "label": "Shipper (xe máy)", "trad": {"sessions": 1761, "dau": 1207, "leads": 884, "adviews": 6401, "listings": 8381, "bounces": 221}, "pmax": {"sessions": 4900, "dau": 3361, "leads": 1681, "adviews": 15772, "listings": 21786, "bounces": 566}}], "campaigns": [{"campaign": "digital_gg_job_vnd_dau_banhang_dsa_all_cate", "adType": "trad", "jobType": "ban_hang", "jobLabel": "Bán hàng", "sessions": 34466, "dau": 27945, "adviews": 126184, "leads": 12761, "bounces": 2557}, {"campaign": "digital_gg_job_vnd_dwl_nvpv_pmax_event", "adType": "pmax", "jobType": "nvpv", "jobLabel": "NV phục vụ", "sessions": 12439, "dau": 10800, "adviews": 28194, "leads": 3721, "bounces": 2506}, {"campaign": "digital_gg_job_vnd_dwl_banhang_dsa_event", "adType": "trad", "jobType": "ban_hang", "jobLabel": "Bán hàng", "sessions": 11998, "dau": 9396, "adviews": 49661, "leads": 6191, "bounces": 1192}, {"campaign": "digital_gg_job_vnd_dwl_nvpv_dsa_event", "adType": "trad", "jobType": "nvpv", "jobLabel": "NV phục vụ", "sessions": 10782, "dau": 8825, "adviews": 43298, "leads": 5723, "bounces": 923}, {"campaign": "digital_gg_job_vnd_dwl_banhang_pmax_event", "adType": "pmax", "jobType": "ban_hang", "jobLabel": "Bán hàng", "sessions": 8098, "dau": 6295, "adviews": 28548, "leads": 3259, "bounces": 847}, {"campaign": "digital_gg_job_vnd_dwl_taixe_pmax_event", "adType": "pmax", "jobType": "tai_xe", "jobLabel": "Tài xế ô tô", "sessions": 7835, "dau": 5942, "adviews": 23161, "leads": 3098, "bounces": 535}, {"campaign": "digital_gg_job_vnd_dwl_baove_pmax_event", "adType": "pmax", "jobType": "bao_ve", "jobLabel": "Bảo vệ", "sessions": 7744, "dau": 6563, "adviews": 15401, "leads": 1839, "bounces": 1337}, {"campaign": "digital_gg_job_vnd_dwl_worker_dsa_event", "adType": "trad", "jobType": "cong_nhan", "jobLabel": "Công nhân", "sessions": 7026, "dau": 5562, "adviews": 32394, "leads": 4170, "bounces": 549}, {"campaign": "digital_gg_job_vnd_dwl_worker_pmax_event", "adType": "pmax", "jobType": "cong_nhan", "jobLabel": "Công nhân", "sessions": 6888, "dau": 5587, "adviews": 23465, "leads": 2560, "bounces": 648}, {"campaign": "digital_gg_job_vnd_dwl_nvkd_dsa_event", "adType": "trad", "jobType": "nvkd", "jobLabel": "NV kinh doanh", "sessions": 6252, "dau": 4758, "adviews": 23058, "leads": 2507, "bounces": 621}, {"campaign": "digital_gg_job_vnd_dwl_nvkv_pmax_event", "adType": "pmax", "jobType": "nvkv", "jobLabel": "NV kho vận", "sessions": 5518, "dau": 4478, "adviews": 14113, "leads": 1510, "bounces": 750}, {"campaign": "digital_gg_job_vnd_dwl_nvkv_dsa_event", "adType": "trad", "jobType": "nvkv", "jobLabel": "NV kho vận", "sessions": 5354, "dau": 4265, "adviews": 21000, "leads": 2524, "bounces": 493}, {"campaign": "digital_gg_job_vnd_dwl_shipper_pmax_event", "adType": "pmax", "jobType": "shipper", "jobLabel": "Shipper (xe máy)", "sessions": 4885, "dau": 3349, "adviews": 15700, "leads": 1676, "bounces": 564}, {"campaign": "digital_gg_job_vnd_dwl_baove_dsa_event", "adType": "trad", "jobType": "bao_ve", "jobLabel": "Bảo vệ", "sessions": 4292, "dau": 3536, "adviews": 16498, "leads": 2570, "bounces": 323}, {"campaign": "digital_gg_job_vnd_dwl_nvkd_pmax_event", "adType": "pmax", "jobType": "nvkd", "jobLabel": "NV kinh doanh", "sessions": 2872, "dau": 2271, "adviews": 6991, "leads": 823, "bounces": 367}, {"campaign": "digital_gg_job_vnd_dwl_taixe_dsa_event", "adType": "trad", "jobType": "tai_xe", "jobLabel": "Tài xế ô tô", "sessions": 2452, "dau": 1905, "adviews": 9466, "leads": 1519, "bounces": 180}, {"campaign": "digital_gg_job_vnd_dwl_shipper_dsa_event", "adType": "trad", "jobType": "shipper", "jobLabel": "Shipper (xe máy)", "sessions": 1707, "dau": 1189, "adviews": 5893, "leads": 789, "bounces": 221}, {"campaign": "digital_gg_job_vnd_dwa_banhang_pmax", "adType": "pmax", "jobType": "ban_hang", "jobLabel": "Bán hàng", "sessions": 1481, "dau": 925, "adviews": 3106, "leads": 322, "bounces": 325}, {"campaign": "digital_gg_job_vnd_dwl_all_job_type_pmax", "adType": "pmax", "jobType": "all_job_type", "jobLabel": "Tất cả job type", "sessions": 458, "dau": 233, "adviews": 1871, "leads": 231, "bounces": 115}, {"campaign": "digital_gg_job_vnd_dwl_nvpv_pmax", "adType": "pmax", "jobType": "nvpv", "jobLabel": "NV phục vụ", "sessions": 235, "dau": 143, "adviews": 467, "leads": 45, "bounces": 68}, {"campaign": "digital_gg_job_vnd_dwl_worker_pmax", "adType": "pmax", "jobType": "cong_nhan", "jobLabel": "Công nhân", "sessions": 157, "dau": 92, "adviews": 434, "leads": 58, "bounces": 46}, {"campaign": "digital_gg_job_vnd_dau_banhang_demandgen", "adType": "trad", "jobType": "ban_hang", "jobLabel": "Bán hàng", "sessions": 105, "dau": 89, "adviews": 443, "leads": 16, "bounces": 34}, {"campaign": "digital_gg_job_vnd_dwl_baove_pmax", "adType": "pmax", "jobType": "bao_ve", "jobLabel": "Bảo vệ", "sessions": 83, "dau": 30, "adviews": 457, "leads": 56, "bounces": 4}, {"campaign": "digital_gg_job_vnd_dwl_worker_search", "adType": "trad", "jobType": "cong_nhan", "jobLabel": "Công nhân", "sessions": 60, "dau": 40, "adviews": 461, "leads": 89, "bounces": 0}, {"campaign": "digital_gg_job_vnd_dwl_shipper_search", "adType": "trad", "jobType": "shipper", "jobLabel": "Shipper (xe máy)", "sessions": 53, "dau": 17, "adviews": 508, "leads": 95, "bounces": 0}, {"campaign": "digital_gg_job_vnd_dwl_banhang_search", "adType": "trad", "jobType": "ban_hang", "jobLabel": "Bán hàng", "sessions": 37, "dau": 21, "adviews": 154, "leads": 11, "bounces": 0}, {"campaign": "digital_gg_job_vnd_dwl_taixe_search", "adType": "trad", "jobType": "tai_xe", "jobLabel": "Tài xế ô tô", "sessions": 35, "dau": 33, "adviews": 249, "leads": 43, "bounces": 0}, {"campaign": "digital_gg_job_vnd_dwl_nvkv_pmax", "adType": "pmax", "jobType": "nvkv", "jobLabel": "NV kho vận", "sessions": 22, "dau": 16, "adviews": 14, "leads": 1, "bounces": 0}, {"campaign": "digital_gg_job_vnd_dwl_nvkv_search", "adType": "trad", "jobType": "nvkv", "jobLabel": "NV kho vận", "sessions": 18, "dau": 17, "adviews": 129, "leads": 1, "bounces": 0}, {"campaign": "digital_gg_job_vnd_dwl_nvkd_search", "adType": "trad", "jobType": "nvkd", "jobLabel": "NV kinh doanh", "sessions": 18, "dau": 8, "adviews": 172, "leads": 13, "bounces": 0}, {"campaign": "digital_gg_job_vnd_dwl_baove_search", "adType": "trad", "jobType": "bao_ve", "jobLabel": "Bảo vệ", "sessions": 16, "dau": 16, "adviews": 94, "leads": 36, "bounces": 0}, {"campaign": "digital_gg_job_vnd_dwl_shipper_pmax", "adType": "pmax", "jobType": "shipper", "jobLabel": "Shipper (xe máy)", "sessions": 15, "dau": 12, "adviews": 72, "leads": 5, "bounces": 2}, {"campaign": "digital_google_job_vnd_dwa_banhang_creative_testing_271125", "adType": "trad", "jobType": "ban_hang", "jobLabel": "Bán hàng", "sessions": 11, "dau": 10, "adviews": 11, "leads": 3, "bounces": 0}, {"campaign": "digital_gg_job_vnd_dau_nvkv_dsa", "adType": "trad", "jobType": "nvkv", "jobLabel": "NV kho vận", "sessions": 6, "dau": 5, "adviews": 6, "leads": 0, "bounces": 1}, {"campaign": "digital_gg_job_vnd_dwl_taixe_pmax", "adType": "pmax", "jobType": "tai_xe", "jobLabel": "Tài xế ô tô", "sessions": 6, "dau": 5, "adviews": 7, "leads": 0, "bounces": 3}, {"campaign": "digital_gg_job_vnd_dwl_nvkd_pmax", "adType": "pmax", "jobType": "nvkd", "jobLabel": "NV kinh doanh", "sessions": 4, "dau": 3, "adviews": 13, "leads": 1, "bounces": 1}, {"campaign": "digital_gg_job_vnd_dwl_nvkd_pmax_underdemand", "adType": "pmax", "jobType": "nvkd", "jobLabel": "NV kinh doanh", "sessions": 4, "dau": 4, "adviews": 3, "leads": 0, "bounces": 2}, {"campaign": "digital_gg_job_vnd_dwl_nvpv_search", "adType": "trad", "jobType": "nvpv", "jobLabel": "NV phục vụ", "sessions": 4, "dau": 4, "adviews": 24, "leads": 6, "bounces": 0}, {"campaign": "digital_gg_job_vnd_dau_banhang_dsa", "adType": "trad", "jobType": "ban_hang", "jobLabel": "Bán hàng", "sessions": 3, "dau": 3, "adviews": 0, "leads": 0, "bounces": 1}, {"campaign": "digital_gg_job_vnd_dwl_nvpv_pmax_wfeed", "adType": "pmax", "jobType": "nvpv", "jobLabel": "NV phục vụ", "sessions": 3, "dau": 3, "adviews": 1, "leads": 0, "bounces": 1}, {"campaign": "digital_gg_job_vnd_dau_shipper_dsa", "adType": "trad", "jobType": "shipper", "jobLabel": "Shipper (xe máy)", "sessions": 1, "dau": 1, "adviews": 0, "leads": 0, "bounces": 0}, {"campaign": "digital_gg_job_vnd_dau_nvkd_dsa", "adType": "trad", "jobType": "nvkd", "jobLabel": "NV kinh doanh", "sessions": 1, "dau": 1, "adviews": 0, "leads": 0, "bounces": 0}, {"campaign": "digital_gg_job_vnd_dau_nvpv_dsa", "adType": "trad", "jobType": "nvpv", "jobLabel": "NV phục vụ", "sessions": 1, "dau": 1, "adviews": 0, "leads": 0, "bounces": 0}]};
+
 function AdPartnershipSection() {
+  const D = AD_PARTNERSHIP;
+  const [metric, setMetric] = useState("sessions"); // sessions | leads | adviews
+  const APC = {trad:"#6366f1", pmax:"#f59e0b"};
+  const labels = D.daily.map(d => d.date.slice(5));
+  const datasets = [
+    {label:"Truyền thống (Search/DSA/DemandGen)", data:D.daily.map(d=>d.trad[metric]||0),
+     borderColor:APC.trad, backgroundColor:APC.trad, tension:.25},
+    {label:"Performance Max", data:D.daily.map(d=>d.pmax[metric]||0),
+     borderColor:APC.pmax, backgroundColor:APC.pmax, tension:.25},
+  ];
+  const totalSessions = D.summary.trad.sessions + D.summary.pmax.sessions;
+  const jtLabels = D.jobTypes.map(j=>j.label);
+  const jtDatasets = [
+    {label:"Truyền thống", data:D.jobTypes.map(j=>j.trad.sessions), backgroundColor:APC.trad},
+    {label:"PMax", data:D.jobTypes.map(j=>j.pmax.sessions), backgroundColor:APC.pmax},
+  ];
+
   return (
     <section id="adPartnership">
       <div className="section-title">🤝 Ad Partnership</div>
+      <div style={{fontSize:11,color:"#9ca3af",marginBottom:16}}>
+        {D.account} · Google Ads · {D.dateFrom.slice(5)} → {D.dateTo.slice(5)}/2026 · nguồn: BigQuery{" "}
+        <code style={{background:"#f3f4f6",padding:"1px 5px",borderRadius:4}}>chotot_data.traffic_visit_detail</code>
+        {" "}· data pulled {D.pulledAt}
+      </div>
+
+      <div style={{...card,marginBottom:20,background:"#fffbeb",border:"1px solid #fde68a"}}>
+        <div style={{fontWeight:700,fontSize:13,marginBottom:6,color:"#92400e"}}>⚠ Giới hạn dữ liệu — đọc trước khi dùng số</div>
+        <div style={{fontSize:12.5,color:"#78350f",lineHeight:1.6}}>
+          Yêu cầu gốc là so sánh theo <b>ad_group</b> (job type mặc định vs. ad_group hậu tố partnership,
+          trong cùng 1 campaign PMax) — nhưng không nguồn nào hiện có (Sheet connector, BigQuery Google Ads,
+          hay UTM session) track được ad_group/asset_group cho account này. View dưới đây vì vậy so sánh ở
+          mức <b>campaign</b>: PMax (theo job type) so với Search/DSA/DemandGen truyền thống — không tách
+          được ad_group partnership riêng. Số liệu là hành vi on-site (session/adview/lead) từ UTM — không
+          có chi phí/CPL vì bảng nguồn không có cột cost. Để có đúng bảng so sánh ad_group, cần export
+          "Asset group performance" từ Google Ads UI cho các campaign PMax của {D.account}.
+        </div>
+      </div>
+
+      <div style={{display:"flex",gap:16,marginBottom:20,flexWrap:"wrap"}}>
+        {[{key:"trad",label:"Truyền thống",sub:"Search / DSA / DemandGen"},
+          {key:"pmax",label:"Performance Max",sub:"theo job type"}].map(cfg=>{
+          const s = D.summary[cfg.key];
+          return (
+            <div key={cfg.key} style={{...card,flex:1,minWidth:260,borderTop:`3px solid ${APC[cfg.key]}`}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                <span style={{width:10,height:10,borderRadius:"50%",background:APC[cfg.key],display:"inline-block"}}/>
+                <span style={{fontWeight:700,fontSize:14,color:"#1f2937"}}>{cfg.label}</span>
+                <span style={{marginLeft:"auto",fontSize:11,color:"#9ca3af",fontWeight:600}}>{pct(s.sessions,totalSessions)}% sessions</span>
+              </div>
+              <div style={{fontSize:10.5,color:"#9ca3af",marginBottom:12}}>{cfg.sub}</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"14px 10px"}}>
+                <div><div style={{fontSize:19,fontWeight:800,color:"#111"}}>{fmtK(s.sessions)}</div><div style={{fontSize:11,color:"#9ca3af"}}>Sessions</div></div>
+                <div><div style={{fontSize:19,fontWeight:800,color:"#111"}}>{fmtK(s.adviews)}</div><div style={{fontSize:11,color:"#9ca3af"}}>Ad views</div></div>
+                <div><div style={{fontSize:19,fontWeight:800,color:"#111"}}>{fmtK(s.leads)}</div><div style={{fontSize:11,color:"#9ca3af"}}>Leads</div></div>
+                <div><div style={{fontSize:19,fontWeight:800,color:APC[cfg.key]}}>{pct(s.leads,s.sessions)}%</div><div style={{fontSize:11,color:"#9ca3af"}}>CR Lead/session</div></div>
+                <div><div style={{fontSize:19,fontWeight:800,color:APC[cfg.key]}}>{pct(s.bounces,s.sessions)}%</div><div style={{fontSize:11,color:"#9ca3af"}}>Bounce rate</div></div>
+                <div><div style={{fontSize:19,fontWeight:800,color:"#111"}}>{fmtK(s.dau)}</div><div style={{fontSize:11,color:"#9ca3af"}}>DAU (proxy)</div></div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{...card,marginBottom:20}}>
+        <div style={{fontWeight:600,fontSize:13,marginBottom:6,color:"#374151"}}>Xu hướng theo ngày</div>
+        <div style={{display:"flex",gap:4,background:"#f3f4f6",borderRadius:8,padding:3,marginBottom:14,width:280}}>
+          {[{key:"sessions",label:"Sessions"},{key:"leads",label:"Leads"},{key:"adviews",label:"Ad views"}].map(o=>(
+            <button key={o.key} onClick={()=>setMetric(o.key)} style={{
+              flex:1,padding:"5px 10px",borderRadius:6,border:"none",cursor:"pointer",
+              fontSize:12,fontWeight:600,transition:"all .15s",
+              background:metric===o.key?"#6366f1":"transparent",
+              color:metric===o.key?"#fff":"#6b7280",
+            }}>{o.label}</button>
+          ))}
+        </div>
+        <LineChart labels={labels} datasets={datasets} height={260}/>
+      </div>
+
+      <div style={{...card,marginBottom:20}}>
+        <div style={{fontWeight:600,fontSize:13,marginBottom:4,color:"#374151"}}>Theo job type — Sessions</div>
+        <div style={{fontSize:11,color:"#9ca3af",marginBottom:14}}>8 nhóm ngành nghề, sắp theo tổng volume</div>
+        <BarChart labels={jtLabels} datasets={jtDatasets} height={260}/>
+      </div>
+
       <div style={{...card}}>
-        <div style={{fontSize:12.5,color:"#6b7280",lineHeight:1.6}}>
-          Chưa có nội dung — tab này mới được tạo khung sườn. Cho biết partnership/đối tác nào cần theo dõi,
-          các chỉ số (KPI) cần xem, và nguồn dữ liệu (BigQuery table / Sheet) để build nội dung thật.
+        <div style={{fontWeight:600,fontSize:13,marginBottom:4,color:"#374151"}}>Chi tiết theo campaign</div>
+        <div style={{fontSize:11,color:"#9ca3af",marginBottom:14}}>{D.campaigns.length} campaign · sắp theo sessions</div>
+        <div style={{overflowX:"auto"}}>
+          <table style={{borderCollapse:"collapse",fontSize:12,width:"100%"}}>
+            <thead><tr>
+              <th style={{...TH,textAlign:"left",minWidth:260}}>Campaign</th>
+              <th style={{...TH,textAlign:"center"}}>Kiểu chạy</th>
+              <th style={{...TH,textAlign:"left"}}>Job type</th>
+              <th style={TH}>Sessions</th>
+              <th style={TH}>Ad views</th>
+              <th style={TH}>Leads</th>
+              <th style={TH}>CR Lead</th>
+              <th style={TH}>Bounce</th>
+            </tr></thead>
+            <tbody>
+              {D.campaigns.map((c,i)=>(
+                <tr key={c.campaign} style={{background:i%2===0?"#fff":"#fafafa"}}>
+                  <td style={{...TD,textAlign:"left",fontWeight:500,fontFamily:"monospace",fontSize:11.5,color:"#374151"}}>{c.campaign}</td>
+                  <td style={{...TD,textAlign:"center"}}>
+                    <span style={{background:(c.adType==="pmax"?APC.pmax:APC.trad)+"22",
+                      color:c.adType==="pmax"?APC.pmax:APC.trad,fontWeight:700,fontSize:11,
+                      padding:"2px 9px",borderRadius:99}}>{c.adType==="pmax"?"PMax":"Truyền thống"}</span>
+                  </td>
+                  <td style={{...TD,textAlign:"left"}}>{c.jobLabel}</td>
+                  <td style={TD}>{fmtK(c.sessions)}</td>
+                  <td style={TD}>{fmtK(c.adviews)}</td>
+                  <td style={TD}>{fmtK(c.leads)}</td>
+                  <td style={TD}>{pct(c.leads,c.sessions)}%</td>
+                  <td style={TD}>{pct(c.bounces,c.sessions)}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
