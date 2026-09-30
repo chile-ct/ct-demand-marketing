@@ -27001,32 +27001,38 @@ function D12TestSection() {
   );
 }
 
-// AD-PARTNERSHIP-2026-09 (v2 — REAL asset_group data, 2026-09-29): the placeholder
-// scaffold below was first filled with a campaign-grain proxy (PMax vs Search/DSA),
-// since no source seemed to carry asset_group. That was wrong to settle for — the
-// real asset_group name IS captured, as the utm_content param on the landing-page
-// URL, sitting in traffic_pageview_detail.screenName (Desktop/MSite only). Extracted
-// via REGEXP_EXTRACT(screenName, r'utm_content=([a-zA-Z0-9_]+)'), joined to
-// traffic_visit_detail on (clientId,visitId,date) for lead/adview/bounce, 2026-09-01
-// to 09-29. Default asset groups are named awo_responsive_generic_<job_type>;
-// partnership ones are awo_responsive_<job_type>_<partner> — 5 confirmed partners
-// this month, all but one (ghn, nvkv) running under NV phục vụ (nvpv): meat (by far
-// the largest), plt, jollibee, aladdin. Manual snapshot like the other Testing
-// sections above, not wired into update_marketplace.py — re-pull the same query to
+// AD-PARTNERSHIP-2026-09 (v3 — refreshed 2026-09-30, adds DWL): asset_group name is
+// captured as the utm_content param on the landing-page URL, in
+// traffic_pageview_detail.screenName (Desktop/MSite only). Extracted via
+// REGEXP_EXTRACT(screenName, r'utm_content=([a-zA-Z0-9_]+)'), joined to
+// traffic_visit_detail on (clientId,visitId,date) for lead/adview/bounce/DWL, 2026-09-01
+// to 09-29, filtered to source IN ('google','google_search') AND utm_content LIKE
+// 'awo_responsive_%' (broader/more consistent than the v2 pull, which is why totals here
+// run ~15-25% higher than the previous snapshot — re-pulled with the exact same query as
+// the Meta dataset below for an apples-to-apples comparison). DWL = DAU w/ Lead: distinct
+// (date, chotot_id) with ≥1 lead in the job category that day, same convention as DAU
+// elsewhere in this dashboard. Default asset groups are named
+// awo_responsive_generic_<job_type>; partnership ones are awo_responsive_<job_type>_<partner>
+// — 5 confirmed partners this month, all but one (ghn, nvkv) running under NV phục vụ
+// (nvpv): meat (by far the largest), plt, jollibee, aladdin. Manual snapshot like the other
+// Testing sections above, not wired into update_marketplace.py — re-pull the same query to
 // refresh. No cost/CPL column (traffic tables don't carry spend).
-const AD_PARTNERSHIP = {"meta": {"account": "Chotot_JOB_VND", "date_from": "2026-09-01", "date_to": "2026-09-29", "source": "chotot-dwh.chotot_data.traffic_pageview_detail (utm_content trong screenName) + traffic_visit_detail", "pulled_at": "2026-09-29"}, "summary": {"generic": {"sessions": 38177, "dau": 30861, "bounces": 4213, "adviews": 101544, "leads": 12134, "listings": 179979}, "partnership": {"sessions": 3540, "dau": 3318, "bounces": 1244, "adviews": 1730, "leads": 369, "listings": 5476}}, "job_type_labels": {"ban_hang": "Bán hàng", "bao_ve": "Bảo vệ", "cong_nhan": "Công nhân", "nvkd": "NV kinh doanh", "nvkv": "NV kho vận", "nvpv": "NV phục vụ", "shipper": "Shipper (xe máy)", "tai_xe": "Tài xế ô tô"}, "job_types": {"ban_hang": {"generic": {"sessions": 5620, "dau": 4738, "bounces": 422, "adviews": 19377, "leads": 2329, "listings": 33772}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "bao_ve": {"generic": {"sessions": 6107, "dau": 4742, "bounces": 1117, "adviews": 8743, "leads": 1121, "listings": 17268}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "cong_nhan": {"generic": {"sessions": 5076, "dau": 4090, "bounces": 389, "adviews": 16708, "leads": 1613, "listings": 27308}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "nvkd": {"generic": {"sessions": 2070, "dau": 1770, "bounces": 234, "adviews": 4632, "leads": 618, "listings": 9087}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "nvkv": {"generic": {"sessions": 4327, "dau": 3780, "bounces": 559, "adviews": 9035, "leads": 1000, "listings": 15700}, "partnership": {"sessions": 6, "dau": 6, "bounces": 3, "adviews": 4, "leads": 0, "listings": 12}}, "nvpv": {"generic": {"sessions": 6392, "dau": 5648, "bounces": 792, "adviews": 19069, "leads": 2402, "listings": 36402}, "partnership": {"sessions": 3534, "dau": 3312, "bounces": 1241, "adviews": 1726, "leads": 369, "listings": 5464}}, "shipper": {"generic": {"sessions": 2592, "dau": 2219, "bounces": 374, "adviews": 7065, "leads": 770, "listings": 13051}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "tai_xe": {"generic": {"sessions": 5993, "dau": 3874, "bounces": 326, "adviews": 16915, "leads": 2281, "listings": 27391}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}}, "partners": {"ghn": {"job_type": "nvkv", "sessions": 6, "dau": 6, "bounces": 3, "adviews": 4, "leads": 0, "listings": 12}, "meat": {"job_type": "nvpv", "sessions": 3404, "dau": 3182, "bounces": 1213, "adviews": 1538, "leads": 348, "listings": 5017}, "plt": {"job_type": "nvpv", "sessions": 79, "dau": 79, "bounces": 17, "adviews": 143, "leads": 10, "listings": 321}, "jollibee": {"job_type": "nvpv", "sessions": 36, "dau": 36, "bounces": 8, "adviews": 36, "leads": 10, "listings": 105}, "aladdin": {"job_type": "nvpv", "sessions": 15, "dau": 15, "bounces": 3, "adviews": 9, "leads": 1, "listings": 21}}};
+const AD_PARTNERSHIP = {"meta": {"account": "Chotot_JOB_VND", "date_from": "2026-09-01", "date_to": "2026-09-29", "source": "chotot-dwh.chotot_data.traffic_pageview_detail (utm_content trong screenName) + traffic_visit_detail, filter source IN ('google','google_search') AND utm_content LIKE 'awo_responsive_%' — refreshed 2026-09-30 with the same query used for Meta, adding DWL (DAU w/ Lead)", "pulled_at": "2026-09-30"}, "summary": {"generic": {"sessions": 46802, "dau": 43294, "dwl": 6584, "bounces": 4459, "adviews": 161049, "leads": 18906, "listings": 271571}, "partnership": {"sessions": 3852, "dau": 3781, "dwl": 196, "bounces": 1304, "adviews": 2785, "leads": 518, "listings": 7246}}, "job_type_labels": {"ban_hang": "Bán hàng", "bao_ve": "Bảo vệ", "cong_nhan": "Công nhân", "nvkd": "NV kinh doanh", "nvkv": "NV kho vận", "nvpv": "NV phục vụ", "shipper": "Shipper (xe máy)", "tai_xe": "Tài xế ô tô"}, "job_types": {"ban_hang": {"generic": {"sessions": 6614, "dau": 6142, "dwl": 1055, "bounces": 427, "adviews": 26953, "leads": 3151, "listings": 46076}, "partnership": {"sessions": 0, "dau": 0, "dwl": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "bao_ve": {"generic": {"sessions": 7122, "dau": 6707, "dwl": 684, "bounces": 1174, "adviews": 14176, "leads": 1796, "listings": 25794}, "partnership": {"sessions": 0, "dau": 0, "dwl": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "cong_nhan": {"generic": {"sessions": 7341, "dau": 6796, "dwl": 1209, "bounces": 471, "adviews": 34222, "leads": 3290, "listings": 53271}, "partnership": {"sessions": 0, "dau": 0, "dwl": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "nvkd": {"generic": {"sessions": 2365, "dau": 2223, "dwl": 269, "bounces": 259, "adviews": 5676, "leads": 747, "listings": 11124}, "partnership": {"sessions": 0, "dau": 0, "dwl": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "nvkv": {"generic": {"sessions": 5119, "dau": 4893, "dwl": 537, "bounces": 598, "adviews": 14089, "leads": 1523, "listings": 23263}, "partnership": {"sessions": 12, "dau": 12, "dwl": 2, "bounces": 3, "adviews": 38, "leads": 2, "listings": 68}}, "nvpv": {"generic": {"sessions": 7521, "dau": 7106, "dwl": 1152, "bounces": 796, "adviews": 28330, "leads": 3525, "listings": 51252}, "partnership": {"sessions": 3840, "dau": 3769, "dwl": 194, "bounces": 1301, "adviews": 2747, "leads": 516, "listings": 7178}}, "shipper": {"generic": {"sessions": 3013, "dau": 2803, "dwl": 420, "bounces": 377, "adviews": 10324, "leads": 1208, "listings": 18272}, "partnership": {"sessions": 0, "dau": 0, "dwl": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "tai_xe": {"generic": {"sessions": 7707, "dau": 6624, "dwl": 1258, "bounces": 357, "adviews": 27279, "leads": 3666, "listings": 42519}, "partnership": {"sessions": 0, "dau": 0, "dwl": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}}, "partners": {"ghn": {"job_type": "nvkv", "sessions": 12, "dau": 12, "dwl": 2, "bounces": 3, "adviews": 38, "leads": 2, "listings": 68}, "meat": {"job_type": "nvpv", "sessions": 3629, "dau": 3564, "dwl": 165, "bounces": 1262, "adviews": 2133, "leads": 444, "listings": 5981}, "plt": {"job_type": "nvpv", "sessions": 124, "dau": 123, "dwl": 17, "bounces": 20, "adviews": 397, "leads": 43, "listings": 845}, "jollibee": {"job_type": "nvpv", "sessions": 70, "dau": 69, "dwl": 10, "bounces": 15, "adviews": 207, "leads": 27, "listings": 328}, "aladdin": {"job_type": "nvpv", "sessions": 17, "dau": 17, "dwl": 2, "bounces": 4, "adviews": 10, "leads": 2, "listings": 24}}};
 
-// AD-PARTNERSHIP-META-2026-09: Meta/Facebook side of the same job-partnership traffic, pulled
-// with the same methodology (utm_content on the landing URL, joined traffic_pageview_detail →
-// traffic_visit_detail on clientId/visitId/date, 2026-09-01 to 09-29, category_id IN (13000,13010)
-// for job adviews/leads/listings). Meta's job campaigns are named digital_fb_job_<suffix> (same
-// 8 suffixes as Google's asset_group naming: banhang, baove, worker, nvkd, nvkv, nvpv, shipper,
-// taixe), and partner creatives use awo_image_/awo_catalog_<job_type>_<partner> instead of
-// Google's awo_responsive_<job_type>_<partner>. Confirms the same 5 partners as Google (meat,
-// plt, jollibee, aladdin — spelled "aladin" in Meta's own creative name, ghn) PLUS a 6th partner
-// running on Meta only this month: kfc (nvpv), not seen on Google Ads. Manual snapshot like the
-// Google one above — not wired into update_marketplace.py, re-pull the same query to refresh.
-const AD_PARTNERSHIP_META = {"meta": {"account": "Chotot_JOB_VND (Meta/Facebook)", "date_from": "2026-09-01", "date_to": "2026-09-29", "source": "chotot-dwh.chotot_data.traffic_pageview_detail (utm_content trong screenName) + traffic_visit_detail, filter source='facebook' AND campaign LIKE 'digital_fb_job_%'", "pulled_at": "2026-09-30"}, "summary": {"generic": {"sessions": 37805, "dau": 30277, "bounces": 5912, "adviews": 82810, "leads": 4455, "listings": 17341}, "partnership": {"sessions": 2463, "dau": 2370, "bounces": 679, "adviews": 1322, "leads": 199, "listings": 4831}}, "job_type_labels": {"ban_hang": "Bán hàng", "bao_ve": "Bảo vệ", "cong_nhan": "Công nhân", "nvkd": "NV kinh doanh", "nvkv": "NV kho vận", "nvpv": "NV phục vụ", "shipper": "Shipper (xe máy)", "tai_xe": "Tài xế ô tô"}, "job_types": {"ban_hang": {"generic": {"sessions": 9072, "dau": 7649, "bounces": 1789, "adviews": 17585, "leads": 1292, "listings": 9163}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "bao_ve": {"generic": {"sessions": 8749, "dau": 6722, "bounces": 1382, "adviews": 18373, "leads": 660, "listings": 1211}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "cong_nhan": {"generic": {"sessions": 5519, "dau": 4337, "bounces": 692, "adviews": 14241, "leads": 615, "listings": 866}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "nvkd": {"generic": {"sessions": 4009, "dau": 3087, "bounces": 583, "adviews": 8205, "leads": 756, "listings": 2015}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "nvkv": {"generic": {"sessions": 2282, "dau": 1818, "bounces": 296, "adviews": 6306, "leads": 248, "listings": 1074}, "partnership": {"sessions": 631, "dau": 610, "bounces": 152, "adviews": 405, "leads": 61, "listings": 1224}}, "nvpv": {"generic": {"sessions": 1507, "dau": 1204, "bounces": 225, "adviews": 4539, "leads": 288, "listings": 1678}, "partnership": {"sessions": 1832, "dau": 1760, "bounces": 527, "adviews": 917, "leads": 138, "listings": 3607}}, "shipper": {"generic": {"sessions": 2735, "dau": 2201, "bounces": 361, "adviews": 6370, "leads": 342, "listings": 581}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "tai_xe": {"generic": {"sessions": 3932, "dau": 3259, "bounces": 584, "adviews": 7191, "leads": 254, "listings": 753}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}}, "partners": {"ghn": {"job_type": "nvkv", "asset_name": "awo_image_nvkv_ghn", "sessions": 626, "dau": 605, "bounces": 152, "adviews": 402, "leads": 60, "listings": 1210}, "meat": {"job_type": "nvpv", "asset_name": "awo_catalog_nvpv_meat", "sessions": 162, "dau": 154, "bounces": 60, "adviews": 38, "leads": 3, "listings": 220}, "plt": {"job_type": "nvpv", "asset_name": "awo_image_nvpv_plt", "sessions": 447, "dau": 429, "bounces": 134, "adviews": 257, "leads": 18, "listings": 888}, "jollibee": {"job_type": "nvpv", "asset_name": "awo_image_nvpv_jollibee", "sessions": 814, "dau": 795, "bounces": 223, "adviews": 340, "leads": 68, "listings": 1604}, "aladdin": {"job_type": "nvpv", "asset_name": "awo_image_nvpv_aladin", "sessions": 87, "dau": 87, "bounces": 33, "adviews": 12, "leads": 1, "listings": 112}, "kfc": {"job_type": "nvpv", "asset_name": "awo_image_nvpv_kfc", "sessions": 327, "dau": 325, "bounces": 77, "adviews": 273, "leads": 49, "listings": 797}}};
+// AD-PARTNERSHIP-META-2026-09 (v2 — adds DWL): Meta/Facebook side of the same
+// job-partnership traffic, pulled with the same methodology (utm_content on the landing
+// URL, joined traffic_pageview_detail → traffic_visit_detail on clientId/visitId/date,
+// 2026-09-01 to 09-29, category_id IN (13000,13010) for job adviews/leads/listings, DWL =
+// DAU w/ Lead = distinct date+chotot_id with ≥1 lead that day). Meta's job campaigns are
+// named digital_fb_job_<suffix> (same 8 suffixes as Google's asset_group naming: banhang,
+// baove, worker, nvkd, nvkv, nvpv, shipper, taixe), and partner creatives use
+// awo_image_/awo_catalog_<job_type>_<partner> instead of Google's
+// awo_responsive_<job_type>_<partner>. Confirms the same 5 partners as Google (meat, plt,
+// jollibee, aladdin — spelled "aladin" in Meta's own creative name, ghn) PLUS a 6th partner
+// running on Meta only this month: kfc (nvpv), not seen on Google Ads. Manual snapshot like
+// the Google one above — not wired into update_marketplace.py, re-pull the same query to
+// refresh.
+const AD_PARTNERSHIP_META = {"meta": {"account": "Chotot_JOB_VND (Meta/Facebook)", "date_from": "2026-09-01", "date_to": "2026-09-29", "source": "chotot-dwh.chotot_data.traffic_pageview_detail (utm_content trong screenName) + traffic_visit_detail, filter source='facebook' AND campaign LIKE 'digital_fb_job_%'", "pulled_at": "2026-09-30"}, "summary": {"generic": {"sessions": 37805, "dau": 30277, "dwl": 1707, "bounces": 5912, "adviews": 82810, "leads": 4455, "listings": 17341}, "partnership": {"sessions": 2463, "dau": 2370, "dwl": 72, "bounces": 679, "adviews": 1322, "leads": 199, "listings": 4831}}, "job_type_labels": {"ban_hang": "Bán hàng", "bao_ve": "Bảo vệ", "cong_nhan": "Công nhân", "nvkd": "NV kinh doanh", "nvkv": "NV kho vận", "nvpv": "NV phục vụ", "shipper": "Shipper (xe máy)", "tai_xe": "Tài xế ô tô"}, "job_types": {"ban_hang": {"generic": {"sessions": 9072, "dau": 7649, "dwl": 430, "bounces": 1789, "adviews": 17585, "leads": 1292, "listings": 9163}, "partnership": {"sessions": 0, "dau": 0, "dwl": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "bao_ve": {"generic": {"sessions": 8749, "dau": 6722, "dwl": 298, "bounces": 1382, "adviews": 18373, "leads": 660, "listings": 1211}, "partnership": {"sessions": 0, "dau": 0, "dwl": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "cong_nhan": {"generic": {"sessions": 5519, "dau": 4337, "dwl": 257, "bounces": 692, "adviews": 14241, "leads": 615, "listings": 866}, "partnership": {"sessions": 0, "dau": 0, "dwl": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "nvkd": {"generic": {"sessions": 4009, "dau": 3087, "dwl": 192, "bounces": 583, "adviews": 8205, "leads": 756, "listings": 2015}, "partnership": {"sessions": 0, "dau": 0, "dwl": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "nvkv": {"generic": {"sessions": 2282, "dau": 1818, "dwl": 130, "bounces": 296, "adviews": 6306, "leads": 248, "listings": 1074}, "partnership": {"sessions": 631, "dau": 610, "dwl": 18, "bounces": 152, "adviews": 405, "leads": 61, "listings": 1224}}, "nvpv": {"generic": {"sessions": 1507, "dau": 1204, "dwl": 121, "bounces": 225, "adviews": 4539, "leads": 288, "listings": 1678}, "partnership": {"sessions": 1832, "dau": 1760, "dwl": 54, "bounces": 527, "adviews": 917, "leads": 138, "listings": 3607}}, "shipper": {"generic": {"sessions": 2735, "dau": 2201, "dwl": 142, "bounces": 361, "adviews": 6370, "leads": 342, "listings": 581}, "partnership": {"sessions": 0, "dau": 0, "dwl": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "tai_xe": {"generic": {"sessions": 3932, "dau": 3259, "dwl": 137, "bounces": 584, "adviews": 7191, "leads": 254, "listings": 753}, "partnership": {"sessions": 0, "dau": 0, "dwl": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}}, "partners": {"ghn": {"job_type": "nvkv", "asset_name": "awo_image_nvkv_ghn", "sessions": 626, "dau": 605, "dwl": 17, "bounces": 152, "adviews": 402, "leads": 60, "listings": 1210}, "meat": {"job_type": "nvpv", "asset_name": "awo_catalog_nvpv_meat", "sessions": 162, "dau": 154, "dwl": 2, "bounces": 60, "adviews": 38, "leads": 3, "listings": 220}, "plt": {"job_type": "nvpv", "asset_name": "awo_image_nvpv_plt", "sessions": 447, "dau": 429, "dwl": 12, "bounces": 134, "adviews": 257, "leads": 18, "listings": 888}, "jollibee": {"job_type": "nvpv", "asset_name": "awo_image_nvpv_jollibee", "sessions": 814, "dau": 795, "dwl": 19, "bounces": 223, "adviews": 340, "leads": 68, "listings": 1604}, "aladdin": {"job_type": "nvpv", "asset_name": "awo_image_nvpv_aladin", "sessions": 87, "dau": 87, "dwl": 1, "bounces": 33, "adviews": 12, "leads": 1, "listings": 112}, "kfc": {"job_type": "nvpv", "asset_name": "awo_image_nvpv_kfc", "sessions": 327, "dau": 325, "dwl": 21, "bounces": 77, "adviews": 273, "leads": 49, "listings": 797}}};
 
 function AdPartnershipSection() {
   const [activeChannels, setActiveChannels] = useState({google:true, meta:true});
@@ -27041,11 +27047,13 @@ function AdPartnershipSection() {
     return (next.google || next.meta) ? next : prev; // always keep ≥1 channel on
   });
 
+  const [chartMet, setChartMet] = useState("dau");
   const APC = {generic:"#6366f1", partnership:"#f59e0b"};
   const labels = AD_PARTNERSHIP.job_type_labels; // identical set/labels on both channels
   const AG_SUFFIX = {ban_hang:"banhang", bao_ve:"baove", cong_nhan:"worker", nvkd:"nvkd", nvkv:"nvkv", nvpv:"nvpv", shipper:"shipper", tai_xe:"taixe"};
-  const emptyM = () => ({sessions:0,dau:0,bounces:0,adviews:0,leads:0,listings:0});
-  const addM = (a,b) => ({sessions:a.sessions+b.sessions,dau:a.dau+b.dau,bounces:a.bounces+b.bounces,adviews:a.adviews+b.adviews,leads:a.leads+b.leads,listings:a.listings+b.listings});
+  const emptyM = () => ({sessions:0,dau:0,dwl:0,bounces:0,adviews:0,leads:0,listings:0});
+  const addM = (a,b) => ({sessions:a.sessions+b.sessions,dau:a.dau+b.dau,dwl:a.dwl+b.dwl,bounces:a.bounces+b.bounces,adviews:a.adviews+b.adviews,leads:a.leads+b.leads,listings:a.listings+b.listings});
+  const dwlRate = (m) => m.dau ? (m.dwl/m.dau*100) : 0;
 
   // Chips filter which channels feed every number below — with both on, values are summed.
   const jobTypes = {};
@@ -27077,21 +27085,24 @@ function AdPartnershipSection() {
     (jobTypes[a].generic.sessions + jobTypes[a].partnership.sessions));
   const barLabels = jtKeys.map(k=>labels[k]||k);
   const barDatasets = [
-    {label:"AWO (mặc định)", data:jtKeys.map(k=>jobTypes[k].generic.sessions), backgroundColor:APC.generic},
-    {label:"Ad Partnership", data:jtKeys.map(k=>jobTypes[k].partnership.sessions), backgroundColor:APC.partnership},
+    {label:"AWO (mặc định)", data:jtKeys.map(k=>jobTypes[k].generic[chartMet]), backgroundColor:APC.generic},
+    {label:"Ad Partnership", data:jtKeys.map(k=>jobTypes[k].partnership[chartMet]), backgroundColor:APC.partnership},
   ];
 
   const nvpv = jobTypes.nvpv;
   const nvpvTotal = nvpv.generic.sessions + nvpv.partnership.sessions;
   const nvpvShare = nvpvTotal ? (nvpv.partnership.sessions/nvpvTotal*100) : 0;
-  const crGeneric = nvpv.generic.sessions ? (nvpv.generic.leads/nvpv.generic.sessions*100) : 0;
-  const crPartner = nvpv.partnership.sessions ? (nvpv.partnership.leads/nvpv.partnership.sessions*100) : 0;
+  const dwlRateGeneric = dwlRate(nvpv.generic);
+  const dwlRatePartner = dwlRate(nvpv.partnership);
   const partnerOrder = Object.keys(partners).filter(n=>partners[n].job_type==="nvpv").sort((a,b)=>partners[b].sessions-partners[a].sessions);
   const spotlightCards = [
     {name:"AWO mặc định (nvpv)", baseline:true, ...nvpv.generic},
     ...partnerOrder.map(n=>({name:n, ...partners[n]})),
   ];
 
+  // Campaign comparison table — every AWO/Partnership row from the active channels, side by
+  // side on DAU/DWL so partnership campaigns can be benchmarked against the AWO baseline of
+  // their own job type (jtKey carries that lookup key).
   const detailRows = [];
   channels.forEach(ch=>{
     const Dc = SOURCES[ch];
@@ -27099,15 +27110,15 @@ function AdPartnershipSection() {
       const g = Dc.job_types[k].generic;
       if(g.sessions>0) detailRows.push({
         name: ch==="meta" ? `digital_fb_job_${AG_SUFFIX[k]||k} (generic: carousel/catalog/video)` : `awo_responsive_generic_${AG_SUFFIX[k]||k}`,
-        type:"awo", jt:labels[k]||k, channel:ch, ...g,
+        type:"awo", jt:labels[k]||k, jtKey:k, channel:ch, ...g,
       });
     });
     Object.keys(Dc.partners).forEach(name=>{
       const p = Dc.partners[name];
-      detailRows.push({name: p.asset_name || `awo_responsive_${p.job_type}_${name}`, type:"partner", jt:labels[p.job_type]||p.job_type, channel:ch, ...p});
+      detailRows.push({name: p.asset_name || `awo_responsive_${p.job_type}_${name}`, type:"partner", jt:labels[p.job_type]||p.job_type, jtKey:p.job_type, channel:ch, ...p});
     });
   });
-  detailRows.sort((a,b)=>b.sessions-a.sessions);
+  detailRows.sort((a,b)=>b.dau-a.dau);
 
   const dateRange = `${AD_PARTNERSHIP.meta.date_from.slice(5)} → ${AD_PARTNERSHIP.meta.date_to.slice(5)}/2026`;
   const assetLabel = channels.length===2 ? "Asset group / Ad creative" : CHANNEL_META[channels[0]].assetLabel;
@@ -27161,12 +27172,12 @@ function AdPartnershipSection() {
               </div>
               <div style={{fontSize:10.5,color:"#9ca3af",marginBottom:12}}>{cfg.sub}</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"14px 10px"}}>
-                <div><div style={{fontSize:19,fontWeight:800,color:"#111"}}>{fmtK(s.sessions)}</div><div style={{fontSize:11,color:"#9ca3af"}}>Sessions</div></div>
-                <div><div style={{fontSize:19,fontWeight:800,color:"#111"}}>{fmtK(s.adviews)}</div><div style={{fontSize:11,color:"#9ca3af"}}>Ad views</div></div>
-                <div><div style={{fontSize:19,fontWeight:800,color:"#111"}}>{fmtK(s.leads)}</div><div style={{fontSize:11,color:"#9ca3af"}}>Leads</div></div>
-                <div><div style={{fontSize:19,fontWeight:800,color:APC[cfg.key]}}>{pct(s.leads,s.sessions)}%</div><div style={{fontSize:11,color:"#9ca3af"}}>CR Lead/session</div></div>
-                <div><div style={{fontSize:19,fontWeight:800,color:APC[cfg.key]}}>{pct(s.bounces,s.sessions)}%</div><div style={{fontSize:11,color:"#9ca3af"}}>Bounce rate</div></div>
-                <div><div style={{fontSize:19,fontWeight:800,color:"#111"}}>{fmtK(s.dau)}</div><div style={{fontSize:11,color:"#9ca3af"}}>DAU (proxy)</div></div>
+                <div><div style={{fontSize:21,fontWeight:800,color:"#111"}}>{fmtK(s.dau)}</div><div style={{fontSize:11,color:"#9ca3af",fontWeight:700}}>DAU</div></div>
+                <div><div style={{fontSize:21,fontWeight:800,color:"#111"}}>{fmtK(s.dwl)}</div><div style={{fontSize:11,color:"#9ca3af",fontWeight:700}}>DWL</div></div>
+                <div><div style={{fontSize:21,fontWeight:800,color:APC[cfg.key]}}>{dwlRate(s).toFixed(1)}%</div><div style={{fontSize:11,color:"#9ca3af",fontWeight:700}}>DWL/DAU</div></div>
+                <div><div style={{fontSize:15,fontWeight:700,color:"#6b7280"}}>{fmtK(s.sessions)}</div><div style={{fontSize:11,color:"#9ca3af"}}>Sessions</div></div>
+                <div><div style={{fontSize:15,fontWeight:700,color:"#6b7280"}}>{fmtK(s.leads)}</div><div style={{fontSize:11,color:"#9ca3af"}}>Leads</div></div>
+                <div><div style={{fontSize:15,fontWeight:700,color:"#6b7280"}}>{pct(s.bounces,s.sessions)}%</div><div style={{fontSize:11,color:"#9ca3af"}}>Bounce rate</div></div>
               </div>
             </div>
           );
@@ -27174,7 +27185,14 @@ function AdPartnershipSection() {
       </div>
 
       <div style={{...card,marginBottom:20}}>
-        <div style={{fontWeight:600,fontSize:13,marginBottom:4,color:"#374151"}}>Theo job type — Sessions</div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginBottom:4}}>
+          <div style={{fontWeight:600,fontSize:13,color:"#374151"}}>Theo job type — {chartMet==="dau"?"DAU":chartMet==="dwl"?"DWL":"Sessions"}</div>
+          <div style={{display:"flex",gap:4,background:"#f3f4f6",borderRadius:8,padding:3,width:220}}>
+            {[{key:"dau",label:"DAU"},{key:"dwl",label:"DWL"},{key:"sessions",label:"Sessions"}].map(o=>(
+              <button key={o.key} onClick={()=>setChartMet(o.key)} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"none",cursor:"pointer",fontSize:11.5,fontWeight:600,transition:"all .15s",background:chartMet===o.key?"#6366f1":"transparent",color:chartMet===o.key?"#fff":"#6b7280"}}>{o.label}</button>
+            ))}
+          </div>
+        </div>
         <div style={{fontSize:11,color:"#9ca3af",marginBottom:14}}>AWO mặc định so với Ad Partnership trong từng job type</div>
         <BarChart labels={barLabels} datasets={barDatasets} height={260}/>
       </div>
@@ -27186,21 +27204,20 @@ function AdPartnershipSection() {
           background:"linear-gradient(135deg,#fef3e2,transparent)",border:"1px solid #e5e7eb"}}>
           <div style={{fontFamily:"inherit",fontWeight:800,fontSize:24,color:"#d97706"}}>{nvpvShare.toFixed(1)}%</div>
           <div style={{fontSize:12.5,color:"#6b7280",lineHeight:1.5}}>
-            tổng traffic NV phục vụ tháng 9 đến từ <b style={{color:"#111"}}>Ad Partnership</b> — volume không nhỏ, nhưng CR Lead chỉ bằng{" "}
-            <b style={{color:"#111"}}>{crGeneric ? Math.round(crPartner/crGeneric*100) : "—"}%</b> so với AWO mặc định.
+            tổng traffic NV phục vụ tháng 9 đến từ <b style={{color:"#111"}}>Ad Partnership</b> — volume không nhỏ, nhưng DWL/DAU chỉ bằng{" "}
+            <b style={{color:"#111"}}>{dwlRateGeneric ? Math.round(dwlRatePartner/dwlRateGeneric*100) : "—"}%</b> so với AWO mặc định.
           </div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:14}}>
           {spotlightCards.map(c=>{
-            const cr = c.sessions ? (c.leads/c.sessions*100) : 0;
-            const br = c.sessions ? (c.bounces/c.sessions*100) : 0;
+            const rate = dwlRate(c);
             return (
               <div key={c.name} style={{background:c.baseline?"#eef2ff":"#f9fafb",border:`1px solid ${c.baseline?"#6366f1":"#e5e7eb"}`,borderRadius:8,padding:"14px 16px"}}>
                 <div style={{fontWeight:700,fontSize:14,color:"#111",marginBottom:2}}>{c.baseline ? c.name : c.name.charAt(0).toUpperCase()+c.name.slice(1)}</div>
                 <div style={{fontSize:11,color:"#9ca3af",marginBottom:10}}>{c.baseline?"Baseline":"Partner"} · sessions: <b>{fmtK(c.sessions)}</b></div>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:12.5,color:"#6b7280",padding:"3px 0"}}><span>Leads</span><b style={{color:"#111"}}>{fmtK(c.leads)}</b></div>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:12.5,color:"#6b7280",padding:"3px 0"}}><span>CR Lead</span><b style={{color:c.baseline?"#111":(cr<crGeneric*0.7?"#dc2626":"#111")}}>{cr.toFixed(1)}%</b></div>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:12.5,color:"#6b7280",padding:"3px 0"}}><span>Bounce</span><b style={{color:br>30?"#dc2626":"#111"}}>{br.toFixed(1)}%</b></div>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12.5,color:"#6b7280",padding:"3px 0"}}><span>DAU</span><b style={{color:"#111"}}>{fmtK(c.dau)}</b></div>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12.5,color:"#6b7280",padding:"3px 0"}}><span>DWL</span><b style={{color:"#111"}}>{fmtK(c.dwl)}</b></div>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12.5,color:"#6b7280",padding:"3px 0"}}><span>DWL/DAU</span><b style={{color:c.baseline?"#111":(rate<dwlRateGeneric*0.7?"#dc2626":"#111")}}>{rate.toFixed(1)}%</b></div>
               </div>
             );
           })}
@@ -27208,8 +27225,8 @@ function AdPartnershipSection() {
       </div>
 
       <div style={{...card}}>
-        <div style={{fontWeight:600,fontSize:13,marginBottom:4,color:"#374151"}}>Chi tiết theo {assetLabel.toLowerCase()}</div>
-        <div style={{fontSize:11,color:"#9ca3af",marginBottom:14}}>{detailRows.length} dòng</div>
+        <div style={{fontWeight:700,fontSize:14,marginBottom:2,color:"#1f2937"}}>So sánh hiệu quả campaign — AWO vs Ad Partnership</div>
+        <div style={{fontSize:11,color:"#9ca3af",marginBottom:14}}>{detailRows.length} campaign ({assetLabel.toLowerCase()}), xếp theo DAU · DWL/DAU tô đỏ khi partnership dưới 70% baseline AWO cùng job type</div>
         <div style={{overflowX:"auto"}}>
           <table style={{borderCollapse:"collapse",fontSize:12,width:"100%"}}>
             <thead><tr>
@@ -27218,13 +27235,16 @@ function AdPartnershipSection() {
               <th style={{...TH,textAlign:"center"}}>Kiểu</th>
               <th style={{...TH,textAlign:"left"}}>Job type</th>
               <th style={TH}>Sessions</th>
-              <th style={TH}>Ad views</th>
-              <th style={TH}>Leads</th>
-              <th style={TH}>CR Lead</th>
-              <th style={TH}>Bounce</th>
+              <th style={TH}>DAU</th>
+              <th style={TH}>DWL</th>
+              <th style={TH}>DWL/DAU</th>
             </tr></thead>
             <tbody>
-              {detailRows.map((r,i)=>(
+              {detailRows.map((r,i)=>{
+                const rate = dwlRate(r);
+                const baselineRate = dwlRate(jobTypes[r.jtKey].generic);
+                const isWeak = r.type==="partner" && baselineRate>0 && rate<baselineRate*0.7;
+                return (
                 <tr key={r.channel+"_"+r.name} style={{background:i%2===0?"#fff":"#fafafa"}}>
                   <td style={{...TD,textAlign:"left",fontWeight:500,fontFamily:"monospace",fontSize:11.5,color:"#374151"}}>{r.name}</td>
                   <td style={{...TD,textAlign:"center"}}>
@@ -27237,12 +27257,11 @@ function AdPartnershipSection() {
                   </td>
                   <td style={{...TD,textAlign:"left"}}>{r.jt}</td>
                   <td style={TD}>{fmtK(r.sessions)}</td>
-                  <td style={TD}>{fmtK(r.adviews)}</td>
-                  <td style={TD}>{fmtK(r.leads)}</td>
-                  <td style={TD}>{pct(r.leads,r.sessions)}%</td>
-                  <td style={TD}>{pct(r.bounces,r.sessions)}%</td>
+                  <td style={TD}>{fmtK(r.dau)}</td>
+                  <td style={TD}>{fmtK(r.dwl)}</td>
+                  <td style={{...TD,fontWeight:700,color:isWeak?"#dc2626":"#111"}}>{rate.toFixed(1)}%</td>
                 </tr>
-              ))}
+              );})}
             </tbody>
           </table>
         </div>
