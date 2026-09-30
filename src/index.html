@@ -27016,8 +27016,25 @@ function D12TestSection() {
 // refresh. No cost/CPL column (traffic tables don't carry spend).
 const AD_PARTNERSHIP = {"meta": {"account": "Chotot_JOB_VND", "date_from": "2026-09-01", "date_to": "2026-09-29", "source": "chotot-dwh.chotot_data.traffic_pageview_detail (utm_content trong screenName) + traffic_visit_detail", "pulled_at": "2026-09-29"}, "summary": {"generic": {"sessions": 38177, "dau": 30861, "bounces": 4213, "adviews": 101544, "leads": 12134, "listings": 179979}, "partnership": {"sessions": 3540, "dau": 3318, "bounces": 1244, "adviews": 1730, "leads": 369, "listings": 5476}}, "job_type_labels": {"ban_hang": "Bán hàng", "bao_ve": "Bảo vệ", "cong_nhan": "Công nhân", "nvkd": "NV kinh doanh", "nvkv": "NV kho vận", "nvpv": "NV phục vụ", "shipper": "Shipper (xe máy)", "tai_xe": "Tài xế ô tô"}, "job_types": {"ban_hang": {"generic": {"sessions": 5620, "dau": 4738, "bounces": 422, "adviews": 19377, "leads": 2329, "listings": 33772}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "bao_ve": {"generic": {"sessions": 6107, "dau": 4742, "bounces": 1117, "adviews": 8743, "leads": 1121, "listings": 17268}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "cong_nhan": {"generic": {"sessions": 5076, "dau": 4090, "bounces": 389, "adviews": 16708, "leads": 1613, "listings": 27308}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "nvkd": {"generic": {"sessions": 2070, "dau": 1770, "bounces": 234, "adviews": 4632, "leads": 618, "listings": 9087}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "nvkv": {"generic": {"sessions": 4327, "dau": 3780, "bounces": 559, "adviews": 9035, "leads": 1000, "listings": 15700}, "partnership": {"sessions": 6, "dau": 6, "bounces": 3, "adviews": 4, "leads": 0, "listings": 12}}, "nvpv": {"generic": {"sessions": 6392, "dau": 5648, "bounces": 792, "adviews": 19069, "leads": 2402, "listings": 36402}, "partnership": {"sessions": 3534, "dau": 3312, "bounces": 1241, "adviews": 1726, "leads": 369, "listings": 5464}}, "shipper": {"generic": {"sessions": 2592, "dau": 2219, "bounces": 374, "adviews": 7065, "leads": 770, "listings": 13051}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "tai_xe": {"generic": {"sessions": 5993, "dau": 3874, "bounces": 326, "adviews": 16915, "leads": 2281, "listings": 27391}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}}, "partners": {"ghn": {"job_type": "nvkv", "sessions": 6, "dau": 6, "bounces": 3, "adviews": 4, "leads": 0, "listings": 12}, "meat": {"job_type": "nvpv", "sessions": 3404, "dau": 3182, "bounces": 1213, "adviews": 1538, "leads": 348, "listings": 5017}, "plt": {"job_type": "nvpv", "sessions": 79, "dau": 79, "bounces": 17, "adviews": 143, "leads": 10, "listings": 321}, "jollibee": {"job_type": "nvpv", "sessions": 36, "dau": 36, "bounces": 8, "adviews": 36, "leads": 10, "listings": 105}, "aladdin": {"job_type": "nvpv", "sessions": 15, "dau": 15, "bounces": 3, "adviews": 9, "leads": 1, "listings": 21}}};
 
+// AD-PARTNERSHIP-META-2026-09: Meta/Facebook side of the same job-partnership traffic, pulled
+// with the same methodology (utm_content on the landing URL, joined traffic_pageview_detail →
+// traffic_visit_detail on clientId/visitId/date, 2026-09-01 to 09-29, category_id IN (13000,13010)
+// for job adviews/leads/listings). Meta's job campaigns are named digital_fb_job_<suffix> (same
+// 8 suffixes as Google's asset_group naming: banhang, baove, worker, nvkd, nvkv, nvpv, shipper,
+// taixe), and partner creatives use awo_image_/awo_catalog_<job_type>_<partner> instead of
+// Google's awo_responsive_<job_type>_<partner>. Confirms the same 5 partners as Google (meat,
+// plt, jollibee, aladdin — spelled "aladin" in Meta's own creative name, ghn) PLUS a 6th partner
+// running on Meta only this month: kfc (nvpv), not seen on Google Ads. Manual snapshot like the
+// Google one above — not wired into update_marketplace.py, re-pull the same query to refresh.
+const AD_PARTNERSHIP_META = {"meta": {"account": "Chotot_JOB_VND (Meta/Facebook)", "date_from": "2026-09-01", "date_to": "2026-09-29", "source": "chotot-dwh.chotot_data.traffic_pageview_detail (utm_content trong screenName) + traffic_visit_detail, filter source='facebook' AND campaign LIKE 'digital_fb_job_%'", "pulled_at": "2026-09-30"}, "summary": {"generic": {"sessions": 37805, "dau": 30277, "bounces": 5912, "adviews": 82810, "leads": 4455, "listings": 17341}, "partnership": {"sessions": 2463, "dau": 2370, "bounces": 679, "adviews": 1322, "leads": 199, "listings": 4831}}, "job_type_labels": {"ban_hang": "Bán hàng", "bao_ve": "Bảo vệ", "cong_nhan": "Công nhân", "nvkd": "NV kinh doanh", "nvkv": "NV kho vận", "nvpv": "NV phục vụ", "shipper": "Shipper (xe máy)", "tai_xe": "Tài xế ô tô"}, "job_types": {"ban_hang": {"generic": {"sessions": 9072, "dau": 7649, "bounces": 1789, "adviews": 17585, "leads": 1292, "listings": 9163}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "bao_ve": {"generic": {"sessions": 8749, "dau": 6722, "bounces": 1382, "adviews": 18373, "leads": 660, "listings": 1211}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "cong_nhan": {"generic": {"sessions": 5519, "dau": 4337, "bounces": 692, "adviews": 14241, "leads": 615, "listings": 866}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "nvkd": {"generic": {"sessions": 4009, "dau": 3087, "bounces": 583, "adviews": 8205, "leads": 756, "listings": 2015}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "nvkv": {"generic": {"sessions": 2282, "dau": 1818, "bounces": 296, "adviews": 6306, "leads": 248, "listings": 1074}, "partnership": {"sessions": 631, "dau": 610, "bounces": 152, "adviews": 405, "leads": 61, "listings": 1224}}, "nvpv": {"generic": {"sessions": 1507, "dau": 1204, "bounces": 225, "adviews": 4539, "leads": 288, "listings": 1678}, "partnership": {"sessions": 1832, "dau": 1760, "bounces": 527, "adviews": 917, "leads": 138, "listings": 3607}}, "shipper": {"generic": {"sessions": 2735, "dau": 2201, "bounces": 361, "adviews": 6370, "leads": 342, "listings": 581}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}, "tai_xe": {"generic": {"sessions": 3932, "dau": 3259, "bounces": 584, "adviews": 7191, "leads": 254, "listings": 753}, "partnership": {"sessions": 0, "dau": 0, "bounces": 0, "adviews": 0, "leads": 0, "listings": 0}}}, "partners": {"ghn": {"job_type": "nvkv", "asset_name": "awo_image_nvkv_ghn", "sessions": 626, "dau": 605, "bounces": 152, "adviews": 402, "leads": 60, "listings": 1210}, "meat": {"job_type": "nvpv", "asset_name": "awo_catalog_nvpv_meat", "sessions": 162, "dau": 154, "bounces": 60, "adviews": 38, "leads": 3, "listings": 220}, "plt": {"job_type": "nvpv", "asset_name": "awo_image_nvpv_plt", "sessions": 447, "dau": 429, "bounces": 134, "adviews": 257, "leads": 18, "listings": 888}, "jollibee": {"job_type": "nvpv", "asset_name": "awo_image_nvpv_jollibee", "sessions": 814, "dau": 795, "bounces": 223, "adviews": 340, "leads": 68, "listings": 1604}, "aladdin": {"job_type": "nvpv", "asset_name": "awo_image_nvpv_aladin", "sessions": 87, "dau": 87, "bounces": 33, "adviews": 12, "leads": 1, "listings": 112}, "kfc": {"job_type": "nvpv", "asset_name": "awo_image_nvpv_kfc", "sessions": 327, "dau": 325, "bounces": 77, "adviews": 273, "leads": 49, "listings": 797}}};
+
 function AdPartnershipSection() {
-  const D = AD_PARTNERSHIP;
+  const [channel, setChannel] = useState("google");
+  const CHANNEL_META = {
+    google: {label:"Google Ads", assetLabel:"Asset group"},
+    meta: {label:"Meta (Facebook) Ads", assetLabel:"Ad creative"},
+  };
+  const D = channel === "meta" ? AD_PARTNERSHIP_META : AD_PARTNERSHIP;
   const APC = {generic:"#6366f1", partnership:"#f59e0b"};
   const labels = D.job_type_labels;
   const totalSessions = D.summary.generic.sessions + D.summary.partnership.sessions;
@@ -27036,7 +27053,7 @@ function AdPartnershipSection() {
   const nvpvShare = nvpvTotal ? (nvpv.partnership.sessions/nvpvTotal*100) : 0;
   const crGeneric = nvpv.generic.sessions ? (nvpv.generic.leads/nvpv.generic.sessions*100) : 0;
   const crPartner = nvpv.partnership.sessions ? (nvpv.partnership.leads/nvpv.partnership.sessions*100) : 0;
-  const partnerOrder = ["meat","plt","jollibee","aladdin"];
+  const partnerOrder = Object.keys(D.partners).filter(n=>D.partners[n].job_type==="nvpv").sort((a,b)=>D.partners[b].sessions-D.partners[a].sessions);
   const spotlightCards = [
     {name:"AWO mặc định (nvpv)", baseline:true, ...nvpv.generic},
     ...partnerOrder.filter(n=>D.partners[n]).map(n=>({name:n, ...D.partners[n]})),
@@ -27046,35 +27063,49 @@ function AdPartnershipSection() {
   const detailRows = [];
   Object.keys(D.job_types).forEach(k=>{
     const g = D.job_types[k].generic;
-    if(g.sessions>0) detailRows.push({name:`awo_responsive_generic_${AG_SUFFIX[k]||k}`, type:"awo", jt:labels[k]||k, ...g});
+    if(g.sessions>0) detailRows.push({name: channel==="meta" ? `digital_fb_job_${AG_SUFFIX[k]||k} (generic: carousel/catalog/video)` : `awo_responsive_generic_${AG_SUFFIX[k]||k}`, type:"awo", jt:labels[k]||k, ...g});
   });
   Object.keys(D.partners).forEach(name=>{
     const p = D.partners[name];
-    detailRows.push({name:`awo_responsive_${p.job_type}_${name}`, type:"partner", jt:labels[p.job_type]||p.job_type, ...p});
+    detailRows.push({name: p.asset_name || `awo_responsive_${p.job_type}_${name}`, type:"partner", jt:labels[p.job_type]||p.job_type, ...p});
   });
   detailRows.sort((a,b)=>b.sessions-a.sessions);
 
   return (
     <section id="adPartnership">
       <div className="section-title">🤝 Ad Partnership</div>
+      <div style={{display:"flex",gap:4,background:"#f3f4f6",borderRadius:8,padding:3,marginBottom:14,width:220}}>
+        {[{key:"google",label:"Google"},{key:"meta",label:"Meta"}].map(o=>(
+          <button key={o.key} onClick={()=>setChannel(o.key)} style={{flex:1,padding:"5px 10px",borderRadius:6,border:"none",cursor:"pointer",fontSize:12,fontWeight:600,transition:"all .15s",background:channel===o.key?"#6366f1":"transparent",color:channel===o.key?"#fff":"#6b7280"}}>{o.label}</button>
+        ))}
+      </div>
+
       <div style={{fontSize:11,color:"#9ca3af",marginBottom:16}}>
-        {D.meta.account} · Google Ads · Asset Group · {D.meta.date_from.slice(5)} → {D.meta.date_to.slice(5)}/2026 · data pulled {D.meta.pulled_at}
+        {D.meta.account} · {CHANNEL_META[channel].label} · {CHANNEL_META[channel].assetLabel} · {D.meta.date_from.slice(5)} → {D.meta.date_to.slice(5)}/2026 · data pulled {D.meta.pulled_at}
       </div>
 
       <div style={{...card,marginBottom:20,background:"#ecfdf5",border:"1px solid #a7f3d0"}}>
         <div style={{fontWeight:700,fontSize:13,marginBottom:6,color:"#065f46"}}>✓ Đã xác nhận bằng dữ liệu thật</div>
         <div style={{fontSize:12.5,color:"#065f46",lineHeight:1.6}}>
-          Asset_group của các campaign PMax được ghi trong tham số <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>utm_content</code> của
-          URL landing page, nằm trong field <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>screenName</code> của <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>traffic_pageview_detail</code> —
-          trước đây bị bỏ sót vì Google Ads không expose field này qua campaign/adContent ở mức session. Asset_group mặc định dạng{" "}
-          <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>awo_responsive_generic_&lt;job_type&gt;</code>; partnership dạng{" "}
-          <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>awo_responsive_&lt;job_type&gt;_&lt;đối tác&gt;</code> (vd. <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>awo_responsive_nvpv_meat</code>).
+          {channel==="google" ? (<>
+            Asset_group của các campaign PMax được ghi trong tham số <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>utm_content</code> của
+            URL landing page, nằm trong field <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>screenName</code> của <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>traffic_pageview_detail</code> —
+            trước đây bị bỏ sót vì Google Ads không expose field này qua campaign/adContent ở mức session. Asset_group mặc định dạng{" "}
+            <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>awo_responsive_generic_&lt;job_type&gt;</code>; partnership dạng{" "}
+            <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>awo_responsive_&lt;job_type&gt;_&lt;đối tác&gt;</code> (vd. <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>awo_responsive_nvpv_meat</code>).
+          </>) : (<>
+            Tên creative (ad name) của các campaign <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>digital_fb_job_&lt;job_type&gt;</code> trên Meta
+            cũng nằm trong <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>utm_content</code> — cùng cơ chế truy vết như Google, chỉ khác quy ước đặt tên.
+            Creative mặc định dùng nhiều dạng (carousel, catalog, video…) không theo 1 tên cố định; creative partnership dạng{" "}
+            <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>awo_image/awo_catalog_&lt;job_type&gt;_&lt;đối tác&gt;</code> (vd. <code style={{background:"#fff",padding:"1px 5px",borderRadius:4}}>awo_image_nvpv_jollibee</code>).
+            Ghi nhận thêm 1 đối tác chạy riêng trên Meta: <b>kfc</b> (nvpv) — chưa thấy trên Google Ads tháng này.
+          </>)}
         </div>
       </div>
 
       <div style={{display:"flex",gap:16,marginBottom:20,flexWrap:"wrap"}}>
         {[{key:"generic",label:"AWO (mặc định)",sub:"awo_responsive_generic_* — 8 job type"},
-          {key:"partnership",label:"Ad Partnership",sub:"5 đối tác: meat, plt, jollibee, aladdin, ghn"}].map(cfg=>{
+          {key:"partnership",label:"Ad Partnership",sub:`${Object.keys(D.partners).length} đối tác: ${Object.keys(D.partners).join(", ")}`}].map(cfg=>{
           const s = D.summary[cfg.key];
           return (
             <div key={cfg.key} style={{...card,flex:1,minWidth:260,borderTop:`3px solid ${APC[cfg.key]}`}}>
@@ -27132,12 +27163,12 @@ function AdPartnershipSection() {
       </div>
 
       <div style={{...card}}>
-        <div style={{fontWeight:600,fontSize:13,marginBottom:4,color:"#374151"}}>Chi tiết theo asset_group</div>
-        <div style={{fontSize:11,color:"#9ca3af",marginBottom:14}}>{detailRows.length} asset_group</div>
+        <div style={{fontWeight:600,fontSize:13,marginBottom:4,color:"#374151"}}>Chi tiết theo {CHANNEL_META[channel].assetLabel.toLowerCase()}</div>
+        <div style={{fontSize:11,color:"#9ca3af",marginBottom:14}}>{detailRows.length} {CHANNEL_META[channel].assetLabel.toLowerCase()}</div>
         <div style={{overflowX:"auto"}}>
           <table style={{borderCollapse:"collapse",fontSize:12,width:"100%"}}>
             <thead><tr>
-              <th style={{...TH,textAlign:"left",minWidth:220}}>Asset group</th>
+              <th style={{...TH,textAlign:"left",minWidth:220}}>{CHANNEL_META[channel].assetLabel}</th>
               <th style={{...TH,textAlign:"center"}}>Kiểu</th>
               <th style={{...TH,textAlign:"left"}}>Job type</th>
               <th style={TH}>Sessions</th>
