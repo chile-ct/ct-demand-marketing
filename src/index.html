@@ -34,7 +34,7 @@ section{padding:28px 24px 0;scroll-margin-top:114px}
 const {useRef,useEffect,useState,useMemo} = React;
 
 // auto-updated by update_marketplace.py
-const DATA_AS_OF = "2026-11-10";
+const DATA_AS_OF = "2026-11-11";
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
 // Detail channel data — auto-updated from daumaulead_mkt_rp (SUM platforms/day → AVG/month)
@@ -105,7 +105,7 @@ const RAW = [
   {v:"GDS",ch:"Growth (Paid)",m:"2026-04",dau:10568,nd:3835,rd:6733,dwl:1178,lead:93086,nm:6620,rm:15678,mc:195745,ml:22298},
   {v:"GDS",ch:"Organic Search",m:"2026-04",dau:35090,nd:14782,rd:20308,dwl:3258,lead:262333,nm:26704,rm:43245,mc:685150,ml:69949},
   {v:"JOB",ch:"(Other)",m:"2026-04",dau:3142,nd:1267,rd:1876,dwl:654,lead:67778,nm:1131,rm:9529,mc:60722,ml:10660},
-  {v:"JOB",ch:"Direct",m:"2026-04",dau:21430,nd:2821,rd:18610,dwl:4407,lead:449648,nm:12816,rm:53130,mc:279558,ml:65946},
+  {v:"JOB",ch:"Direct",m:"2026-04",dau:21430,nd:2821,rd:18610,dwl:4406,lead:449648,nm:12816,rm:53130,mc:279558,ml:65946},
   {v:"JOB",ch:"Growth (CRM)",m:"2026-04",dau:1743,nd:15,rd:1728,dwl:400,lead:45510,nm:33,rm:5688,mc:20986,ml:5721},
   {v:"JOB",ch:"Growth (Paid)",m:"2026-04",dau:13084,nd:6470,rd:6614,dwl:1692,lead:149762,nm:15133,rm:21166,mc:277759,ml:36299},
   {v:"JOB",ch:"Organic Search",m:"2026-04",dau:8744,nd:3450,rd:5294,dwl:1548,lead:132010,nm:13040,rm:19363,mc:164328,ml:32403},
@@ -141,7 +141,7 @@ const RAW = [
   {v:"VEH",ch:"Organic Search",m:"2026-05",dau:28615,nd:13192,rd:15423,dwl:1599,lead:143907,nm:14606,rm:23872,mc:627372,ml:38478},
   {v:"GDS",ch:"(Other)",m:"2026-06",dau:8667,nd:533,rd:8135,dwl:2529,lead:199176,nm:1204,rm:36129,mc:86514,ml:37333},
   {v:"GDS",ch:"Direct",m:"2026-06",dau:121759,nd:8237,rd:113522,dwl:15633,lead:1164281,nm:20056,rm:177712,mc:1547600,ml:197768},
-  {v:"GDS",ch:"Growth (CRM)",m:"2026-06",dau:5401,nd:4,rd:5396,dwl:1098,lead:83946,nm:28,rm:13492,mc:42699,ml:13520},
+  {v:"GDS",ch:"Growth (CRM)",m:"2026-06",dau:5401,nd:5,rd:5396,dwl:1098,lead:83946,nm:28,rm:13492,mc:42699,ml:13520},
   {v:"GDS",ch:"Growth (Paid)",m:"2026-06",dau:14170,nd:6222,rd:7948,dwl:1134,lead:93819,nm:8024,rm:14524,mc:279959,ml:22548},
   {v:"GDS",ch:"Organic Search",m:"2026-06",dau:34922,nd:15123,rd:19799,dwl:3230,lead:265212,nm:28657,rm:42297,mc:689151,ml:70954},
   {v:"JOB",ch:"(Other)",m:"2026-06",dau:2685,nd:629,rd:2055,dwl:873,lead:98102,nm:1295,rm:13077,mc:42637,ml:14372},
@@ -218,7 +218,7 @@ const RAW = [
   {v:"VEH",ch:"Direct",m:"2026-09",dau:47254,nd:5773,rd:41480,dwl:4226,lead:330014,nm:5826,rm:57995,mc:607456,ml:63821},
   {v:"VEH",ch:"Growth (CRM)",m:"2026-09",dau:6606,nd:22,rd:6584,dwl:1015,lead:82573,nm:63,rm:13055,mc:63892,ml:13118},
   {v:"VEH",ch:"Growth (Paid)",m:"2026-09",dau:5499,nd:2125,rd:3375,dwl:359,lead:28172,nm:2198,rm:5056,mc:107600,ml:7254},
-  {v:"VEH",ch:"Organic Search",m:"2026-09",dau:30152,nd:14068,rd:16084,dwl:1694,lead:127198,nm:16244,rm:23767,mc:634449,ml:40011},
+  {v:"VEH",ch:"Organic Search",m:"2026-09",dau:30152,nd:14069,rd:16084,dwl:1694,lead:127198,nm:16244,rm:23767,mc:634449,ml:40011},
   {v:"GDS",ch:"(Other)",m:"2026-10",dau:4912,nd:958,rd:3954,dwl:2448,lead:172864,nm:2616,rm:39323,mc:82493,ml:41939},
   {v:"GDS",ch:"Direct",m:"2026-10",dau:100971,nd:14800,rd:86171,dwl:14013,lead:1004681,nm:15992,rm:158951,mc:1010735,ml:174943},
   {v:"GDS",ch:"Growth (CRM)",m:"2026-10",dau:16921,nd:45,rd:16876,dwl:3628,lead:279401,nm:260,rm:39899,mc:119525,ml:40158},
@@ -254,7 +254,7 @@ const RAW = [
   {v:"PTY",ch:"Growth (CRM)",m:"2026-11",dau:6334,nd:29,rd:6306,dwl:1100,lead:36161,nm:51,rm:6238,mc:27851,ml:6289},
   {v:"PTY",ch:"Growth (Paid)",m:"2026-11",dau:6380,nd:2923,rd:3457,dwl:745,lead:23908,nm:2517,rm:3686,mc:50507,ml:6203},
   {v:"PTY",ch:"Organic Search",m:"2026-11",dau:13578,nd:6664,rd:6914,dwl:1366,lead:52558,nm:3775,rm:7005,mc:105753,ml:10780},
-  {v:"VEH",ch:"(Other)",m:"2026-11",dau:1725,nd:455,rd:1271,dwl:503,lead:10503,nm:348,rm:3687,mc:12887,ml:4035},
+  {v:"VEH",ch:"(Other)",m:"2026-11",dau:1725,nd:454,rd:1271,dwl:503,lead:10503,nm:348,rm:3687,mc:12887,ml:4035},
   {v:"VEH",ch:"Direct",m:"2026-11",dau:42679,nd:5113,rd:37566,dwl:3675,lead:90832,nm:1471,rm:22050,mc:244840,ml:23521},
   {v:"VEH",ch:"Growth (CRM)",m:"2026-11",dau:6800,nd:27,rd:6773,dwl:1002,lead:26729,nm:20,rm:5632,mc:29667,ml:5652},
   {v:"VEH",ch:"Growth (Paid)",m:"2026-11",dau:5624,nd:1960,rd:3664,dwl:320,lead:8136,nm:662,rm:1697,mc:38798,ml:2359},
@@ -21014,30 +21014,19 @@ const CAMPAIGN_DATA = [
 // scripts/update_marketplace.py from the "PTY-URL"/"JOB-URL" tabs of the "Digital demand
 // campaigns - LDP" Google Sheet, classified via scripts/url_tracking_classifier.py.
 const URL_TRACKING = {
-  "dataAsOf": "2026-11-10",
+  "dataAsOf": "2026-11-11",
   "PTY": {
     "totals": {
-      "cost": 401955774,
-      "clicks": 491392,
-      "focusCost": 374105431,
-      "focusClicks": 445416,
-      "genericCost": 5555227,
-      "genericClicks": 7144,
-      "nonfocusCost": 22295116,
-      "nonfocusClicks": 38832
+      "cost": 399717027,
+      "clicks": 473949,
+      "focusCost": 371985028,
+      "focusClicks": 429038,
+      "genericCost": 4938660,
+      "genericClicks": 7107,
+      "nonfocusCost": 22793339,
+      "nonfocusClicks": 37804
     },
     "daily": [
-      {
-        "date": "2026-11-01",
-        "cost": 59977532,
-        "clicks": 83022,
-        "focusCost": 55705748,
-        "focusClicks": 75525,
-        "genericCost": 1372521,
-        "genericClicks": 1022,
-        "nonfocusCost": 2899263,
-        "nonfocusClicks": 6475
-      },
       {
         "date": "2026-11-02",
         "cost": 60446091,
@@ -21073,199 +21062,210 @@ const URL_TRACKING = {
       },
       {
         "date": "2026-11-05",
-        "cost": 31821442,
-        "clicks": 39648,
-        "focusCost": 29783973,
-        "focusClicks": 36198,
-        "genericCost": 340085,
-        "genericClicks": 540,
-        "nonfocusCost": 1697385,
-        "nonfocusClicks": 2910
+        "cost": 37124602,
+        "clicks": 46255,
+        "focusCost": 34747554,
+        "focusClicks": 42230,
+        "genericCost": 396765,
+        "genericClicks": 630,
+        "nonfocusCost": 1980282,
+        "nonfocusClicks": 3395
       },
       {
         "date": "2026-11-06",
-        "cost": 46273465,
-        "clicks": 42841,
-        "focusCost": 42790720,
-        "focusClicks": 38669,
-        "genericCost": 739024,
-        "genericClicks": 600,
-        "nonfocusCost": 2743722,
-        "nonfocusClicks": 3572
+        "cost": 55521469,
+        "clicks": 51405,
+        "focusCost": 51341980,
+        "focusClicks": 46398,
+        "genericCost": 886828,
+        "genericClicks": 720,
+        "nonfocusCost": 3292661,
+        "nonfocusClicks": 4287
       },
       {
         "date": "2026-11-07",
-        "cost": 39906013,
-        "clicks": 37673,
-        "focusCost": 37179164,
-        "focusClicks": 34079,
-        "genericCost": 510276,
-        "genericClicks": 504,
-        "nonfocusCost": 2216573,
-        "nonfocusClicks": 3090
+        "cost": 49880362,
+        "clicks": 47088,
+        "focusCost": 46471397,
+        "focusClicks": 42595,
+        "genericCost": 637846,
+        "genericClicks": 630,
+        "nonfocusCost": 2771119,
+        "nonfocusClicks": 3863
       },
       {
         "date": "2026-11-08",
-        "cost": 25123687,
-        "clicks": 30964,
-        "focusCost": 23032693,
-        "focusClicks": 27695,
-        "genericCost": 376403,
-        "genericClicks": 509,
-        "nonfocusCost": 1714590,
-        "nonfocusClicks": 2760
+        "cost": 33493827,
+        "clicks": 41279,
+        "focusCost": 30706203,
+        "focusClicks": 36921,
+        "genericCost": 502096,
+        "genericClicks": 679,
+        "nonfocusCost": 2285528,
+        "nonfocusClicks": 3679
       },
       {
         "date": "2026-11-09",
-        "cost": 17433930,
-        "clicks": 21516,
-        "focusCost": 16180044,
-        "focusClicks": 19286,
-        "genericCost": 209825,
-        "genericClicks": 392,
-        "nonfocusCost": 1044061,
-        "nonfocusClicks": 1838
+        "cost": 26147069,
+        "clicks": 32271,
+        "focusCost": 24266240,
+        "focusClicks": 28926,
+        "genericCost": 314737,
+        "genericClicks": 588,
+        "nonfocusCost": 1566092,
+        "nonfocusClicks": 2757
       },
       {
         "date": "2026-11-10",
-        "cost": 8344378,
-        "clicks": 10191,
-        "focusCost": 7761127,
-        "focusClicks": 9173,
-        "genericCost": 118973,
-        "genericClicks": 154,
-        "nonfocusCost": 464278,
-        "nonfocusClicks": 864
+        "cost": 16688899,
+        "clicks": 20387,
+        "focusCost": 15523292,
+        "focusClicks": 18353,
+        "genericCost": 237945,
+        "genericClicks": 308,
+        "nonfocusCost": 927663,
+        "nonfocusClicks": 1726
+      },
+      {
+        "date": "2026-11-11",
+        "cost": 7785472,
+        "clicks": 9727,
+        "focusCost": 7256399,
+        "focusClicks": 8824,
+        "genericCost": 74323,
+        "genericClicks": 129,
+        "nonfocusCost": 454750,
+        "nonfocusClicks": 774
       }
     ],
     "groups": [
       {
         "name": "Let",
-        "cost": 244189623,
-        "clicks": 334596,
-        "nonfocusCost": 12771905,
-        "nonfocusClicks": 22424,
+        "cost": 244191929,
+        "clicks": 322401,
+        "nonfocusCost": 13015396,
+        "nonfocusClicks": 22158,
         "campaigns": [
           {
-            "name": "digital_dau_pty_let_room_hcm_pmax_lead_2026_newuser",
-            "cost": 44878232,
-            "clicks": 61805,
-            "nonfocusCost": 3549413,
-            "nonfocusClicks": 5427,
+            "name": "digital_dau_pty_let_room_hcm_pmax_lead_2025",
+            "cost": 42720341,
+            "clicks": 71233,
+            "nonfocusCost": 3778711,
+            "nonfocusClicks": 7449,
             "topCluster": "Room × Unclassified / no city in URL"
           },
           {
-            "name": "digital_dau_pty_let_room_hcm_pmax_lead_2025",
-            "cost": 41666182,
-            "clicks": 73813,
-            "nonfocusCost": 3521685,
-            "nonfocusClicks": 7119,
+            "name": "digital_dau_pty_let_room_hcm_pmax_lead_2026_newuser",
+            "cost": 46238933,
+            "clicks": 58106,
+            "nonfocusCost": 3478030,
+            "nonfocusClicks": 5236,
             "topCluster": "Room × Unclassified / no city in URL"
           },
           {
             "name": "digital_dau_pty_let_apartment_hcm_pmax_lead_2025",
-            "cost": 32676765,
-            "clicks": 64408,
-            "nonfocusCost": 2350014,
-            "nonfocusClicks": 4762,
+            "cost": 32079071,
+            "clicks": 59782,
+            "nonfocusCost": 2398064,
+            "nonfocusClicks": 4499,
             "topCluster": "Apartment × Unclassified / no city in URL"
           },
           {
             "name": "digital_dau_pty_let_houses_hcm_pmax_lead_2026_newuser",
-            "cost": 55230901,
-            "clicks": 74015,
-            "nonfocusCost": 2083999,
-            "nonfocusClicks": 4328,
+            "cost": 56341297,
+            "clicks": 71210,
+            "nonfocusCost": 2125693,
+            "nonfocusClicks": 4205,
             "topCluster": "Other / no focus property token × Ho Chi Minh"
           },
           {
             "name": "digital_dau_pty_let_room_hcm_dsa_lead_2025",
-            "cost": 17941570,
-            "clicks": 10677,
-            "nonfocusCost": 710181,
-            "nonfocusClicks": 242,
+            "cost": 16179855,
+            "clicks": 11389,
+            "nonfocusCost": 705296,
+            "nonfocusClicks": 231,
             "topCluster": "Room × Unclassified / no city in URL"
           },
           {
             "name": "digital_dau_pty_let_houses_hcm_dsa_lead_2025",
-            "cost": 32576685,
-            "clicks": 33139,
-            "nonfocusCost": 278377,
-            "nonfocusClicks": 291,
+            "cost": 33058917,
+            "clicks": 34113,
+            "nonfocusCost": 272288,
+            "nonfocusClicks": 287,
             "topCluster": "House × Unclassified / no city in URL"
           },
           {
             "name": "digital_dau_pty_let_apartment_hcm_dsa_lead_2025",
-            "cost": 19219287,
-            "clicks": 16739,
-            "nonfocusCost": 278234,
-            "nonfocusClicks": 255,
+            "cost": 17573516,
+            "clicks": 16568,
+            "nonfocusCost": 257314,
+            "nonfocusClicks": 251,
             "topCluster": "Apartment × Unclassified / no city in URL"
           }
         ]
       },
       {
         "name": "Sell",
-        "cost": 157766151,
-        "clicks": 156796,
-        "nonfocusCost": 9523211,
-        "nonfocusClicks": 16408,
+        "cost": 155525098,
+        "clicks": 151548,
+        "nonfocusCost": 9777943,
+        "nonfocusClicks": 15646,
         "campaigns": [
           {
-            "name": "digital_dau_pty_sell_houses_hcm_pmax_lead_2026",
-            "cost": 38454694,
-            "clicks": 48704,
-            "nonfocusCost": 2578664,
-            "nonfocusClicks": 6233,
-            "topCluster": "Other / no focus property token × Ho Chi Minh"
-          },
-          {
             "name": "digital_dau_pty_sell_apartment_hcm_pmax_lead_2026",
-            "cost": 27579327,
-            "clicks": 46679,
-            "nonfocusCost": 2549883,
-            "nonfocusClicks": 4501,
+            "cost": 28794220,
+            "clicks": 45326,
+            "nonfocusCost": 2792796,
+            "nonfocusClicks": 4598,
             "topCluster": "Project page without focus type × Ho Chi Minh"
           },
           {
+            "name": "digital_dau_pty_sell_houses_hcm_pmax_lead_2026",
+            "cost": 37669871,
+            "clicks": 46507,
+            "nonfocusCost": 2571951,
+            "nonfocusClicks": 5681,
+            "topCluster": "Other / no focus property token × Ho Chi Minh"
+          },
+          {
             "name": "digital_dau_pty_sell_apartment_binhduong_pmax_lead_2026",
-            "cost": 14983989,
-            "clicks": 19473,
-            "nonfocusCost": 2381945,
-            "nonfocusClicks": 3346,
+            "cost": 14821551,
+            "clicks": 18934,
+            "nonfocusCost": 2326072,
+            "nonfocusClicks": 3257,
             "topCluster": "Apartment × Unclassified / no city in URL"
           },
           {
             "name": "digital_dau_pty_sell_houses_binhduong_pmax_lead_2026",
-            "cost": 11978903,
-            "clicks": 16172,
-            "nonfocusCost": 1642275,
-            "nonfocusClicks": 2142,
+            "cost": 11987294,
+            "clicks": 15131,
+            "nonfocusCost": 1732901,
+            "nonfocusClicks": 1948,
             "topCluster": "Project page without focus type × Binh Duong"
           },
           {
             "name": "digital_dau_pty_sell_apartment_hcm_dsa_lead_2025",
-            "cost": 33237328,
-            "clicks": 13644,
-            "nonfocusCost": 309187,
-            "nonfocusClicks": 146,
+            "cost": 32279106,
+            "clicks": 12897,
+            "nonfocusCost": 326924,
+            "nonfocusClicks": 137,
             "topCluster": "Apartment × Unclassified / no city in URL"
           },
           {
             "name": "digital_dau_pty_sell_houses_binhduong_dsa_lead_2026",
-            "cost": 16230507,
-            "clicks": 7006,
-            "nonfocusCost": 37899,
-            "nonfocusClicks": 20,
-            "topCluster": "House × Binh Phuoc"
+            "cost": 16866068,
+            "clicks": 7036,
+            "nonfocusCost": 20748,
+            "nonfocusClicks": 14,
+            "topCluster": "House × Unclassified / no city in URL"
           },
           {
             "name": "digital_dau_pty_sell_houses_hcm_dsa_lead_2025",
-            "cost": 15301401,
-            "clicks": 5118,
-            "nonfocusCost": 23358,
-            "nonfocusClicks": 20,
-            "topCluster": "House × Vinh Long"
+            "cost": 13106989,
+            "clicks": 5717,
+            "nonfocusCost": 6551,
+            "nonfocusClicks": 11,
+            "topCluster": "Other / no focus property token × Ho Chi Minh"
           }
         ]
       }
@@ -21273,220 +21273,209 @@ const URL_TRACKING = {
     "combos": [
       {
         "label": "House x Ho Chi Minh",
-        "cost": 132988079,
-        "clicks": 145806,
+        "cost": 131898924,
+        "clicks": 143437,
         "cluster": "Focus"
       },
       {
         "label": "Apartment x Ho Chi Minh",
-        "cost": 102446174,
-        "clicks": 126614,
+        "cost": 100142046,
+        "clicks": 120235,
         "cluster": "Focus"
       },
       {
         "label": "Room x Ho Chi Minh",
-        "cost": 91312056,
-        "clicks": 121680,
+        "cost": 91731549,
+        "clicks": 115933,
         "cluster": "Focus"
       },
       {
         "label": "House x Binh Duong",
-        "cost": 28679922,
-        "clicks": 23725,
+        "cost": 29027055,
+        "clicks": 22867,
         "cluster": "Focus"
       },
       {
         "label": "Apartment x Binh Duong",
-        "cost": 15580816,
-        "clicks": 21653,
+        "cost": 16300152,
+        "clicks": 20992,
         "cluster": "Focus"
       },
       {
-        "label": "Apartment x Unclassified / no city in URL",
-        "cost": 3891431,
-        "clicks": 5640,
+        "label": "Other / no focus property token x Ho Chi Minh",
+        "cost": 4033002,
+        "clicks": 8339,
         "cluster": "Non-focus"
       },
       {
-        "label": "Other / no focus property token x Ho Chi Minh",
-        "cost": 3848971,
-        "clicks": 8380,
+        "label": "Apartment x Unclassified / no city in URL",
+        "cost": 3882436,
+        "clicks": 5309,
         "cluster": "Non-focus"
       },
       {
         "label": "Other / no focus property token x Unclassified / no city in URL",
-        "cost": 3253645,
-        "clicks": 5343,
+        "cost": 3255106,
+        "clicks": 5412,
         "cluster": "Generic"
-      },
-      {
-        "label": "Room x Binh Duong",
-        "cost": 3098385,
-        "clicks": 5938,
-        "cluster": "Focus"
-      },
-      {
-        "label": "Room x Unclassified / no city in URL",
-        "cost": 2890552,
-        "clicks": 3130,
-        "cluster": "Non-focus"
       },
       {
         "label": "Project page without focus type x Ho Chi Minh",
-        "cost": 2824208,
-        "clicks": 5724,
+        "cost": 2994796,
+        "clicks": 5605,
         "cluster": "Non-focus"
       },
       {
-        "label": "Generic / homepage x Unclassified / no city in URL",
-        "cost": 1286272,
-        "clicks": 678,
-        "cluster": "Generic"
+        "label": "Room x Unclassified / no city in URL",
+        "cost": 2909390,
+        "clicks": 3060,
+        "cluster": "Non-focus"
+      },
+      {
+        "label": "Room x Binh Duong",
+        "cost": 2885303,
+        "clicks": 5574,
+        "cluster": "Focus"
       },
       {
         "label": "Room x Dong Nai",
-        "cost": 1014123,
-        "clicks": 1467,
-        "cluster": "Non-focus"
-      },
-      {
-        "label": "House x Unclassified / no city in URL",
-        "cost": 949180,
-        "clicks": 1325,
-        "cluster": "Non-focus"
-      },
-      {
-        "label": "Generic property page x Ho Chi Minh",
-        "cost": 770913,
-        "clicks": 1055,
+        "cost": 1038260,
+        "clicks": 1459,
         "cluster": "Non-focus"
       },
       {
         "label": "Project page without focus type x Binh Duong",
-        "cost": 698139,
-        "clicks": 1269,
+        "cost": 835760,
+        "clicks": 1436,
         "cluster": "Non-focus"
       },
       {
+        "label": "Generic property page x Ho Chi Minh",
+        "cost": 830855,
+        "clicks": 1016,
+        "cluster": "Non-focus"
+      },
+      {
+        "label": "House x Unclassified / no city in URL",
+        "cost": 826067,
+        "clicks": 1036,
+        "cluster": "Non-focus"
+      },
+      {
+        "label": "Generic / homepage x Unclassified / no city in URL",
+        "cost": 676803,
+        "clicks": 631,
+        "cluster": "Generic"
+      },
+      {
         "label": "Generic property page x Unclassified / no city in URL",
-        "cost": 649987,
-        "clicks": 595,
+        "cost": 589905,
+        "clicks": 542,
         "cluster": "Generic"
       },
       {
         "label": "Room x Long An",
-        "cost": 637397,
-        "clicks": 1177,
-        "cluster": "Non-focus"
-      },
-      {
-        "label": "House x Dong Nai",
-        "cost": 430523,
-        "clicks": 1129,
-        "cluster": "Non-focus"
-      },
-      {
-        "label": "House x Long An",
-        "cost": 403995,
-        "clicks": 982,
+        "cost": 513926,
+        "clicks": 981,
         "cluster": "Non-focus"
       },
       {
         "label": "Project page without focus type x Unclassified / no city in URL",
-        "cost": 365323,
-        "clicks": 528,
+        "cost": 416845,
+        "clicks": 522,
         "cluster": "Generic"
       },
       {
-        "label": "Other / no focus property token x Binh Duong",
-        "cost": 295777,
-        "clicks": 865,
+        "label": "House x Long An",
+        "cost": 409662,
+        "clicks": 951,
+        "cluster": "Non-focus"
+      },
+      {
+        "label": "House x Dong Nai",
+        "cost": 403096,
+        "clicks": 1066,
         "cluster": "Non-focus"
       },
       {
         "label": "Land x Ho Chi Minh",
-        "cost": 289120,
-        "clicks": 308,
+        "cost": 312560,
+        "clicks": 303,
+        "cluster": "Non-focus"
+      },
+      {
+        "label": "Other / no focus property token x Binh Duong",
+        "cost": 288527,
+        "clicks": 867,
         "cluster": "Non-focus"
       },
       {
         "label": "Room x Lam Dong",
-        "cost": 216544,
-        "clicks": 447,
+        "cost": 234410,
+        "clicks": 456,
         "cluster": "Non-focus"
       },
       {
         "label": "Room x Ha Noi",
-        "cost": 211690,
-        "clicks": 168,
+        "cost": 216381,
+        "clicks": 163,
         "cluster": "Non-focus"
       },
       {
         "label": "House x An Giang",
-        "cost": 138171,
-        "clicks": 72,
-        "cluster": "Non-focus"
-      },
-      {
-        "label": "Apartment x Ha Noi",
-        "cost": 117017,
-        "clicks": 200,
+        "cost": 136679,
+        "clicks": 62,
         "cluster": "Non-focus"
       },
       {
         "label": "House x Tay Ninh",
-        "cost": 109218,
-        "clicks": 215,
+        "cost": 126659,
+        "clicks": 207,
+        "cluster": "Non-focus"
+      },
+      {
+        "label": "Apartment x Ha Noi",
+        "cost": 119955,
+        "clicks": 191,
         "cluster": "Non-focus"
       },
       {
         "label": "Project page without focus type x Khanh Hoa",
-        "cost": 99294,
-        "clicks": 6,
+        "cost": 115843,
+        "clicks": 7,
         "cluster": "Non-focus"
       },
       {
         "label": "Room x Da Nang",
-        "cost": 97134,
-        "clicks": 123,
+        "cost": 110151,
+        "clicks": 118,
         "cluster": "Non-focus"
       }
     ],
     "comboRest": {
-      "n": 132,
-      "cost": 2361720,
-      "clicks": 5150
+      "n": 136,
+      "cost": 2454923,
+      "clicks": 5172
     },
     "priceTag": {
-      "focusCost": 374105431,
-      "focusCostPriced": 48392012,
-      "focusClicks": 445416,
-      "focusClicksPriced": 65064
+      "focusCost": 371985028,
+      "focusCostPriced": 49175609,
+      "focusClicks": 429038,
+      "focusClicksPriced": 63319
     }
   },
   "JOB": {
     "totals": {
-      "cost": 391533437,
-      "clicks": 307581,
-      "focusCost": 362826605,
-      "focusClicks": 272315,
+      "cost": 385630312,
+      "clicks": 295966,
+      "focusCost": 357792692,
+      "focusClicks": 260543,
       "genericCost": 0,
       "genericClicks": 0,
-      "nonfocusCost": 28706832,
-      "nonfocusClicks": 35266
+      "nonfocusCost": 27837620,
+      "nonfocusClicks": 35423
     },
     "daily": [
-      {
-        "date": "2026-11-01",
-        "cost": 58752999,
-        "clicks": 48797,
-        "focusCost": 54695673,
-        "focusClicks": 44703,
-        "genericCost": 0,
-        "genericClicks": 0,
-        "nonfocusCost": 4057326,
-        "nonfocusClicks": 4094
-      },
       {
         "date": "2026-11-02",
         "cost": 60869882,
@@ -21522,116 +21511,127 @@ const URL_TRACKING = {
       },
       {
         "date": "2026-11-05",
-        "cost": 45531110,
-        "clicks": 29609,
-        "focusCost": 42380143,
-        "focusClicks": 25883,
+        "cost": 53120094,
+        "clicks": 34546,
+        "focusCost": 49443966,
+        "focusClicks": 30199,
         "genericCost": 0,
         "genericClicks": 0,
-        "nonfocusCost": 3150966,
-        "nonfocusClicks": 3726
+        "nonfocusCost": 3676128,
+        "nonfocusClicks": 4347
       },
       {
         "date": "2026-11-06",
-        "cost": 36662805,
-        "clicks": 25365,
-        "focusCost": 34078488,
-        "focusClicks": 22030,
+        "cost": 43993756,
+        "clicks": 30438,
+        "focusCost": 40892577,
+        "focusClicks": 26436,
         "genericCost": 0,
         "genericClicks": 0,
-        "nonfocusCost": 2584317,
-        "nonfocusClicks": 3335
+        "nonfocusCost": 3101179,
+        "nonfocusClicks": 4002
       },
       {
         "date": "2026-11-07",
-        "cost": 27412105,
-        "clicks": 19347,
-        "focusCost": 25324854,
-        "focusClicks": 17050,
+        "cost": 34257449,
+        "clicks": 24176,
+        "focusCost": 31648419,
+        "focusClicks": 21305,
         "genericCost": 0,
         "genericClicks": 0,
-        "nonfocusCost": 2087251,
-        "nonfocusClicks": 2297
+        "nonfocusCost": 2609030,
+        "nonfocusClicks": 2871
       },
       {
         "date": "2026-11-08",
-        "cost": 21902281,
-        "clicks": 14846,
-        "focusCost": 20432106,
-        "focusClicks": 12908,
+        "cost": 29194159,
+        "clicks": 19785,
+        "focusCost": 27233926,
+        "focusClicks": 17201,
         "genericCost": 0,
         "genericClicks": 0,
-        "nonfocusCost": 1470175,
-        "nonfocusClicks": 1938
+        "nonfocusCost": 1960233,
+        "nonfocusClicks": 2584
       },
       {
         "date": "2026-11-09",
-        "cost": 17210760,
-        "clicks": 11823,
-        "focusCost": 16399173,
-        "focusClicks": 10541,
+        "cost": 25804852,
+        "clicks": 17721,
+        "focusCost": 24588925,
+        "focusClicks": 15799,
         "genericCost": 0,
         "genericClicks": 0,
-        "nonfocusCost": 811586,
-        "nonfocusClicks": 1282
+        "nonfocusCost": 1215927,
+        "nonfocusClicks": 1922
       },
       {
         "date": "2026-11-10",
-        "cost": 7530434,
-        "clicks": 5875,
-        "focusCost": 7148523,
-        "focusClicks": 5323,
+        "cost": 15058385,
+        "clicks": 11744,
+        "focusCost": 14291776,
+        "focusClicks": 10637,
         "genericCost": 0,
         "genericClicks": 0,
-        "nonfocusCost": 381911,
-        "nonfocusClicks": 552
+        "nonfocusCost": 766610,
+        "nonfocusClicks": 1107
+      },
+      {
+        "date": "2026-11-11",
+        "cost": 7670673,
+        "clicks": 5637,
+        "focusCost": 7325458,
+        "focusClicks": 5089,
+        "genericCost": 0,
+        "genericClicks": 0,
+        "nonfocusCost": 345215,
+        "nonfocusClicks": 548
       }
     ],
     "groups": [
       {
         "name": "Sales staff / Nhan vien kinh doanh",
-        "cost": 24825833,
-        "clicks": 21388,
-        "nonfocusCost": 14746430,
-        "nonfocusClicks": 15374,
+        "cost": 24537463,
+        "clicks": 21725,
+        "nonfocusCost": 14588178,
+        "nonfocusClicks": 15924,
         "campaigns": [
           {
             "name": "digital_gg_job_vnd_dwl_nvkd_dsa_event",
-            "cost": 19190773,
-            "clicks": 18418,
-            "nonfocusCost": 14678448,
-            "nonfocusClicks": 15337,
+            "cost": 19084172,
+            "clicks": 18960,
+            "nonfocusCost": 14536288,
+            "nonfocusClicks": 15890,
             "topCluster": "Generic location / homepage × Ho Chi Minh"
           },
           {
             "name": "digital_gg_job_vnd_dwl_nvkd_pmax_event",
-            "cost": 5635060,
-            "clicks": 2970,
-            "nonfocusCost": 67982,
-            "nonfocusClicks": 37,
+            "cost": 5453291,
+            "clicks": 2765,
+            "nonfocusCost": 51891,
+            "nonfocusClicks": 34,
             "topCluster": "Sales staff / Nhan vien kinh doanh × Unclassified / no city in URL"
           }
         ]
       },
       {
         "name": "Security guard / Bao ve",
-        "cost": 31542485,
-        "clicks": 24860,
-        "nonfocusCost": 7365190,
-        "nonfocusClicks": 11451,
+        "cost": 31668851,
+        "clicks": 24482,
+        "nonfocusCost": 7562713,
+        "nonfocusClicks": 11350,
         "campaigns": [
           {
             "name": "digital_gg_job_vnd_dwl_baove_pmax_event",
-            "cost": 11799781,
-            "clicks": 18055,
-            "nonfocusCost": 7365190,
-            "nonfocusClicks": 11451,
+            "cost": 11819954,
+            "clicks": 18073,
+            "nonfocusCost": 7562713,
+            "nonfocusClicks": 11350,
             "topCluster": "Security guard / Bao ve × Unclassified / no city in URL"
           },
           {
             "name": "digital_gg_job_vnd_dwl_baove_dsa_event",
-            "cost": 19742704,
-            "clicks": 6805,
+            "cost": 19848897,
+            "clicks": 6409,
             "nonfocusCost": 0,
             "nonfocusClicks": 0,
             "topCluster": "—"
@@ -21640,55 +21640,55 @@ const URL_TRACKING = {
       },
       {
         "name": "Generic / multiple types",
-        "cost": 116804664,
-        "clicks": 89278,
-        "nonfocusCost": 6017523,
-        "nonfocusClicks": 7865,
+        "cost": 112600197,
+        "clicks": 84502,
+        "nonfocusCost": 5077927,
+        "nonfocusClicks": 7560,
         "campaigns": [
           {
             "name": "digital_gg_job_vnd_dwl_shipper_dsa_event",
-            "cost": 14769632,
-            "clicks": 12996,
-            "nonfocusCost": 5805700,
-            "nonfocusClicks": 7673,
+            "cost": 14948249,
+            "clicks": 13057,
+            "nonfocusCost": 4848034,
+            "nonfocusClicks": 7351,
             "topCluster": "Generic location / homepage × Ho Chi Minh"
           },
           {
             "name": "digital_gg_job_vnd_dwl_worker_pmax_event",
-            "cost": 13663044,
-            "clicks": 16207,
-            "nonfocusCost": 111286,
-            "nonfocusClicks": 123,
+            "cost": 13102424,
+            "clicks": 16005,
+            "nonfocusCost": 119046,
+            "nonfocusClicks": 133,
             "topCluster": "Factory worker / Cong nhan × Unclassified / no city in URL"
           },
           {
             "name": "digital_gg_job_vnd_dwl_worker_dsa_event",
-            "cost": 37812536,
-            "clicks": 23690,
-            "nonfocusCost": 100536,
-            "nonfocusClicks": 69,
+            "cost": 36745329,
+            "clicks": 22434,
+            "nonfocusCost": 110846,
+            "nonfocusClicks": 76,
             "topCluster": "Factory worker / Cong nhan × Unclassified / no city in URL"
           },
           {
+            "name": "digital_gg_job_vnd_dwl_nvkv_pmax_event",
+            "cost": 8122269,
+            "clicks": 13117,
+            "nonfocusCost": 0,
+            "nonfocusClicks": 0,
+            "topCluster": "—"
+          },
+          {
             "name": "digital_gg_job_vnd_dwl_nvkv_dsa_event",
-            "cost": 33538727,
-            "clicks": 15039,
+            "cost": 31399653,
+            "clicks": 13388,
             "nonfocusCost": 0,
             "nonfocusClicks": 0,
             "topCluster": "—"
           },
           {
             "name": "digital_gg_job_vnd_dwl_shipper_pmax_event",
-            "cost": 8220786,
-            "clicks": 6777,
-            "nonfocusCost": 0,
-            "nonfocusClicks": 0,
-            "topCluster": "—"
-          },
-          {
-            "name": "digital_gg_job_vnd_dwl_nvkv_pmax_event",
-            "cost": 8799939,
-            "clicks": 14569,
+            "cost": 8282271,
+            "clicks": 6501,
             "nonfocusCost": 0,
             "nonfocusClicks": 0,
             "topCluster": "—"
@@ -21697,31 +21697,31 @@ const URL_TRACKING = {
       },
       {
         "name": "Sales / Ban hang",
-        "cost": 124195563,
-        "clicks": 107797,
-        "nonfocusCost": 577691,
-        "nonfocusClicks": 576,
+        "cost": 124640817,
+        "clicks": 105623,
+        "nonfocusCost": 608802,
+        "nonfocusClicks": 589,
         "campaigns": [
           {
             "name": "digital_gg_job_vnd_dau_banhang_dsa_all_cate",
-            "cost": 69761219,
-            "clicks": 76551,
-            "nonfocusCost": 577691,
-            "nonfocusClicks": 576,
+            "cost": 70463430,
+            "clicks": 75267,
+            "nonfocusCost": 608802,
+            "nonfocusClicks": 589,
             "topCluster": "Generic location / homepage × Ho Chi Minh"
           },
           {
-            "name": "digital_gg_job_vnd_dwl_banhang_dsa_event",
-            "cost": 35832484,
-            "clicks": 20568,
+            "name": "digital_gg_job_vnd_dwl_banhang_pmax_event",
+            "cost": 18546142,
+            "clicks": 10400,
             "nonfocusCost": 0,
             "nonfocusClicks": 0,
             "topCluster": "—"
           },
           {
-            "name": "digital_gg_job_vnd_dwl_banhang_pmax_event",
-            "cost": 18601860,
-            "clicks": 10678,
+            "name": "digital_gg_job_vnd_dwl_banhang_dsa_event",
+            "cost": 35631245,
+            "clicks": 19956,
             "nonfocusCost": 0,
             "nonfocusClicks": 0,
             "topCluster": "—"
@@ -21730,23 +21730,23 @@ const URL_TRACKING = {
       },
       {
         "name": "Service staff / Nhan vien phuc vu",
-        "cost": 80167236,
-        "clicks": 45983,
+        "cost": 78326766,
+        "clicks": 41392,
         "nonfocusCost": 0,
         "nonfocusClicks": 0,
         "campaigns": [
           {
-            "name": "digital_gg_job_vnd_dwl_nvpv_dsa_event",
-            "cost": 58179272,
-            "clicks": 26608,
+            "name": "digital_gg_job_vnd_dwl_nvpv_pmax_event",
+            "cost": 20145304,
+            "clicks": 16171,
             "nonfocusCost": 0,
             "nonfocusClicks": 0,
             "topCluster": "—"
           },
           {
-            "name": "digital_gg_job_vnd_dwl_nvpv_pmax_event",
-            "cost": 21987965,
-            "clicks": 19375,
+            "name": "digital_gg_job_vnd_dwl_nvpv_dsa_event",
+            "cost": 58181463,
+            "clicks": 25221,
             "nonfocusCost": 0,
             "nonfocusClicks": 0,
             "topCluster": "—"
@@ -21755,23 +21755,23 @@ const URL_TRACKING = {
       },
       {
         "name": "Driver / Tai xe",
-        "cost": 13997656,
-        "clicks": 18275,
+        "cost": 13856217,
+        "clicks": 18242,
         "nonfocusCost": 0,
         "nonfocusClicks": 0,
         "campaigns": [
           {
-            "name": "digital_gg_job_vnd_dwl_taixe_dsa_event",
-            "cost": 5370560,
-            "clicks": 5241,
+            "name": "digital_gg_job_vnd_dwl_taixe_pmax_event",
+            "cost": 8776319,
+            "clicks": 13406,
             "nonfocusCost": 0,
             "nonfocusClicks": 0,
             "topCluster": "—"
           },
           {
-            "name": "digital_gg_job_vnd_dwl_taixe_pmax_event",
-            "cost": 8627096,
-            "clicks": 13034,
+            "name": "digital_gg_job_vnd_dwl_taixe_dsa_event",
+            "cost": 5079897,
+            "clicks": 4836,
             "nonfocusCost": 0,
             "nonfocusClicks": 0,
             "topCluster": "—"
@@ -21782,189 +21782,189 @@ const URL_TRACKING = {
     "combos": [
       {
         "label": "Service staff / Nhan vien phuc vu x Ho Chi Minh",
-        "cost": 85663742,
-        "clicks": 51557,
+        "cost": 83794053,
+        "clicks": 46645,
         "cluster": "Focus"
       },
       {
         "label": "Factory worker / Cong nhan x Ho Chi Minh",
-        "cost": 84044997,
-        "clicks": 74547,
+        "cost": 83173780,
+        "clicks": 73189,
         "cluster": "Focus"
       },
       {
         "label": "Sales / Ban hang x Ho Chi Minh",
-        "cost": 68413412,
-        "clicks": 45796,
+        "cost": 67160347,
+        "clicks": 43736,
         "cluster": "Focus"
       },
       {
         "label": "Warehouse staff / Nhan vien kho x Ho Chi Minh",
-        "cost": 42666172,
-        "clicks": 29889,
+        "cost": 39887193,
+        "clicks": 26803,
         "cluster": "Focus"
       },
       {
         "label": "Driver / Tai xe x Ho Chi Minh",
-        "cost": 33644565,
-        "clicks": 37298,
+        "cost": 34776427,
+        "clicks": 37574,
         "cluster": "Focus"
       },
       {
         "label": "Security guard / Bao ve x Ho Chi Minh",
-        "cost": 28676124,
-        "clicks": 18245,
+        "cost": 28692423,
+        "clicks": 17852,
         "cluster": "Focus"
       },
       {
         "label": "Delivery / Giao hang x Ho Chi Minh",
-        "cost": 13427669,
-        "clicks": 11414,
+        "cost": 14142818,
+        "clicks": 11351,
         "cluster": "Focus"
       },
       {
         "label": "Generic location / homepage x Ho Chi Minh",
-        "cost": 9544594,
-        "clicks": 8999,
+        "cost": 9492555,
+        "clicks": 9086,
         "cluster": "Non-focus"
       },
       {
         "label": "Security guard / Bao ve x Unclassified / no city in URL",
-        "cost": 7365190,
-        "clicks": 11451,
+        "cost": 7562713,
+        "clicks": 11350,
         "cluster": "Non-focus"
       },
       {
         "label": "Sales staff / Nhan vien kinh doanh x Ho Chi Minh",
-        "cost": 6038006,
-        "clicks": 3277,
+        "cost": 5895722,
+        "clicks": 3076,
         "cluster": "Focus"
       },
       {
-        "label": "Cleaner / Tap vu x Ho Chi Minh",
-        "cost": 1884997,
-        "clicks": 2076,
+        "label": "Office staff x Ho Chi Minh",
+        "cost": 1939138,
+        "clicks": 1819,
         "cluster": "Non-focus"
       },
       {
-        "label": "Office staff x Ho Chi Minh",
-        "cost": 1703761,
-        "clicks": 1608,
+        "label": "Cleaner / Tap vu x Ho Chi Minh",
+        "cost": 1402580,
+        "clicks": 1966,
         "cluster": "Non-focus"
       },
       {
         "label": "Receptionist x Ho Chi Minh",
-        "cost": 1474731,
-        "clicks": 2010,
-        "cluster": "Non-focus"
-      },
-      {
-        "label": "Domestic helper x Ho Chi Minh",
-        "cost": 842521,
-        "clicks": 1208,
+        "cost": 1206614,
+        "clicks": 2105,
         "cluster": "Non-focus"
       },
       {
         "label": "Accountant x Ho Chi Minh",
-        "cost": 579063,
-        "clicks": 907,
+        "cost": 528973,
+        "clicks": 911,
+        "cluster": "Non-focus"
+      },
+      {
+        "label": "Domestic helper x Ho Chi Minh",
+        "cost": 516594,
+        "clicks": 1103,
         "cluster": "Non-focus"
       },
       {
         "label": "Electrician x Ho Chi Minh",
-        "cost": 488086,
-        "clicks": 545,
+        "cost": 484953,
+        "clicks": 557,
         "cluster": "Non-focus"
       },
       {
         "label": "Spa technician x Ho Chi Minh",
-        "cost": 460602,
-        "clicks": 514,
-        "cluster": "Non-focus"
-      },
-      {
-        "label": "Cook / Chef x Ho Chi Minh",
-        "cost": 366576,
-        "clicks": 561,
+        "cost": 446573,
+        "clicks": 496,
         "cluster": "Non-focus"
       },
       {
         "label": "Computer technician x Ho Chi Minh",
-        "cost": 358124,
-        "clicks": 463,
+        "cost": 393624,
+        "clicks": 511,
         "cluster": "Non-focus"
       },
       {
         "label": "Kitchen assistant x Ho Chi Minh",
-        "cost": 345280,
-        "clicks": 532,
-        "cluster": "Non-focus"
-      },
-      {
-        "label": "Other tag / keyword page x Ho Chi Minh",
-        "cost": 339269,
-        "clicks": 628,
-        "cluster": "Non-focus"
-      },
-      {
-        "label": "Welder x Ho Chi Minh",
-        "cost": 319666,
-        "clicks": 448,
+        "cost": 354228,
+        "clicks": 568,
         "cluster": "Non-focus"
       },
       {
         "label": "Nanny x Ho Chi Minh",
-        "cost": 293853,
-        "clicks": 471,
+        "cost": 319451,
+        "clicks": 525,
         "cluster": "Non-focus"
       },
       {
-        "label": "Sales staff / Nhan vien kinh doanh x Unclassified / no city in URL",
-        "cost": 237306,
-        "clicks": 185,
+        "label": "Welder x Ho Chi Minh",
+        "cost": 310057,
+        "clicks": 459,
+        "cluster": "Non-focus"
+      },
+      {
+        "label": "Other tag / keyword page x Ho Chi Minh",
+        "cost": 307379,
+        "clicks": 586,
         "cluster": "Non-focus"
       },
       {
         "label": "Cashier x Ho Chi Minh",
-        "cost": 234285,
-        "clicks": 310,
+        "cost": 253405,
+        "clicks": 341,
+        "cluster": "Non-focus"
+      },
+      {
+        "label": "Sales staff / Nhan vien kinh doanh x Unclassified / no city in URL",
+        "cost": 230871,
+        "clicks": 179,
         "cluster": "Non-focus"
       },
       {
         "label": "Factory worker / Cong nhan x Unclassified / no city in URL",
-        "cost": 211822,
-        "clicks": 192,
+        "cost": 229893,
+        "clicks": 209,
         "cluster": "Non-focus"
       },
       {
-        "label": "Telesales x Ho Chi Minh",
-        "cost": 196158,
-        "clicks": 122,
-        "cluster": "Non-focus"
-      },
-      {
-        "label": "Mason x Ho Chi Minh",
-        "cost": 190907,
-        "clicks": 126,
-        "cluster": "Non-focus"
-      },
-      {
-        "label": "Mechanical worker x Ho Chi Minh",
-        "cost": 181949,
-        "clicks": 260,
+        "label": "Cook / Chef x Ho Chi Minh",
+        "cost": 210801,
+        "clicks": 498,
         "cluster": "Non-focus"
       },
       {
         "label": "Customer service x Ho Chi Minh",
-        "cost": 181583,
-        "clicks": 219,
+        "cost": 205551,
+        "clicks": 250,
+        "cluster": "Non-focus"
+      },
+      {
+        "label": "Barista x Ho Chi Minh",
+        "cost": 196579,
+        "clicks": 115,
+        "cluster": "Non-focus"
+      },
+      {
+        "label": "Mason x Ho Chi Minh",
+        "cost": 192743,
+        "clicks": 125,
+        "cluster": "Non-focus"
+      },
+      {
+        "label": "Mechanical worker x Ho Chi Minh",
+        "cost": 155929,
+        "clicks": 248,
         "cluster": "Non-focus"
       }
     ],
     "comboRest": {
       "n": 25,
-      "cost": 1158428,
-      "clicks": 1723
+      "cost": 1166344,
+      "clicks": 1733
     },
     "priceTag": null
   }
@@ -26597,7 +26597,7 @@ const SEGMENT_MIX = {
 // complete day. See build_d12_test() in that script for the full method + channel-
 // detection notes (Google/Meta/Zalo source verification).
 const D12_TEST = {
-  "dataAsOf": "2026-11-10",
+  "dataAsOf": "2026-11-11",
   "startDate": "2026-07-24",
   "part1": {
     "daily": [
@@ -28281,14 +28281,14 @@ const D12_TEST = {
         "name": "digital_dau_pty_sell_houses_q12_pmax_lead_2026",
         "label": "Google PMax — sell_houses_q12_pmax_lead_2026",
         "channel": "Google",
-        "dau": 106.3,
-        "dwl": 18.9,
-        "lead": 49.6,
-        "cost": 480900,
+        "dau": 105.3,
+        "dwl": 18.8,
+        "lead": 49.1,
+        "cost": 476528,
         "cpDwl": 25396,
         "cpLead": 9696,
         "placeholder": false,
-        "activeDays": 109,
+        "activeDays": 110,
         "dwlTotal": 2064,
         "dauTotal": 11585,
         "leadTotal": 5406
@@ -28300,11 +28300,11 @@ const D12_TEST = {
         "dau": 2.2,
         "dwl": 0.0,
         "lead": 0.0,
-        "cost": 54036,
+        "cost": 53526,
         "cpDwl": 5673772,
         "cpLead": 5673772,
         "placeholder": false,
-        "activeDays": 105,
+        "activeDays": 106,
         "dwlTotal": 1,
         "dauTotal": 232,
         "leadTotal": 1
@@ -28313,14 +28313,14 @@ const D12_TEST = {
         "name": "fb_growth_pty_web_pro_sell_thodia_bau_180826_HCM",
         "label": "Meta (new) — fb_growth_pty_web_pro_sell_thodia_bau_180826_HCM",
         "channel": "Meta",
-        "dau": 3.2,
+        "dau": 3.1,
         "dwl": 0.0,
         "lead": 0.0,
-        "cost": 56801,
+        "cost": 56141,
         "cpDwl": 4828126,
         "cpLead": 4828126,
         "placeholder": false,
-        "activeDays": 85,
+        "activeDays": 86,
         "dwlTotal": 1,
         "dauTotal": 269,
         "leadTotal": 1
@@ -28336,7 +28336,7 @@ const D12_TEST = {
         "cpDwl": null,
         "cpLead": null,
         "placeholder": false,
-        "activeDays": 82,
+        "activeDays": 83,
         "dwlTotal": 4,
         "dauTotal": 68,
         "leadTotal": 5
@@ -28352,7 +28352,7 @@ const D12_TEST = {
         "cpDwl": null,
         "cpLead": null,
         "placeholder": false,
-        "activeDays": 83,
+        "activeDays": 84,
         "dwlTotal": 4,
         "dauTotal": 124,
         "leadTotal": 8
@@ -28368,7 +28368,7 @@ const D12_TEST = {
         "cpDwl": null,
         "cpLead": null,
         "placeholder": false,
-        "activeDays": 80,
+        "activeDays": 81,
         "dwlTotal": 0,
         "dauTotal": 15,
         "leadTotal": 0
